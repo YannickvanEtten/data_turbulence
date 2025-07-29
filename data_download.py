@@ -14,8 +14,6 @@ import numpy.random as rnd
 import numpy as np
 import matplotlib.pyplot as plt
 import scipy.stats as sts
-import scipy.integrate as ing
-from scipy.integrate import quad
 import pandas as pd
 import cdsapi
 c = cdsapi.Client()

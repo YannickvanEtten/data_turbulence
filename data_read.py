@@ -14,26 +14,24 @@ import numpy.random as rnd
 import numpy as np
 import matplotlib.pyplot as plt
 import scipy.stats as sts
-import scipy.integrate as ing
-from scipy.integrate import quad
 import pandas as pd
-import cdsapi
+#import cdsapi
 import xarray as xr
-import pygrib
-c = cdsapi.Client()
+#import pygrib
+#c = cdsapi.Client()
 ###########################################################
 
 ###########################################################
 
 def main():
     grib = "C://Users//yanni//OneDrive//Documenten//Universiteit//Dataproject//ERA5_global_raw_[date].grib" 
-    #ds = xr.open_dataset(file_path, engine='cfgrib')
-    #print(ds)
+    ds = xr.open_dataset(grib, engine='cfgrib')
+    print(ds)
     #grib = 'cams_aod.grib' # Set the file name of your input GRIB file
-    grbs = pygrib.open(grib)
-    grbs = pygrib.open(grib)
-    grb = grbs.select()[0]
-    data = grb.values
+    #grbs = pygrib.open(grib)
+    #grbs = pygrib.open(grib)
+    #grb = grbs.select()[0]
+    #data = grb.values
     #print('test')
 
 ###########################################################

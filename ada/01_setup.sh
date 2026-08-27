@@ -103,59 +103,28 @@ echo "  environment ready ($(du -sh .pixi 2>/dev/null | cut -f1))"
 
 # ---------------------------------------------------------------------------
 step "5. verification"
-echo
-echo "-- 5a. python and rojak rev --"
-pixi run python -c "
-import sys, importlib.metadata as md
-v = md.version('rojak-cat')
-print('   python     ', sys.version.split()[0])
-print('   rojak-cat  ', v)
-assert v.endswith('$EXPECTED_ROJAK_SUFFIX'), (
-    'WRONG ROJAK REV: got ' + v + ', expected one ending $EXPECTED_ROJAK_SUFFIX. '
-    'The verification evidence in verification/ was produced at that rev.')
-print('   rev matches the pin')
-" || fail "rojak rev check failed"
+# NOTE: every check below runs from a FILE, never `pixi run python -c "..."`.
+# pixi parses the -c string with its own task-shell parser before python ever
+# sees it, and that parser rejects ordinary English words that happen to be
+# shell reserved words. The first real run on ADA died on the word "in" inside
+# an assertion message, with the environment perfectly healthy. Files have no
+# quoting layer to get wrong.
 
 echo
-echo "-- 5b. cfgrib / eccodes (historically the fragile piece) --"
+echo "-- 5a. python, rojak rev, GRIB stack, diagnostics, CDS --"
+pixi run python ada/verify_env.py || fail "environment checks failed (see above)"
+
+echo
+echo "-- 5b. cfgrib selfcheck --"
 pixi run python -m cfgrib selfcheck || fail "cfgrib selfcheck failed"
 
 echo
-echo "-- 5c. all 21 diagnostics import --"
-pixi run python -c "
-import importlib.util, sys
-from pathlib import Path
-s = importlib.util.spec_from_file_location('diagnostics', Path('2_diagnostics.py'))
-m = importlib.util.module_from_spec(s); sys.modules['diagnostics'] = m
-s.loader.exec_module(m)
-n = len(m.REFERENCE_TABLE)
-print('   REFERENCE_TABLE:', n)
-assert n == 21, 'expected 21, got %d' % n
-" || fail "diagnostics did not import"
-
-echo
-echo "-- 5d. the verification suite, on ADA --"
-# Passing here means the numbers in verification/ are reproducible in the
+echo "-- 5c. the verification suite, on ADA --"
+# Passing here means the numbers under verification/ are reproducible in the
 # environment that will actually produce the dataset, not only in the one
 # where they were first measured.
 pixi run python -m pytest tests -q --no-header -p no:cacheprovider \
   || fail "the test suite did not pass on ADA -- do not proceed to downloads"
-
-echo
-echo "-- 5e. CDS credentials --"
-if [ ! -f ~/.cdsapirc ]; then
-  echo "   !! ~/.cdsapirc MISSING. Downloads will fail. Create it with:"
-  echo "        url: https://cds.climate.copernicus.eu/api"
-  echo "        key: <your Personal Access Token>"
-  echo "      then:  chmod 600 ~/.cdsapirc"
-else
-  echo "   ~/.cdsapirc present (mode $(stat -c '%a' ~/.cdsapirc))"
-  pixi run python -c "
-import cdsapi
-cdsapi.Client().check_authentication()
-print('   CDS authentication OK')
-" || echo "   !! CDS authentication FAILED -- check the key and the /api url"
-fi
 
 # ---------------------------------------------------------------------------
 step "SETUP COMPLETE"

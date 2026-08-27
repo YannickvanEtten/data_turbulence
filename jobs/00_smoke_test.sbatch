@@ -40,49 +40,19 @@ echo "This block must appear ONCE. If it appears twice, --ntasks=1 is not"
 echo "taking effect and the download array would double-request every month."
 
 echo
-echo "--- 2. python and rojak version ---"
-pixi run python -c "
-import sys, importlib.metadata as md
-print('  python :', sys.version.split()[0])
-print('  rojak  :', md.version('rojak-cat'))
-assert md.version('rojak-cat').endswith('g25b8685c6'), 'WRONG ROJAK REV -- check pixi.lock'
-print('  rev matches the pin in pixi.toml')
-"
+echo "--- 2-6. environment checks (python, rojak rev, GRIB, diagnostics, CDS) ---"
+# Run from a file, not `pixi run python -c`: pixi parses -c strings with its
+# own task-shell parser, which rejects English words that are shell reserved
+# words. See the note in ada/verify_env.py.
+pixi run python ada/verify_env.py
 
 echo
-echo "--- 3. cfgrib / eccodes ---"
+echo "--- cfgrib selfcheck ---"
 pixi run python -m cfgrib selfcheck
 
 echo
-echo "--- 4. the 21 diagnostics import and register ---"
-pixi run python -c "
-import importlib.util, sys
-from pathlib import Path
-s = importlib.util.spec_from_file_location('diagnostics', Path('2_diagnostics.py'))
-m = importlib.util.module_from_spec(s); sys.modules['diagnostics'] = m; s.loader.exec_module(m)
-print('  REFERENCE_TABLE:', len(m.REFERENCE_TABLE), 'diagnostics')
-assert len(m.REFERENCE_TABLE) == 21
-"
-
-echo
-echo "--- 5. the verification suite, on the cluster ---"
-# If this passes here, the numbers in verification/ are reproducible on ADA
-# rather than only in the environment they were first produced in.
+echo "--- the verification suite, on the cluster ---"
 pixi run python -m pytest tests -q --no-header -p no:cacheprovider
-
-echo
-echo "--- 6. CDS credentials and authentication ---"
-if [ ! -f ~/.cdsapirc ]; then
-  echo "  FAIL: ~/.cdsapirc missing -- every download task will fail"
-else
-  echo "  ~/.cdsapirc present, mode $(stat -c '%a' ~/.cdsapirc) (should be 600)"
-  pixi run python -c "
-import cdsapi
-c = cdsapi.Client()
-c.check_authentication()
-print('  CDS authentication OK from a compute node')
-" || echo "  FAIL: CDS auth did not succeed from this node"
-fi
 
 echo
 echo "--- 7. one real month, end to end (Jan 2016: small, recent, non-leap) ---"

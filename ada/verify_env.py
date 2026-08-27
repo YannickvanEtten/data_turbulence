@@ -44,6 +44,11 @@ def bad(msg: str) -> None:
     _failures.append(msg)
 
 
+def note(msg: str) -> None:
+    """Informational: worth reading, but not a reason to stop."""
+    print(f"   [note] {msg}")
+
+
 def check_python() -> None:
     v = sys.version_info
     text = f"python {v.major}.{v.minor}.{v.micro}"
@@ -116,12 +121,45 @@ def check_cds() -> None:
             f"'url: https://cds.climate.copernicus.eu/api'")
         return
     ok(f"~/.cdsapirc present (mode {mode}), {url}")
+
+    # Authentication is checked OPPORTUNISTICALLY and never fails the run.
+    #
+    # There is no method that exists across cdsapi builds. conda-forge's build
+    # returns a LegacyClient with no `check_authentication`; PyPI 0.7.7 has no
+    # LegacyClient at all; the datapi-backed builds put it somewhere else
+    # again. Failing setup on "this particular build lacks this particular
+    # method" would block a perfectly working environment -- which is exactly
+    # what it did on the first ADA run.
+    #
+    # The definitive test is the real trial-day download in
+    # jobs/00_smoke_test.sbatch, one step away. This is a convenience probe.
     try:
         import cdsapi
-        cdsapi.Client().check_authentication()
+        # retry_max/sleep_max MUST be overridden. cdsapi's defaults are
+        # retry_max=500, sleep_max=120 -- on an unreachable CDS that is over
+        # SIXTEEN HOURS of silent retrying. A pre-flight probe that can hang
+        # for sixteen hours is worse than no probe.
+        client = cdsapi.Client(retry_max=1, sleep_max=5, timeout=20, quiet=True)
+    except Exception as exc:  # noqa: BLE001
+        note(f"could not construct a CDS client ({type(exc).__name__}: {exc}) "
+             f"-- the smoke test's download is the real check")
+        return
+
+    checker = getattr(client, "check_authentication", None)
+    if checker is None:
+        inner = getattr(client, "client", None)
+        checker = getattr(inner, "check_authentication", None)
+    if checker is None:
+        note("this cdsapi build exposes no check_authentication(); credentials "
+             "look well-formed, so deferring to the smoke test's real download")
+        return
+    try:
+        checker()
         ok("CDS authentication succeeded from this node")
     except Exception as exc:  # noqa: BLE001
-        bad(f"CDS authentication failed ({type(exc).__name__}: {exc})")
+        note(f"CDS authentication probe failed ({type(exc).__name__}: {exc}). "
+             f"Not fatal here -- but if the smoke test's download also fails, "
+             f"this is why. Check the token and that the ERA5 licence is accepted.")
 
 
 def main() -> int:

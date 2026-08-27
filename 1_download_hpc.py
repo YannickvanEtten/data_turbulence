@@ -45,9 +45,28 @@ import download_plan
 # CDS client -- imported lazily so the planning/verify functions (and their
 # tests) don't require cdsapi to be installed.
 # ---------------------------------------------------------------------------
-def get_client():
+def get_client(retry_max=8, sleep_max=60, timeout=120):
+    """A CDS client that gives up in a bounded time.
+
+    cdsapi's DEFAULTS ARE retry_max=500, sleep_max=120. On an unreachable CDS
+    that is over sixteen hours of silent retrying -- longer than this job's
+    entire walltime. A month that cannot be fetched would burn a compute node
+    to the end of its allocation, print nothing useful, and be killed by the
+    scheduler rather than reporting a cause.
+
+    The bounded values here are the right shape for a SLURM array: 8 attempts
+    backing off to a minute apart is roughly 8 minutes of genuine transient-
+    error tolerance, then a loud failure. Because the downloader is resumable
+    and idempotent -- a failed month leaves no final file, so re-submitting the
+    same array retries exactly the months that failed -- failing fast is
+    strictly better than hanging. Retrying is the job of the next submission,
+    not of a wedged process.
+
+    Discovered by accident, in a pre-flight probe that hung for five minutes
+    against a blocked endpoint and would have kept going for sixteen hours.
+    """
     import cdsapi
-    return cdsapi.Client()
+    return cdsapi.Client(retry_max=retry_max, sleep_max=sleep_max, timeout=timeout)
 
 
 # ---------------------------------------------------------------------------

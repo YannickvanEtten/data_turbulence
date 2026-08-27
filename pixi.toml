@@ -81,6 +81,20 @@ pandas = "*"
 zarr = "*"
 pytest = "*"               # for tests/
 
+# --- rojak's UNDECLARED imports --------------------------------------------
+# rojak imports these at module load but does not declare them, so a resolver
+# working only from its metadata produces an environment that installs cleanly
+# and then dies on `import rojak.core.data`. Found the hard way, twice: once
+# building locally, once on ADA, each time as a chain of ModuleNotFoundErrors
+# discovered one package at a time.
+#   dask-geopandas -> rojak.core.data
+#   requests       -> rojak.datalib.madis.amdar
+#   rich           -> rojak.orchestrator
+# geopandas, pyproj and shapely arrive as dependencies of dask-geopandas.
+dask-geopandas = "*"
+requests = "*"
+rich = "*"
+
 [pypi-dependencies]
 rojak-cat = { git = "https://github.com/ImperialCollegeLondon/rojak.git", rev = "25b8685c670401883bf6d186a522ccfd4561c908" }
 

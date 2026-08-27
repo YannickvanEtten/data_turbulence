@@ -35,6 +35,9 @@ fail() { printf '\n!! %s\n' "$1"; exit 1; }
 step() { printf '\n=== %s ===\n' "$1"; }
 
 echo "ADA setup -- $(date -Is)  on $(hostname)"
+if [ -n "${SLURM_JOB_ID:-}" ]; then
+  echo "running as SLURM job ${SLURM_JOB_ID} -- good, this is a compute node"
+fi
 case "$(hostname)" in
   login*) echo
           echo "!! You are on a LOGIN node. pixi install will likely be killed."

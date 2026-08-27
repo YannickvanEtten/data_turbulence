@@ -22,19 +22,22 @@
 #SBATCH --partition=defq
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=4
-#SBATCH --mem=64G
+#SBATCH --mem=24G
 #SBATCH --time=04:00:00
 #SBATCH --output=logs/diag-%j.out
 #SBATCH --error=logs/diag-%j.out
 
-# --mem=64G is DELIBERATELY generous for a first run. A month is 248 timesteps
-#          x 3 levels x 121 x 301, and 21 diagnostics on top of that, plus
-#          rojak's intermediates. Rough arithmetic puts the diagnostics alone
-#          near 4 GB at float64 before any intermediate is counted, and an OOM
-#          kill would waste the run and tell us nothing. Over-asking once to
-#          MEASURE is cheaper than guessing twice. Trim it for production once
-#          MaxRSS is known.
-# --time=04:00:00 likewise: no idea yet how long 248 timesteps takes.
+# --mem=24G  MEASURED, not guessed. The first run (job 1091555, 1979-01) asked
+#            for 64G and peaked at MaxRSS = 14.8 GB. 24G gives ~1.6x headroom
+#            for longer months and for whatever a different year's data does
+#            differently, without hogging a node.
+#            Memory is scheduled explicitly on ADA, so this is not free
+#            generosity: at 64G perhaps three array tasks fit on a node, at 24G
+#            eight or more. The request size directly sets how wide the array
+#            can actually run.
+# --time=04:00:00  measured at 8 min 11 s for a 31-day month. Kept generous
+#            because a stall should be killed by the scheduler, not run for a
+#            week -- but this is ~30x the observed cost.
 
 set -uo pipefail
 

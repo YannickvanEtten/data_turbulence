@@ -771,6 +771,57 @@ before launching the full array. A single month cannot exercise
 `chunk_stitch.py`'s month-boundary buffer, but it can show whether the
 exceedance field is jet-stream-shaped rather than noise.
 
+### 10.12 First month of diagnostics — 2026-08-28 00:15
+
+Job `1091555` on `node013`, exit 0. `3_pipeline.py` on `era5_na_1979-01.grib`.
+All 21 diagnostics computed, no failures, no NaN placeholders.
+
+| | measured |
+|---|---|
+| wall time | **8 min 11 s** (vs 6 min 55 s to download the same month) |
+| peak memory (`MaxRSS`) | **14.8 GB** — the job asked for 64 GB |
+| output, NetCDF | 1.3 GB |
+| output, Zarr | 1.1 GB |
+
+**Download and diagnostics cost roughly the same per month, for opposite
+reasons.** The download is idle waiting on Copernicus; the diagnostics are real
+arithmetic on the node. They therefore want opposite job shapes: downloads
+narrow (`%4`, CDS-limited, 4 GB), diagnostics wide (memory-limited, 24 GB).
+504 months of diagnostics: 17 h at `%4`, **4.3 h at `%16`**.
+
+`jobs/03_diagnostics.sbatch` now requests **24 GB** (1.6× the measured peak)
+rather than 64 GB. On ADA memory is scheduled explicitly, so the request size
+directly sets how many array tasks fit on a node — this is what makes `%16`
+schedulable at all.
+
+**Storage, settled.** One format × 504 months = **613 GB**; plus ~183 GB of raw
+GRIB that is **796 GB, about 32 % of the 2.5 TB share.** Comfortable. Writing
+both formats would be 1226 GB — `save_outputs()` writes the same data as
+NetCDF *and* Zarr, and production must pick one.
+
+**The output is 200 hPa only.** Visible in the log: rojak computes on
+`(121, 301, 248, 3)` and `compute_all_21(target_level=200)` saves
+`(121, 301, 248)`. That is correct — three levels give the vertical-derivative
+stencil, the middle one is where diagnostics are evaluated — but it is an
+implicit decision. **If the econometrics ever wants 175 or 225 hPa, that is a
+re-run of all 504 months.** Worth deciding deliberately before phase 4.
+
+**Comparison against Williams & Joshi Table 1: read it as season, not error.**
+January in the North Atlantic at 200 hPa *is* the jet stream; W&J's medians are
+a far broader climatology. Wind speed **29.8 vs 14.9 m/s** is the giveaway —
+30 m/s is a textbook winter jet core. Everything downstream of the wind
+inherits that (VWS 4.67 vs 1.88, DEF 43.8 vs 18.6, TI1 184 vs 31.5). Several
+land close regardless: brown1 80.6 vs 77.1, PV 5.19 vs 6.84, NCSU1 8.98 vs 11.1.
+
+**F2D moved from `FLAG: magnitude mismatch` to `PLAUSIBLE` (91 vs 56.6).** On
+the 2-timestep validation file it was computed over an *empty array* (§4a);
+with 248 timesteps its material derivative is real for the first time.
+
+Still flagged `1-2 ORDERS OFF`: `colson_panofsky`, `rva_magnitude`, `ubf`,
+`nva`. Worth examining — `ubf` especially, since its geometry changed on
+2026-08-26 (§4g). But recall §5.4: a *constant* offset washes out of the
+percentile calibration entirely. Only a structured error matters.
+
 ### 10.9 Still open on ADA
 - **Compute-node egress** (§10.7) — the blocker.
 - Snapshot retention / backup policy on the Koopman share.

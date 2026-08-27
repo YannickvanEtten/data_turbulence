@@ -5,7 +5,7 @@
 no longer findable. Those references are not retrievable; this file replaces
 them. When a decision gets made, it gets written here, not into a docstring.
 
-Last updated: 2026-08-27 (structure pass).
+Last updated: 2026-08-27 (ADA environment verified).
 
 ---
 
@@ -701,6 +701,75 @@ xr.open_dataset(path, engine="cfgrib", backend_kwargs={"indexpath": ""})
 The domain matches `download_plan.NORTH_ATLANTIC_BOX` exactly. The integrity
 check in `1_download_hpc.py` (`verify_file`) was run against this file and
 **passes with zero problems**. That risk is closed.
+
+### 10.10 Environment built and verified on ADA — 2026-08-27
+
+Job `1091550` on `node009`, exit status 0. `pixi install` from the repo's
+`pixi.toml`, 1.2 GB, rojak pinned at `25b8685`.
+
+```
+python 3.12.14                                    [ok]
+rojak-cat 1.0.2.dev20+g25b8685c6 -- matches pin   [ok]
+cfgrib + ecCodes v2.48.0                          [ok]
+all 21 diagnostics import and register            [ok]
+~/.cdsapirc, new-format url                       [ok]
+CDS authentication from a compute node            [ok]
+cfgrib selfcheck: "Your system is ready."
+25 passed in 6.34s          <-- the full verification suite, ON ADA
+```
+
+**The last line is the point.** The accuracy figures in `verification/` are now
+reproducible in the environment that will produce the dataset, at the same
+rojak rev, rather than only in the environment where they were first measured.
+
+**Three bugs found getting there**, all mine, all now fixed:
+
+1. **`pixi run python -c "..."` is not safe for multi-line Python.** `pixi run`
+   parses the string with its own task-shell parser before Python sees it, and
+   that parser rejects English words that happen to be shell reserved words.
+   The first run died on the word **"in"**, inside a Python string, inside an
+   assertion message — with a perfectly healthy environment. All checks now
+   live in `ada/verify_env.py` as a real file. The same pattern was waiting in
+   `jobs/00_smoke_test.sbatch` in four more places.
+2. **rojak has undeclared imports.** `dask-geopandas`, `requests` and `rich`
+   are imported at module load but not declared, so a resolver working from its
+   metadata builds a clean environment that then dies on
+   `import rojak.core.data`. Now named explicitly in `pixi.toml`.
+3. **`cdsapi.Client()` defaults to `retry_max=500, sleep_max=120`** — over
+   **sixteen hours** of silent retrying on an unreachable CDS. In
+   `1_download_hpc.py` that meant any month CDS could not serve would hold a
+   compute node until SLURM killed it at walltime, printing nothing useful.
+   Now bounded to 8 attempts backing off to a minute, then a loud failure —
+   which is the right shape precisely *because* the downloader is resumable: a
+   failed month leaves no final file, so re-submitting the array retries
+   exactly the months that failed. Found by accident when a pre-flight probe
+   hung against a blocked endpoint.
+
+Also worth recording: `check_authentication()` does not exist across all cdsapi
+builds (conda-forge returns a `LegacyClient` without it; PyPI 0.7.7 has no such
+class). The probe now tries a couple of locations and degrades to a note rather
+than failing setup — a missing or old-format `~/.cdsapirc` is still fatal.
+
+### 10.11 First real month downloaded — 2026-08-27 23:58
+
+Job `1091553_0`, `--array=0`, on `node009`. Smoke test passed first
+(`--ntasks=1` confirmed, 25 tests passed on ADA, one trial-day download).
+
+```
+era5_na_1979-01.grib   363 MB   integrity check PASSED
+request -> successful  6 min 55 s
+```
+
+**Measured timings for the full run.** 7 minutes per month at `--array=...%4`
+is 126 batches, roughly **15 hours** of wall clock for all 504 — likely one to
+two days once CDS is busier in European working hours than it was at midnight.
+Size: 363 MB for a 31-day month is ~11.7 MB/day, giving ~183 GB for the full
+raw archive, against the 188 GB predicted in 10.6. The storage plan holds.
+
+**Not yet done:** run the diagnostics on this month and look at the output
+before launching the full array. A single month cannot exercise
+`chunk_stitch.py`'s month-boundary buffer, but it can show whether the
+exceedance field is jet-stream-shaped rather than noise.
 
 ### 10.9 Still open on ADA
 - **Compute-node egress** (§10.7) — the blocker.

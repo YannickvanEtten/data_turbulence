@@ -1,0 +1,22 @@
+#,Diagnostic,W&J units,W&J median,Trial median (table units),Trial p99 (table units),Status
+1,Magnitude of potential vorticity,PVU,6.84,3.49,11.3,PLAUSIBLE
+2,Colson–Panofsky index,10^3 kt^2,-34.8,-350,-44.8,1-2 ORDERS OFF
+3,Brown index,10^-6 s^-1,77.1,74.7,165,PLAUSIBLE
+4,|Horizontal temperature gradient|,10^-6 K m^-1,5.75,8.28,43.5,PLAUSIBLE
+5,|Horizontal divergence|,10^-6 s^-1,2.82,11,87.3,PLAUSIBLE
+6,|Vertical wind shear|,10^-3 s^-1,1.88,4.23,13.9,PLAUSIBLE
+7,Wind speed × directional shear,10^-3 rad s^-1,0.952,1.97,9.06,PLAUSIBLE
+8,Flow deformation (rojak returns squared),10^-6 s^-1,18.6,40.7,138,PLAUSIBLE
+9,Wind speed,m s^-1,14.9,20,49.9,PLAUSIBLE
+10,Deformation × vertical T gradient,10^-9 K m^-1 s^-1,8.17,114,736,1-2 ORDERS OFF
+11,Negative Richardson number (-Ri),dimensionless,-127.2,-15.3,-1.72,PLAUSIBLE
+12,|Relative vorticity advection|,10^-10 s^-2,2.33,18.4,293,PLAUSIBLE
+13,|Residual of nonlinear balance eq.|,10^-12 s^-2,161.0,2.39e+03,2.46e+04,1-2 ORDERS OFF
+14,Negative absolute vorticity advection,10^-10 s^-2,2.05,0.356,221,PLAUSIBLE
+15,Brown energy dissipation rate,10^-6 J kg^-1 s^-1,116.0,4.98e-05,0.000932,FLAG: magnitude mismatch
+16,Relative vorticity squared,10^-9 s^-2,0.221,1.39,15,PLAUSIBLE
+17,Ellrod TI1,10^-9 s^-2,31.5,156,1.26e+03,PLAUSIBLE
+18,Deformation × wind speed,10^-3 m s^-2,0.251,0.76,5.03,PLAUSIBLE
+19,Ellrod TI2,10^-9 s^-2,28.8,139,1.44e+03,PLAUSIBLE
+20,Frontogenesis (2D),10^-9 K^2 m^-2 s^-1,56.6,0.0223,2.26,FLAG: magnitude mismatch
+21,NCSU index v1,10^-18 s^-3,11.1,2.1,2.63e+05,PLAUSIBLE

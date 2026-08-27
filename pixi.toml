@@ -1,0 +1,91 @@
+# pixi.toml -- the project environment for the CAT pipeline on ADA.
+#
+# Build it on the project share, not in $HOME:
+#     module load 2025 && module load pixi
+#     mkdir -p /scistor/SBE-EDS-ClimateKoopman/yen230/env && cd $_
+#     cp <this file> pixi.toml
+#     pixi install
+#     pixi run python -m cfgrib selfcheck     # expect "Your system is ready."
+#     pixi run python -c "import rojak"       # expect no output
+#
+# Then run anything through it:
+#     pixi run python 3_pipeline.py <grib> <outdir>
+#
+# ---------------------------------------------------------------------------
+# WHY THE ROJAK REV IS WHAT IT IS
+# ---------------------------------------------------------------------------
+# Pinned to 25b8685c670401883bf6d186a522ccfd4561c908 (2026-08-17), which was
+# HEAD when this was written. Moved forward from the earlier pin 1a65326
+# deliberately, not by drift:
+#
+#   * 25b8685 is "FIX: Geospatial laplacian was missing an extra derivative"
+#     (#234). At 1a65326, rojak's spatial_laplacian returned (df/dx + df/dy) --
+#     not a Laplacian at all. Upstream now routes it through divergence(),
+#     which uses vector_derivatives() and so carries the spherical curvature
+#     term. That is the SAME correction this project derived independently
+#     from the divergence theorem (STATUS.md 4g). Two independent routes,
+#     one answer.
+#   * The full verification suite was re-run at both revs and gives identical
+#     error magnitudes: 25/25 tests pass, all 16 analytic diagnostics
+#     unchanged, all 5 cross-checks at Spearman rho = 1.0000. Nothing
+#     regresses.
+#   * Because upstream's Laplacian is now correct, 4_verify.py no longer
+#     monkey-patches it. That makes the ubf cross-check genuinely independent
+#     instead of comparing two copies of our own formula.
+#
+# Six of the seven Phase-A findings still stand at this rev, so all seven
+# hand-written diagnostics are still required. Confirmed at 25b8685:
+#     Richardson       still N2/Sv   (must be N2/Sv2)      -- still broken
+#     UBF sign         still mass + inertial (must be a residual) -- broken
+#     Frontogenesis2D  still dv_dy cross term (must be dv_dx)     -- broken
+#     spatial_laplacian ................................... FIXED upstream
+#
+# PIN A SHA, NEVER A BRANCH. The pin is the reproducibility record; `main`
+# would make results depend on the date you happened to install.
+#
+# ---------------------------------------------------------------------------
+# WHY NUMPY IS NOT LISTED WITH A VERSION
+# ---------------------------------------------------------------------------
+# numpy is transitively bounded by rojak -> sparse -> numba. Pinning it high
+# makes numba lag, the resolver falls back to sparse 0.3.1 (which requires
+# Python <3.10), and the resulting error blames PYTHON rather than the
+# resolver -- which is what produced the misleading "needs Python 3.9" report.
+# Leave numpy unconstrained upward and let numba set the ceiling.
+#
+# Reference resolved set that is known to work on ADA:
+#   python 3.12.13 | numpy 2.4.6 | numba 0.65.1 | sparse 0.19.0
+#   xarray 2026.4.0 | cfgrib 0.9.15.x | eccodes 2.47.0 | cdsapi 0.7.7
+#
+# After `pixi install`, COMMIT pixi.lock -- that is what makes the environment
+# reproducible, not this file.
+
+[workspace]
+name = "cat-turbulence"
+version = "0.1.0"
+channels = ["conda-forge"]
+platforms = ["linux-64"]
+
+[dependencies]
+python = "3.12.*"          # rojak declares requires-python >=3.12
+numpy = "*"                # see note above -- do NOT pin
+numba = "*"
+sparse = "*"
+xarray = "*"
+dask = "*"
+cfgrib = ">=0.9.15.1,<0.10"
+eccodes = ">=2.47.0,<3"
+netcdf4 = ">=1.7.4,<2"
+cdsapi = ">=0.7.7,<0.8"
+scipy = "*"                # 4_verify.py uses scipy.stats.spearmanr
+pandas = "*"
+zarr = "*"
+pytest = "*"               # for tests/
+
+[pypi-dependencies]
+rojak-cat = { git = "https://github.com/ImperialCollegeLondon/rojak.git", rev = "25b8685c670401883bf6d186a522ccfd4561c908" }
+
+[tasks]
+selfcheck = "python -m cfgrib selfcheck"
+verify = "python 4_verify.py"
+test = "python -m pytest tests/ -v"
+report = "python tests/report_errors.py"

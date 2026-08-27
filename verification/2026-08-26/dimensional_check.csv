@@ -1,0 +1,8 @@
+diagnostic,units,expected,median,p99,W&J SI,verdict
+negative_richardson,1,1,-9.54,-0.89,-127,sign=− (magnitude domain-dependent)
+colson_panofsky,m2 s-2,m2 s-2,-504,-137,-9.21e+03,sign=− (magnitude domain-dependent)
+ubf,s-2,s-2,3.44e-09,3.31e-08,1.61e-10,PLAUSIBLE (ratio 21)
+f2d,m2 s-3 K-2,m2 s-3 K-2,nan,nan,5.66e-08,CHECK (ratio nan)
+ncsu1,s-3,s-3,5.19e-18,3.72e-13,1.11e-17,PLAUSIBLE (ratio 0.47)
+rva_magnitude,s-2,s-2,3.86e-09,3.83e-08,2.33e-10,PLAUSIBLE (ratio 17)
+brown2,s-3,s-3,1.45e-10,1.21e-09,—,n/a (rank-only)

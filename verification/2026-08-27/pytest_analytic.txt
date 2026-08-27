@@ -1,0 +1,30 @@
+============================= test session starts ==============================
+collecting ... collected 25 items
+
+tests/test_analytic.py::TestTierC::test_rva_magnitude PASSED             [  4%]
+tests/test_analytic.py::TestTierC::test_f2d_isentropic PASSED            [  8%]
+tests/test_analytic.py::TestTierC::test_f2d_material_derivative_parts PASSED [ 12%]
+tests/test_analytic.py::TestPassthrough::test_wind_speed PASSED          [ 16%]
+tests/test_analytic.py::TestPassthrough::test_vorticity_squared PASSED   [ 20%]
+tests/test_analytic.py::TestPassthrough::test_horizontal_divergence_is_absolute PASSED [ 24%]
+tests/test_analytic.py::TestPassthrough::test_magnitude_pv_is_absolute PASSED [ 28%]
+tests/test_analytic.py::TestGradientBased::test_temperature_gradient PASSED [ 32%]
+tests/test_analytic.py::TestGradientBased::test_vertical_wind_shear PASSED [ 36%]
+tests/test_analytic.py::TestGradientBased::test_endlich PASSED           [ 40%]
+tests/test_analytic.py::TestDeformationFamily::test_deformation_is_squared PASSED [ 44%]
+tests/test_analytic.py::TestDeformationFamily::test_ti1 PASSED           [ 48%]
+tests/test_analytic.py::TestDeformationFamily::test_ti2_uses_era5_divergence PASSED [ 52%]
+tests/test_analytic.py::TestDeformationFamily::test_ngm1 PASSED          [ 56%]
+tests/test_analytic.py::TestDeformationFamily::test_ngm2 PASSED          [ 60%]
+tests/test_analytic.py::TestVorticityFamily::test_brown1 PASSED          [ 64%]
+tests/test_analytic.py::TestVorticityFamily::test_nva PASSED             [ 68%]
+tests/test_analytic.py::test_every_diagnostic_is_covered PASSED          [ 72%]
+tests/test_convergence.py::test_rva_converges_in_space PASSED            [ 76%]
+tests/test_convergence.py::test_f2d_converges_in_time PASSED             [ 80%]
+tests/test_convergence.py::test_ngm2_vertical_error_is_truncation_not_formula PASSED [ 84%]
+tests/test_convergence.py::test_gradient_metric_matches_exact_ellipsoid PASSED [ 88%]
+tests/test_geometry_theorems.py::test_stokes_says_vorticity_needs_the_curvature_term PASSED [ 92%]
+tests/test_geometry_theorems.py::test_divergence_theorem_says_laplacian_needs_the_curvature_term PASSED [ 96%]
+tests/test_geometry_theorems.py::test_ubf_uses_the_spherical_laplacian_and_vector_jacobian PASSED [100%]
+
+============================== 25 passed in 5.42s ==============================

@@ -1,0 +1,6 @@
+diagnostic,hand median,rojak-fixed median,median ratio,Spearman ρ,agreement
+negative_richardson,-12.4,-12.4,1,1.0000,MATCH
+colson_panofsky,-439,-439,1,1.0000,MATCH
+ubf,3.41e-09,3.41e-09,1,1.0000,MATCH
+ncsu1,5.19e-18,5.19e-18,1,1.0000,MATCH
+brown2,1.22e-10,1.22e-10,1,1.0000,MATCH

@@ -1,0 +1,17 @@
+diagnostic,wj_number,tier,formula_checked,median_rel_err,p95_rel_err,verdict
+magnitude_pv,1,B,|PV| (ERA5 field),0.000000,0.000000,EXACT
+brown1,3,B,sqrt(0.3 zeta_a^2 + Dsh^2 + Dst^2),0.000007,0.000021,EXACT
+temperature_gradient,4,B,|grad T|,0.000098,0.000874,EXACT
+horizontal_divergence,5,B,|delta| (ERA5 field),0.000000,0.000000,EXACT
+vertical_wind_shear,6,B,sqrt((du/dZ)^2+(dv/dZ)^2),0.000000,0.000000,EXACT
+endlich,7,B,|v| |dpsi/dz|,0.001857,0.009117,OK
+deformation,8,B,DEF^2 (rojak returns squared),0.000826,0.001480,EXACT
+wind_speed,9,B,sqrt(u^2+v^2),0.000000,0.000000,EXACT
+ngm2,10,B,|dT/dZ| * DEF,0.028449,0.034305,OK (truncation)
+rva_magnitude,12,C,|u dz/dx + v dz/dy|,0.000100,0.000220,EXACT
+nva,14,B,"max(-u d(zeta+f)/dx - v d(zeta+f)/dy, 0)",0.000000,0.000529,EXACT
+vorticity_squared,16,B,zeta^2,0.000000,0.000000,EXACT
+ti1,17,B,Sv * DEF,0.000421,0.001644,EXACT
+ngm1,18,B,|v| * DEF,0.000506,0.001303,EXACT
+ti2,19,B,Sv * (DEF - delta_ERA5),0.000376,0.001469,EXACT
+f2d,20,C,0.5 D/Dt[(du/dth)^2+(dv/dth)^2],0.000357,0.000547,EXACT

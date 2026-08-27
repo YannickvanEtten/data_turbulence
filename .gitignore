@@ -1,0 +1,71 @@
+# .gitignore — keeps `git add .` from sweeping in ~114 MB of generated data.
+#
+# This file only affects files that are NOT already tracked. It deletes
+# nothing, changes no history, and can be removed at any time with no effect
+# on your work.
+#
+# Rule of thumb: source and evidence are tracked; anything a script can
+# regenerate is not.
+
+# ---------------------------------------------------------------------------
+# Generated data — the reason committing felt dangerous.
+# cat_outputs/ alone is 421 files / 114 MB, including a 42 MB NetCDF.
+# Patterns are by extension rather than by folder, so the small result CSVs
+# in cat_outputs/ (summary_stats.csv, comparison_table.csv) STAY TRACKED.
+# ---------------------------------------------------------------------------
+*.nc
+*.grib
+*.grb
+*.idx
+*.zarr/
+*.tmp
+
+# The verification input is small (687 KB) and makes the verification
+# reproducible by anyone who clones this — keep it despite the *.nc rule.
+!era5_validation_subset.nc
+
+# ---------------------------------------------------------------------------
+# Credentials — never commit these. Your CDS API key lives in .cdsapirc.
+# ---------------------------------------------------------------------------
+.cdsapirc
+.cdsapirc_*
+*.key
+.env
+
+# ---------------------------------------------------------------------------
+# Python
+# ---------------------------------------------------------------------------
+__pycache__/
+*.py[cod]
+.pixi/          # pixi builds the environment here, inside the repo
+.venv/
+venv/
+env/
+.ipynb_checkpoints/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# ---------------------------------------------------------------------------
+# HPC / SLURM run artefacts
+# ---------------------------------------------------------------------------
+slurm-*.out
+slurm-*.err
+*.log
+
+# ---------------------------------------------------------------------------
+# OS clutter
+# ---------------------------------------------------------------------------
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ---------------------------------------------------------------------------
+# NOT ignored, deliberately:
+#   verification/   — the evidence that the diagnostics are correct. This is
+#                     the whole point of phase 0; it must be in the repo.
+#   *.csv           — small result tables worth keeping under version control.
+#   5_explore.ipynb — real work. It is 2.6 MB because the plot outputs are
+#                     saved inside it; clearing outputs before committing
+#                     drops it to a few KB, but that is your call, not mine.
+# ---------------------------------------------------------------------------

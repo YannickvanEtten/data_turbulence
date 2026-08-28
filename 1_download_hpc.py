@@ -238,6 +238,41 @@ def download_month(client, year, month, out_dir, area=None, force=False,
     return _fetch_verified(client, request, final, force=force)
 
 
+def subsampled_filename(year, month, days, domain):
+    """Filename for a month downloaded on an explicit SUBSET of its days.
+
+    Distinct from month_filename() for the same reason download_trial_day has
+    its own name: a partial month must never be mistaken for a complete one by
+    anything that globs the era5_<code>_YYYY-MM.grib series. The day list goes
+    into the name rather than a sidecar, so the file is self-describing and a
+    different sub-sample cannot silently overwrite this one.
+
+        era5_glob_2000-01_d01-09-17-25.grib
+    """
+    code = download_plan.domain_code(domain)
+    tag = "-".join(f"{int(d):02d}" for d in days)
+    return f"era5_{code}_{year}-{month:02d}_d{tag}.grib"
+
+
+def download_month_subset(client, year, month, days, out_dir, area=None,
+                          force=False, domain=download_plan.DEFAULT_DOMAIN):
+    """Download an explicit subset of a month's days.
+
+    Used for the year-2000 global calibration pull, where thresholds are
+    percentiles of a climatological distribution and therefore need coverage of
+    the seasonal and diurnal cycles rather than every consecutive day. See
+    jobs/02b_download_global_calib.sbatch.
+
+    The integrity check needs no special-casing: expected_counts() derives the
+    timestep count from len(request["day"]), so a 4-day request is checked
+    against 4 x 8 = 32 timesteps, and check_grid() is unchanged.
+    """
+    request = download_plan.build_request(year, month, area=area, days=list(days),
+                                          domain=domain)
+    final = Path(out_dir) / subsampled_filename(year, month, days, domain)
+    return _fetch_verified(client, request, final, force=force)
+
+
 def download_trial_day(client, year, month, day, out_dir, area=None, force=False,
                        domain=download_plan.DEFAULT_DOMAIN):
     # Distinct filename so a one-day trial can never masquerade as a complete
@@ -283,12 +318,36 @@ def parse_args(argv=None):
                         "--domain. If given it overrides the domain's box but NOT "
                         "the domain code in the filename, so use it only for "
                         "one-off experiments, never for production data.")
+    p.add_argument("--days", default=None,
+                   help="comma-separated day-of-month list, e.g. '1,9,17,25'. "
+                        "Downloads only those days of each month in the span, "
+                        "at full 3-hourly resolution, to a DIFFERENT filename "
+                        "(era5_<code>_YYYY-MM_dNN-NN.grib) so a partial month "
+                        "can never be mistaken for a complete one. Intended for "
+                        "the year-2000 global calibration pull, where the "
+                        "thresholds are percentiles of a climatological "
+                        "distribution and need seasonal and diurnal coverage "
+                        "rather than consecutive days. Days that a given month "
+                        "does not have are dropped, so '1,9,17,25,31' is safe.")
     p.add_argument("--force", action="store_true",
                    help="re-download even if a final file already exists")
 
     args = p.parse_args(argv)
     if args.start and not args.end:
         p.error("--start requires --end")
+    if args.days is not None:
+        if args.trial_day:
+            p.error("--days is for month spans; --trial-day is already one day")
+        try:
+            parsed = [int(tok) for tok in args.days.split(",") if tok.strip()]
+        except ValueError:
+            p.error(f"--days must be comma-separated integers, got {args.days!r}")
+        if not parsed:
+            p.error("--days was empty")
+        bad = [d for d in parsed if not 1 <= d <= 31]
+        if bad:
+            p.error(f"--days values out of range 1..31: {bad}")
+        args.days = sorted(set(parsed))
     return args
 
 
@@ -320,9 +379,28 @@ def main(argv=None):
         months = [months[args.index]]
 
     for (year, month) in months:
-        result = download_month(client, year, month, out_dir, area=area,
-                                force=args.force, domain=args.domain)
-        print(f"{args.domain} {year}-{month:02d}: {result}")
+        if args.days:
+            # Drop days this month does not have, so one --days list works for
+            # every month of the year (February included) without the job
+            # script needing per-month logic.
+            have = {int(d) for d in download_plan.month_days(year, month)}
+            days = [d for d in args.days if d in have]
+            if not days:
+                raise ValueError(
+                    f"none of --days {args.days} exist in {year}-{month:02d}"
+                )
+            if len(days) != len(args.days):
+                dropped = sorted(set(args.days) - set(days))
+                print(f"note: {year}-{month:02d} has no day(s) {dropped}; "
+                      f"downloading {days}")
+            result = download_month_subset(client, year, month, days, out_dir,
+                                           area=area, force=args.force,
+                                           domain=args.domain)
+            print(f"{args.domain} {year}-{month:02d} days={days}: {result}")
+        else:
+            result = download_month(client, year, month, out_dir, area=area,
+                                    force=args.force, domain=args.domain)
+            print(f"{args.domain} {year}-{month:02d}: {result}")
 
 
 if __name__ == "__main__":

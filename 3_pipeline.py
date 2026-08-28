@@ -91,9 +91,30 @@ def summarise(name: str, da: xr.DataArray) -> DiagStats:
 # A small number of diagnostics need a pre-transform first:
 #   - `deformation`: rojak returns DEF² (s⁻²), so we take √ first then × 1e6
 #     to compare against W&J's DEF in 10⁻⁶ s⁻¹.
+#
+# COLSON-PANOFSKY UNIT FIX (2026-08-28)
+# ------------------------------------
+# This entry was 1.0, with a comment promising a "see note below" that was
+# never written. The consequence: a native value in m² s⁻² was compared
+# directly against a table printed in 10³ kt², so the ratio was out by the
+# knot conversion and colson_panofsky has been reported as
+# "1-2 ORDERS OFF" ever since. That verdict was an artefact of this line, not
+# a property of the diagnostic.
+#
+#     1 kt   = 0.514444 m s⁻¹
+#     1 kt²  = 0.2646526 m² s⁻²
+#     native (m² s⁻²) -> 10³ kt²  :  1 / (1000 x 0.2646526) = 3.778538e-3
+#
+# Check against the published number: W&J's median of -34.8 (10³ kt²) is
+# -34.8e3 x 0.2646526 = -9209.9 m² s⁻². So a native median near -9.2e3 maps
+# back to -34.8, i.e. ratio ~1. Both Williams (2017) Table 2 and W&J (2013)
+# Table 1 print this diagnostic in kt²; it is the only one of the 21 not in
+# SI, which is exactly why it was missed.
+_KT2_TO_M2S2 = 0.514444 ** 2          # 0.2646526
+
 SCALE_TO_TABLE: dict[str, float] = {
     "magnitude_pv":          1.0e6,   # K m^2/(kg s) → PVU
-    "colson_panofsky":       1.0,     # rojak returns m²/s²; W&J table is 10³ kt². Conversion factor is non-trivial — see note below
+    "colson_panofsky":       1.0 / (1.0e3 * _KT2_TO_M2S2),  # m² s⁻² → 10³ kt²
     "brown1":                1.0e6,   # s^-1 → 10^-6 s^-1
     "temperature_gradient":  1.0e6,   # K/m → 10^-6 K/m
     "horizontal_divergence": 1.0e6,   # s^-1 → 10^-6 s^-1

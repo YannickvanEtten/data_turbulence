@@ -3,8 +3,8 @@
 # 04_diagnostics_global.sbatch -- the 21 diagnostics on the year-2000 global
 # calibration files.
 #
-# RUN ONE MONTH FIRST, AND MEAN IT THIS TIME.
-# ------------------------------------------
+# RUN ONE MONTH FIRST.
+# --------------------
 #     sbatch --array=0 jobs/04_diagnostics_global.sbatch
 #
 # The only MaxRSS measurement this project has is 14.8 GB, from a North
@@ -15,23 +15,28 @@
 # point count alone. The first task exists to replace that guess with a
 # number.
 #
-# --mem below is deliberately generous for the FIRST run. After it finishes:
+# The driver prints its own PEAK RSS -- do not chase sacct, which on this
+# cluster has not been returning MaxRSS for job steps. Read the log line:
 #
-#     sacct -j <jobid> --format=JobID,State,Elapsed,MaxRSS
+#     PEAK RSS  : NN.N GB   <-- size the remaining months from this
 #
-# then set --mem to roughly 1.5x the real MaxRSS and release the other eleven.
-# Memory is scheduled explicitly on ADA, so an honest request is what decides
-# how many array tasks fit on a node -- exactly the reasoning that took
-# 03_diagnostics.sbatch from 64G down to 24G.
+# then adjust --mem to ~1.5x it before releasing --array=1-11.
+#
+# --chunk-days 1 COSTS NOTHING
+# ----------------------------
+# Each chunk is computed with one extra timestep on each side and trimmed
+# back, so the output is bit-identical to processing the whole file at once --
+# verified across 1-, 2-, 4-day and whole-file chunking. F2D loses exactly the
+# 2 steps at the file's true ends either way; NAIVE chunking without the
+# overlap would cost it 8. See ada/diagnostics_global.py for the reasoning.
 #
 # IF IT OOMs
 # ----------
-# The job will be killed with an out-of-memory message rather than producing
-# a wrong answer. Two routes out, in order of preference:
-#   1. raise --mem and, if needed, switch to --partition=defq-fat
-#   2. fall back to processing each day separately, at the cost of F2D losing
-#      2 of every 8 timesteps to its centred material derivative instead of
-#      2 of every 32
+# The job is killed with an out-of-memory message rather than producing a
+# wrong answer. Raise --mem; the chunk size is already at its minimum useful
+# value, so an OOM at 24G would mean the per-chunk footprint is much larger
+# than the North Atlantic month's and is worth understanding before the
+# 504-month run.
 #
 # OUTPUT
 #     derived/global/diagnostics_glob_2000-MM.zarr    ~2.8 GB each, ~33 GB total
@@ -47,18 +52,22 @@
 #SBATCH --array=0-11
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=4
-#SBATCH --mem=96G
-#SBATCH --time=06:00:00
+#SBATCH --mem=24G
+#SBATCH --time=01:00:00
 #SBATCH --output=logs/diag-glob-%A_%a.out
 #SBATCH --error=logs/diag-glob-%A_%a.out
 
 # --array=0-11   no % throttle: this is CPU-bound local work, not CDS requests.
-#                But note --mem=96G means few tasks fit per node, so SLURM will
-#                serialise them anyway until the request is right-sized.
-# --mem=96G      A DELIBERATE OVERESTIMATE for task 0 only. Replace it with
-#                ~1.5x the measured MaxRSS before running the rest.
-# --time=06:00   The NA month took 8 min 11 s. This file has 3.7x the points,
-#                so expect well under an hour; the rest is slack for a stall.
+# --mem=24G      With --chunk-days 1 the peak is set by ONE DAY (721x1440x8 =
+#                8.3e6 points, essentially the North Atlantic month's footprint
+#                at its measured 14.8 GB), not by the whole file. 24G therefore
+#                fits EVERY defq node including the 59 GB ones -- which is the
+#                difference between starting now and being scheduled tomorrow.
+#                A 120G request on this cluster was queued 22 h out while every
+#                node sat in 'mix'; the 4-8 GB download jobs started instantly.
+# --time=01:00   The NA month took 8 min 11 s for a comparable per-chunk size,
+#                x4 chunks plus I/O. An honest short walltime is also far more
+#                backfillable than the 6 h I originally asked for.
 
 set -uo pipefail
 
@@ -85,7 +94,7 @@ fi
 mkdir -p "$BASE/derived/global"
 
 start=$(date +%s)
-pixi run python ada/diagnostics_global.py "$IN" "$OUT"
+pixi run python ada/diagnostics_global.py "$IN" "$OUT" --chunk-days 1
 status=$?
 end=$(date +%s)
 

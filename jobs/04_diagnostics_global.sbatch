@@ -78,6 +78,13 @@ DAYS=d01-09-17-25
 module load 2025
 module load pixi
 
+# Python block-buffers stdout when it is a file rather than a terminal, so
+# without this NOTHING appears in the log until the process exits -- the
+# per-chunk progress lines are useless exactly when you want them, and a job
+# that is working is indistinguishable from one that is hung. stderr is
+# unbuffered either way, so a traceback would still appear immediately.
+export PYTHONUNBUFFERED=1
+
 cd "$REPO" || { echo "cannot cd to $REPO"; exit 1; }
 
 MONTH=$(printf "%02d" $((SLURM_ARRAY_TASK_ID + 1)))
@@ -100,6 +107,7 @@ end=$(date +%s)
 
 echo
 echo "=== exit ${status}, wall $(( (end-start)/60 )) min $(( (end-start)%60 )) s ==="
-echo "Peak memory -- size the remaining eleven from this:"
-echo "    sacct -j \$SLURM_JOB_ID --format=JobID,State,Elapsed,MaxRSS"
+echo "Peak memory is the PEAK RSS line above -- sacct on this cluster has not"
+echo "been returning MaxRSS for job steps. For a RUNNING job, sstat works:"
+echo "    sstat -j \$SLURM_JOB_ID --format=JobID,MaxRSS,AveCPU"
 exit $status

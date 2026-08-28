@@ -183,6 +183,37 @@ def lat_weights_for(ds: xr.Dataset) -> xr.DataArray:
                         name="lat_weights")
 
 
+def progress_percentile(names: list[str], stage: str):
+    """Wrap weighted_percentile so a long stage reports where it is.
+
+    calibration.compute_thresholds takes weighted_percentile as an INJECTED
+    argument, which makes this possible without touching the library: the shim
+    counts calls, and since the function is called once per severity, every
+    len(SEVERITIES)-th call means one more diagnostic is finished.
+
+    Sorting 21 arrays of 4e8 float64 values takes the better part of an hour.
+    Without this the log shows a stage header and then nothing, which is
+    indistinguishable from a hang -- the same problem PYTHONUNBUFFERED solved
+    at the job level, one layer down.
+    """
+    import time
+    state = {"n": 0, "t0": time.time()}
+
+    def wrapped(values, weights, pct):
+        result = weighted_percentile(values, weights, pct)
+        state["n"] += 1
+        if state["n"] % len(SEVERITIES) == 0:
+            i = state["n"] // len(SEVERITIES)
+            elapsed = time.time() - state["t0"]
+            eta = elapsed / i * (len(names) - i)
+            print(f"   [{stage} {i:>2}/{len(names)}] {names[i - 1]:<23} "
+                  f"{elapsed / 60:>5.1f} min elapsed, ~{eta / 60:>4.1f} min left",
+                  flush=True)
+        return result
+
+    return wrapped
+
+
 def weighted_rate(exceed: xr.DataArray, weights: xr.DataArray) -> float:
     """cos(phi)-weighted mean of a 0/1/NaN exceedance field.
 
@@ -237,12 +268,13 @@ def main() -> int:
         print(f"!! only {len(fields)} of 21 diagnostics present in the stores")
         return 1
 
+    print("   sorting 21 arrays of 4e8 values; progress below\n")
     thresholds, signs, sample_sizes = calibration.compute_thresholds(
         calibration_fields=fields,
         lat_weights=lat_weights_for(calib),
         severities=SEVERITIES,
         reference_table=reference_table,
-        weighted_percentile=weighted_percentile,
+        weighted_percentile=progress_percentile(list(fields), "A"),
     )
 
     print(f"\n{'diagnostic':<23}" + "".join(f"{LABEL[s]:>13}" for s in ORDER))
@@ -272,14 +304,15 @@ def main() -> int:
         halves = {}
         for label, days in SPLIT_HALVES.items():
             sub = open_months(glob_paths, days=days)
+            print(f"   {label}: {sub.sizes['time']} timesteps")
             halves[label], _, _ = calibration.compute_thresholds(
                 calibration_fields={k: sub[k] for k in fields},
                 lat_weights=lat_weights_for(sub),
                 severities=SEVERITIES,
                 reference_table=reference_table,
-                weighted_percentile=weighted_percentile,
+                weighted_percentile=progress_percentile(
+                    list(fields), f"B {label}"),
             )
-            print(f"   {label}: {sub.sizes['time']} timesteps")
 
         a, b = halves.values()
         rows = []
@@ -313,12 +346,17 @@ def main() -> int:
     # ordering re-reads each diagnostic from zarr five times, turning 21 reads
     # of 1.6 GB into 105.
     rates: dict[str, list[float]] = {sev: [] for sev in ORDER}
-    for n in fields:
+    import time as _time
+    _t0 = _time.time()
+    for i, n in enumerate(fields, 1):
         vals = fields[n].compute()
         for sev in ORDER:
             rates[sev].append(weighted_rate(
                 aggregate.exceedance_field(vals, thresholds[n][sev], signs[n]), cw))
         del vals
+        el = _time.time() - _t0
+        print(f"   [C {i:>2}/{len(fields)}] {n:<23} {el / 60:>5.1f} min elapsed, "
+              f"~{el / i * (len(fields) - i) / 60:>4.1f} min left", flush=True)
 
     print(f"\n   {'severity':<20}{'expected':>10}{'observed':>10}{'rel err':>10}")
     identity_worst = 0.0

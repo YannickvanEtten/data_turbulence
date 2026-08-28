@@ -7,20 +7,19 @@
 # --------------------
 #     sbatch --array=0 jobs/04_diagnostics_global.sbatch
 #
-# The only MaxRSS measurement this project has is 14.8 GB, from a North
-# Atlantic month of shape 121 x 301 x 248 (9.0e6 points). A global calibration
-# file is 721 x 1440 x 32 -- 3.3e7 points, 3.7x more, but a completely
-# different array SHAPE. Linear extrapolation says ~55 GB; that is a guess
-# across a shape change, and rojak's gradient operators need not scale with
-# point count alone. The first task exists to replace that guess with a
-# number.
+# MEASURED on 2000-01 (job 1092495, node009):
 #
-# The driver prints its own PEAK RSS -- do not chase sacct, which on this
-# cluster has not been returning MaxRSS for job steps. Read the log line:
+#     peak RSS    17.7 GB      <-- against --mem=24G, 74% used
+#     wall time   30 min 18 s
+#     output      2.28 GB zarr, 21 of 21 diagnostics, no failures
 #
-#     PEAK RSS  : NN.N GB   <-- size the remaining months from this
+# 24G is therefore right and stays: it fits EVERY defq node including the
+# 59 GB ones, which is what let this schedule in 13 seconds. Raising it would
+# buy nothing and cost scheduling speed -- a 120G request on this cluster was
+# queued 22 h out.
 #
-# then adjust --mem to ~1.5x it before releasing --array=1-11.
+# The driver prints its own PEAK RSS. Do not chase sacct or sstat: this
+# cluster has job-step accounting disabled and both return empty.
 #
 # --chunk-days 1 COSTS NOTHING
 # ----------------------------
@@ -39,7 +38,7 @@
 # 504-month run.
 #
 # OUTPUT
-#     derived/global/diagnostics_glob_2000-MM.zarr    ~2.8 GB each, ~33 GB total
+#     derived/global/diagnostics_glob_2000-MM.zarr    2.28 GB each, ~27 GB total
 #
 # float32 and zarr only -- NOT 3_pipeline.run(), which writes NetCDF AND zarr
 # in float64 (~134 GB for twelve months) and builds a W&J comparison table
@@ -53,7 +52,7 @@
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=24G
-#SBATCH --time=01:00:00
+#SBATCH --time=02:00:00
 #SBATCH --output=logs/diag-glob-%A_%a.out
 #SBATCH --error=logs/diag-glob-%A_%a.out
 
@@ -65,9 +64,10 @@
 #                difference between starting now and being scheduled tomorrow.
 #                A 120G request on this cluster was queued 22 h out while every
 #                node sat in 'mix'; the 4-8 GB download jobs started instantly.
-# --time=01:00   The NA month took 8 min 11 s for a comparable per-chunk size,
-#                x4 chunks plus I/O. An honest short walltime is also far more
-#                backfillable than the 6 h I originally asked for.
+# --time=02:00   MEASURED: 2000-01 took 30 min 18 s on node009. 2 h is ~4x
+#                that, which covers a slower node (defq spans several
+#                generations) without being so long that backfill ignores it.
+#                1 h -- my first guess -- would have left only 2x margin.
 
 set -uo pipefail
 

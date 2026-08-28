@@ -25,10 +25,16 @@
 #     32G still fits EVERY defq node including the 59 GB ones, which is what
 #     keeps it schedulable. A 120G request on this cluster queued 22 hours.
 #
-# --time=04:00:00
-#     Estimated ~50 min for the full-year percentiles, ~50 min for the two
-#     split halves, ~20 min for the identity check, minutes for the rest.
-#     4 h is roughly 2x that. Pass --skip-split-half to halve it.
+# --time=06:00:00
+#     calibration_check.py memoises the five severities onto ONE sort per
+#     diagnostic (see progress_percentile). Without that, weighted_percentile
+#     sorts the same 4e8-element array once per severity -- 105 sorts instead
+#     of 21 -- and the job does not finish inside any sane walltime. Measured
+#     5.67x on a 2e6-element benchmark, bit-identical output.
+#
+#     With the fix: ~1 h for the full-year percentiles, ~1 h for the two split
+#     halves, ~20 min for the identity check. 6 h is generous.
+#     Pass --skip-split-half to roughly halve it.
 #
 # OUTPUT
 #     calibration/thresholds_<date>.json   (via calibration.save_thresholds,
@@ -41,7 +47,7 @@
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=32G
-#SBATCH --time=04:00:00
+#SBATCH --time=06:00:00
 #SBATCH --output=logs/calib-%j.out
 #SBATCH --error=logs/calib-%j.out
 

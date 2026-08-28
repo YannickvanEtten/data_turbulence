@@ -191,25 +191,51 @@ def progress_percentile(names: list[str], stage: str):
     counts calls, and since the function is called once per severity, every
     len(SEVERITIES)-th call means one more diagnostic is finished.
 
-    Sorting 21 arrays of 4e8 float64 values takes the better part of an hour.
-    Without this the log shows a stage header and then nothing, which is
-    indistinguishable from a hang -- the same problem PYTHONUNBUFFERED solved
-    at the job level, one layer down.
+    Sorting 21 arrays of 4e8 float64 values takes a long time. Without this the
+    log shows a stage header and then nothing, which is indistinguishable from
+    a hang -- the same problem PYTHONUNBUFFERED solved at the job level, one
+    layer down.
+
+    IT ALSO MAKES THE STAGE 5x FASTER, WHICH MATTERS MORE
+    -----------------------------------------------------
+    calibration.compute_thresholds asks for one severity at a time:
+
+        thresholds[name] = {sev: weighted_percentile(values, weights, pct)
+                            for sev, pct in severities.items()}
+
+    and weighted_percentile sorts its whole input on every call. So the same
+    4e8-element array is sorted FIVE times per diagnostic -- 105 full sorts
+    where 21 would do.
+
+    weighted_percentile already accepts an ARRAY of percentiles and returns one
+    value per entry (np.interp is vectorised over p). So the shim computes all
+    five on the first call of each group and serves the other four from cache.
+    Identical numbers, one fifth of the work, and no change to the library.
+
+    The group boundary is found by COUNTING calls, not by identifying the
+    array: compute_thresholds calls this exactly len(SEVERITIES) times per
+    diagnostic, in order. Keying on id(values) would be shorter but unsound --
+    CPython reuses ids once an array is freed, so the next diagnostic could
+    silently collide with the previous one's cache.
     """
     import time
-    state = {"n": 0, "t0": time.time()}
+    pcts = list(SEVERITIES.values())
+    state = {"n": 0, "t0": time.time(), "cache": {}}
 
     def wrapped(values, weights, pct):
-        result = weighted_percentile(values, weights, pct)
-        state["n"] += 1
-        if state["n"] % len(SEVERITIES) == 0:
-            i = state["n"] // len(SEVERITIES)
+        if state["n"] % len(pcts) == 0:
+            allp = np.atleast_1d(
+                weighted_percentile(values, weights, np.asarray(pcts, dtype=float)))
+            state["cache"] = dict(zip(pcts, [float(v) for v in allp]))
+            i = state["n"] // len(pcts) + 1
             elapsed = time.time() - state["t0"]
-            eta = elapsed / i * (len(names) - i)
+            eta = elapsed / max(i - 1, 1) * (len(names) - i + 1) if i > 1 else 0.0
             print(f"   [{stage} {i:>2}/{len(names)}] {names[i - 1]:<23} "
-                  f"{elapsed / 60:>5.1f} min elapsed, ~{eta / 60:>4.1f} min left",
+                  f"{elapsed / 60:>5.1f} min elapsed"
+                  + (f", ~{eta / 60:>4.1f} min left" if i > 1 else ""),
                   flush=True)
-        return result
+        state["n"] += 1
+        return state["cache"][pct]
 
     return wrapped
 

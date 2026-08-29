@@ -8,19 +8,32 @@ each result licenses. Companion to `FORMULA_AUDIT.md`; same shape as
 
 ## 0. The one-paragraph version
 
-Push, pull on ADA, and submit `jobs/09_audit_checks.sbatch` — it needs nothing
-that is not already on disk and takes minutes. **Submit the production download
-first and independently**: the raw ERA5 fetch is diagnostic-independent, it is
-the only 36-hour item, and nothing in this runbook can invalidate a byte of it.
+Push, pull on ADA, run the tests, then submit the checks. Nothing here needs a
+new CDS request and nothing here can invalidate a byte of a running download —
+the raw ERA5 fetch is diagnostic-independent, and it is the only 36-hour item.
 
 ```bash
-cd /scistor/SBE-EDS-ClimateKoopman/yen230/data_turbulence
+export BASE=/scistor/SBE-EDS-ClimateKoopman/yen230
+cd $BASE/data_turbulence          # NOT $BASE — git fails there, STATUS §10.1
+module load 2025 && module load pixi
 git pull
-mkdir -p logs
+mkdir -p logs                     # before any sbatch, STATUS §11.9
 
-sbatch jobs/01_download.sbatch          # bare — NOT --array=..., see STATUS §11.9
-sbatch jobs/09_audit_checks.sbatch      # while it runs
+sbatch jobs/12_tests.sbatch       # the gate — wait for this to be green
+sbatch jobs/09_audit_checks.sbatch
+sbatch jobs/10_f2d_variants.sbatch
+sbatch jobs/11_ubf_diagnosis.sbatch
 ```
+
+**Concurrency.** The default QOS caps you at **8 running jobs** (STATUS §11.9).
+A download array at `%4` holds four, leaving four — exactly enough for `12`,
+`09`, `10` and `11`. None of them needs to wait for the download.
+
+**Two ADA facts these scripts encode, learned the hard way.** Modules do not
+persist onto compute nodes, so a bare `srun ... pixi run ...` dies with
+`execve(): pixi: No such file or directory`; every job script re-loads its own
+(STATUS §10.2). And `mkdir -p logs` belongs on the command line, not inside a
+script — SLURM opens the `--output` file before the body runs.
 
 ---
 
@@ -76,7 +89,22 @@ Why the question is open at all: `FORMULA_AUDIT.md` §4.
 
 ## 2. What to run, in order
 
-### Step 1 — `jobs/09_audit_checks.sbatch`  (minutes, 32 GB)
+### Step 0 — `jobs/12_tests.sbatch`  (under a minute, 8 GB)
+
+The cheapest possible place for the two code changes to fail. **Do not queue
+09–11 until this is green.** Expect ~67 tests: the existing 56 plus 11 new ones
+in `tests/test_audit_fixes.py`, none of which need ERA5.
+
+```bash
+mkdir -p logs && sbatch jobs/12_tests.sbatch
+tail -f logs/tests-*.out
+```
+
+If `TestDeformationUnsquared` fails, the `2_diagnostics`/`3_pipeline` pairing is
+wrong. If `TestF2dVariants` fails, the A9 variant flag is. Anything else means
+the change broke something it should not have touched.
+
+### Step 1 — `jobs/09_audit_checks.sbatch`  (minutes, 16 GB)
 
 Runs the composition identities on one NA month, then the shape-ratio test
 twice (daily-mean and instantaneous).
@@ -107,7 +135,7 @@ fail.**
 Exit code 2 from the composition step means an identity failed; that is a stop
 sign, not a warning.
 
-### Step 2 — `jobs/10_f2d_variants.sbatch`  (~30 min, 48 GB)
+### Step 2 — `jobs/10_f2d_variants.sbatch`  (~30 min, 24 GB)
 
 Measures which of the four readings is distributed like the published
 diagnostic, on the global calibration month, in both boxes.
@@ -117,7 +145,7 @@ agrees; what differs is which tail a threshold selects, and the tail-overlap
 matrix in the output shows those sets are essentially disjoint. Separating them
 needs the sign of the *trend* — step 4.
 
-### Step 3 — `jobs/11_ubf_diagnosis.sbatch`  (~15 min, 32 GB)
+### Step 3 — `jobs/11_ubf_diagnosis.sbatch`  (~15 min, 16 GB)
 
 UBF at two months forty-one years apart. Reports term magnitudes and the
 cancellation ratio, float32 vs float64 by rank, and ERA5's `vo` against the
@@ -169,40 +197,61 @@ The `deformation` fix is already in and needs no decision.
 
 ---
 
-## 3. Tests
+## 3. Running during the download
 
-```bash
-python -m pytest tests/ -v
-```
+All four jobs are safe to run while `jobs/01_download.sbatch` is fetching the
+production series.
 
-`tests/test_audit_fixes.py` adds 11 tests and needs no ERA5. Existing tests are
-unchanged except one docstring in `tests/test_analytic.py`, which used to say
-`3_pipeline.py` takes the square root — no longer true, and the pairing it
-guarded now lives in the new file.
+- **Nothing they read is being written.** `09` reads `derived/`, which the
+  download does not touch. `11` reads `raw/north_atlantic/*.grib`, which the
+  download *is* writing into — but it writes `<name>.tmp` and atomically
+  renames (STATUS §10.7), so a complete file is never seen half-written, and
+  months already on disk are skipped rather than rewritten.
+- **Nothing they change is being read.** The download runs `1_download_hpc.py`
+  and `download_plan.py`; neither was modified. After any `git pull`, confirm
+  with `pixi run python -m py_compile 1_download_hpc.py download_plan.py` —
+  with hundreds of array tasks still queued, each reading those files as it
+  starts, a working tree left in a conflicted state would take them all down.
+- **The one thing not to do** is pull midway through a *diagnostics* array.
+  Tasks that have not started yet would pick up new code, and the dataset would
+  be built half one way and half the other.
 
 ---
 
 ## 4. What was and was not exercised before this push
 
-Run on synthetic data in a scratch container, end to end, including a negative
-control with a mis-wired `ngm1` and a wrong `brown2` constant — both were caught
-and the unaffected identities stayed green:
+Exercised on synthetic data in a scratch container, end to end:
 
-- `ada/check_composition.py` — both DEF conventions, plus the negative control
+- `ada/check_composition.py` — both DEF conventions, **plus a negative control**
+  with a mis-wired `ngm1` (2 % perturbation) and a doubled `brown2` constant.
+  Both faults were caught, the three unaffected identities stayed green, and
+  the job exited 2. A check that cannot fail is not a check — STATUS §12.8
+  records that lesson being paid for once already.
 - `ada/check_shape_ratios.py` — both sampling modes, box subsetting on
-  descending ERA5 latitudes, cos φ weighting under a transposed dimension order
+  descending ERA5 latitudes, cos φ weighting verified cell-by-cell under a
+  transposed dimension order, and the graceful fallback when `2_diagnostics`
+  cannot be imported.
+- `check_f2d_variants.py`'s **chunk-boundary arithmetic**, exhaustively: for
+  every timestep count and chunk size, the retained absolute indices are
+  exactly `{1 … n-2}`, with no gaps and no duplicates. The chunked result is
+  therefore identical to an unchunked one, which is what lets `--chunk-days 1`
+  hold peak memory at 24 GB instead of asking for a request that would sit
+  hours in the queue.
 
-**Not executed anywhere yet**, because both need rojak and real GRIB:
+**Not executed anywhere yet**, because all need rojak and real GRIB:
 
-- `ada/check_f2d_variants.py`
+- `ada/check_f2d_variants.py` end to end (only its chunking maths was proved)
 - `ada/check_ubf.py`
 - the code changes in `2_diagnostics.py` and `3_pipeline.py`
 
-All are syntax-checked and follow the patterns of the scripts that were
+They are syntax-checked and follow the patterns of the scripts that were
 exercised, but the first run of steps 2 and 3 on ADA is also their first real
 run. `check_ubf.py` guards itself: it cross-checks its own term decomposition
 against `2_diagnostics.ubf()` by rank correlation and refuses to print anything
 if they disagree.
 
-Run `python -m pytest tests/ -v` before the sbatch queue, since that is the
-cheapest place for the two code changes to fail.
+Which is why **step 0 exists** and why the four job scripts discover their
+inputs with a glob rather than hard-coding a filename — STATUS §13.1 records a
+derived directory being deleted on 2026-08-29, and a hard-coded path is exactly
+how a script starts failing for a reason that has nothing to do with what it
+tests.

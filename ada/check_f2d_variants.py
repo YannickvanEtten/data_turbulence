@@ -59,6 +59,23 @@ A global calibration month with --box williams reproduces the published
 sampling most closely. An NA month with --box prosser is cheaper and is the
 box the replication actually reports on. Both are informative; the shape
 verdict should not depend on which.
+
+MEMORY -- WHY --chunk-days EXISTS HERE TOO
+------------------------------------------
+Same reason as ada/diagnostics_global.py. A global file is 721 x 1440 x 32 =
+3.3e7 points, the diagnostics touch three pressure levels, and this script
+computes two variants rather than one. Unchunked that runs well past the 24 GB
+that the full 21-diagnostic global run needed -- and STATUS.md §11.9 measured a
+120 GB request scheduled 22 hours out while a 24 GB one started in 13 seconds,
+so an over-large request costs a day rather than some memory.
+
+Chunking is exact here for the same reason it is there: each chunk is computed
+with one extra timestep on each side and then trimmed, so every retained step
+saw the neighbours it would have had in an unchunked run. Only the file's true
+first and last step are dropped, and those are dropped deliberately -- d/dt is
+one-sided there, and a one-sided slope on a diurnally varying field is a
+different estimator from the centred one used everywhere else. Letting it into
+a tail statistic would put an artefact exactly where the comparison lives.
 """
 from __future__ import annotations
 
@@ -77,6 +94,15 @@ from calib_weighted_percentile import weighted_percentile  # noqa: E402
 
 PUBLISHED_RATIO = 770.0 / 56.6      # 13.6, Williams (2017) / Williams & Joshi (2013)
 MOG_PERCENTILE = 99.6               # Prosser's MOG rung, for the tail-overlap sets
+STEPS_PER_DAY = 8                   # 3-hourly ERA5
+OVERLAP = 1                         # buffer steps each side; d/dt needs exactly 1
+
+
+def time_dim_of(ds) -> str | None:
+    for candidate in ("time", "valid_time"):
+        if candidate in ds.dims:
+            return candidate
+    return None
 
 
 def describe(values: np.ndarray, weights: np.ndarray) -> dict:
@@ -102,6 +128,12 @@ def main() -> int:
     ap.add_argument("--box", default="williams",
                     choices=["williams", "prosser", "none"])
     ap.add_argument("--level", type=int, default=200)
+    ap.add_argument("--chunk-days", type=int, default=1,
+                    help="process this many days at a time, with a "
+                         "1-timestep overlap buffer so the retained values are "
+                         "identical to an unchunked run. Default 1, matching "
+                         "ada/diagnostics_global.py, which keeps peak memory "
+                         "near a North Atlantic month's ~15 GB. 0 = whole file.")
     args = ap.parse_args()
 
     box = {"williams": WILLIAMS_BOX, "prosser": PROSSER_BOX, "none": None}[args.box]
@@ -118,40 +150,64 @@ def main() -> int:
             return 1
         print(f">>> {p.name}  ({p.stat().st_size / 1e9:.2f} GB)")
         ds_raw = diag.load_era5(p)
-        prepared = diag.prepare_for_rojak(ds_raw)
-        ds = prepared._dataset
+        tname = time_dim_of(ds_raw)
+        if tname is None:
+            print(f"!! no recognised time dimension in {list(ds_raw.dims)}")
+            return 1
+        n_steps = ds_raw.sizes[tname]
+        if n_steps < 3:
+            print("!! fewer than 3 timesteps: d/dt is one-sided everywhere and")
+            print("   the tail statistic would be an artefact. Refusing.")
+            return 1
 
-        # A and D are genuinely different computations; B and C are exact
-        # functions of A, so computing them separately would only add cost and
-        # a chance of the three drifting apart.
-        a = diag.frontogenesis_isentropic(ds, target_level=args.level, variant="A")
-        d = diag.frontogenesis_isentropic(ds, target_level=args.level, variant="D")
+        step = args.chunk_days * STEPS_PER_DAY if args.chunk_days > 0 else n_steps
+        bounds = [(s, min(s + step, n_steps)) for s in range(0, n_steps, step)]
+        print(f"    {n_steps} timesteps -> {len(bounds)} chunk(s), overlap {OVERLAP}")
 
-        # Drop the first and last timestep. d/dt is one-sided there, and a
-        # one-sided slope on a diurnally varying field is a different estimator
-        # from the centred one used everywhere else -- letting it into a tail
-        # statistic would put an artefact exactly where the comparison lives.
-        tdim = "time" if "time" in a.dims else None
-        if tdim and a.sizes[tdim] > 2:
-            a = a.isel({tdim: slice(1, -1)})
-            d = d.isel({tdim: slice(1, -1)})
-        else:
-            print("    !! fewer than 3 timesteps: d/dt is one-sided everywhere;")
-            print("       treat this file's numbers as indicative only")
+        for i, (b0, b1) in enumerate(bounds):
+            lo, hi = max(0, b0 - OVERLAP), min(n_steps, b1 + OVERLAP)
+            sub = ds_raw.isel({tname: slice(lo, hi)})
+            prepared = diag.prepare_for_rojak(sub)
+            ds = prepared._dataset
 
-        if box is not None:
-            a = subset_box(a.to_dataset(name="f2d"), **box)["f2d"]
-            d = subset_box(d.to_dataset(name="f2d"), **box)["f2d"]
+            # A and D are genuinely different computations; B and C are exact
+            # functions of A, so computing those separately would add cost and
+            # a chance of the three drifting apart.
+            a = diag.frontogenesis_isentropic(ds, target_level=args.level, variant="A")
+            d = diag.frontogenesis_isentropic(ds, target_level=args.level, variant="D")
 
-        av = np.asarray(a.values, dtype=np.float64).ravel()
-        dv = np.asarray(d.values, dtype=np.float64).ravel()
-        per_file["A"].append(av)
-        per_file["B"].append(-av)
-        per_file["C"].append(np.abs(av))
-        per_file["D"].append(dv)
-        weights.append(cos_phi_weights(a))
-        print(f"    {av.size:,} cells   [rss {peak_rss_gb():.1f} GB]")
-        del ds_raw, prepared, ds, a, d
+            # Keep only steps that had a neighbour on BOTH sides in the
+            # original file: the buffer steps this chunk borrowed, and the
+            # file's own first and last step, all go.
+            keep0 = max(b0, 1) - lo
+            keep1 = min(b1, n_steps - 1) - lo
+            if keep1 <= keep0:
+                continue
+            tdim = time_dim_of(a)
+            a = a.isel({tdim: slice(keep0, keep1)})
+            d = d.isel({tdim: slice(keep0, keep1)})
+
+            if box is not None:
+                a = subset_box(a.to_dataset(name="f2d"), **box)["f2d"]
+                d = subset_box(d.to_dataset(name="f2d"), **box)["f2d"]
+
+            av = np.asarray(a.values, dtype=np.float64).ravel()
+            dv = np.asarray(d.values, dtype=np.float64).ravel()
+            per_file["A"].append(av)
+            per_file["B"].append(-av)
+            per_file["C"].append(np.abs(av))
+            per_file["D"].append(dv)
+            weights.append(cos_phi_weights(a))
+            print(f"    chunk {i + 1}/{len(bounds)}  steps {b0}:{b1}  "
+                  f"{av.size:,} cells   [rss {peak_rss_gb():.1f} GB]")
+            del sub, prepared, ds, a, d
+
+        del ds_raw
+
+    if not weights:
+        print("!! no usable chunks — every chunk was buffer-only. Check the "
+              "input file's timestep count.")
+        return 1
 
     vals = {k: np.concatenate(v) for k, v in per_file.items()}
     w = np.concatenate(weights)

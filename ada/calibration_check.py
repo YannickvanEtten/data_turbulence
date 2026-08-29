@@ -136,8 +136,15 @@ W2017_TABLE2 = {
     "rva_magnitude":         [1.44, 1.99, 2.34, 2.66, 3.00],
 }
 # Williams 2017 prints NVA/RVA in 10^-9 s^-2 while REFERENCE_TABLE (following
-# W&J 2013) uses 10^-10. One factor of ten, applied here rather than silently.
-W2017_UNIT_FIXUP = {"nva": 10.0, "rva_magnitude": 10.0}
+# W&J 2013) uses 10^-10. To express a value given in 10^-9 units in 10^-10
+# units you MULTIPLY by ten: V x 10^-9 / 10^-10 = 10V.
+#
+# The first version of this divided, which made the published values ten times
+# too small and inflated the printed ratios by a hundred -- nva read 1081 when
+# it is 10.8, rva 1327 when it is 13.3. Those two then looked like wild
+# outliers rather than sitting in the same resolution family as everything
+# else. A reminder that a "sanity check" is only as sane as its own arithmetic.
+W2017_UNIT_MULTIPLIER = {"nva": 10.0, "rva_magnitude": 10.0}
 
 
 # ---------------------------------------------------------------------------
@@ -187,53 +194,48 @@ def progress_percentile(names: list[str], stage: str):
     """Wrap weighted_percentile so a long stage reports where it is.
 
     calibration.compute_thresholds takes weighted_percentile as an INJECTED
-    argument, which makes this possible without touching the library: the shim
-    counts calls, and since the function is called once per severity, every
-    len(SEVERITIES)-th call means one more diagnostic is finished.
+    argument, so progress reporting needs no change to the library.
 
-    Sorting 21 arrays of 4e8 float64 values takes a long time. Without this the
-    log shows a stage header and then nothing, which is indistinguishable from
-    a hang -- the same problem PYTHONUNBUFFERED solved at the job level, one
-    layer down.
+    Sorting 21 arrays of 4e8 float64 values takes about an hour. Without this
+    the log shows a stage header and then nothing, which is indistinguishable
+    from a hang -- the same problem PYTHONUNBUFFERED solved at the job level,
+    one layer down.
 
-    IT ALSO MAKES THE STAGE 5x FASTER, WHICH MATTERS MORE
-    -----------------------------------------------------
-    calibration.compute_thresholds asks for one severity at a time:
+    TWO CALL SHAPES
+    ---------------
+    Since the 2026-08-29 fix, compute_thresholds asks for all five severities
+    in ONE call, passing an array of percentiles. Older copies asked one
+    severity at a time. This handles both rather than silently mislabelling
+    progress if the two files ever drift:
 
-        thresholds[name] = {sev: weighted_percentile(values, weights, pct)
-                            for sev, pct in severities.items()}
-
-    and weighted_percentile sorts its whole input on every call. So the same
-    4e8-element array is sorted FIVE times per diagnostic -- 105 full sorts
-    where 21 would do.
-
-    weighted_percentile already accepts an ARRAY of percentiles and returns one
-    value per entry (np.interp is vectorised over p). So the shim computes all
-    five on the first call of each group and serves the other four from cache.
-    Identical numbers, one fifth of the work, and no change to the library.
-
-    The group boundary is found by COUNTING calls, not by identifying the
-    array: compute_thresholds calls this exactly len(SEVERITIES) times per
-    diagnostic, in order. Keying on id(values) would be shorter but unsound --
-    CPython reuses ids once an array is freed, so the next diagnostic could
-    silently collide with the previous one's cache.
+      * array `pct`  -> one call per diagnostic; report on every call
+      * scalar `pct` -> len(SEVERITIES) calls per diagnostic; report on the
+                        first of each group, and memoise the other four onto
+                        the same sort so the 5x cost is not paid either way
     """
     import time
     pcts = list(SEVERITIES.values())
-    state = {"n": 0, "t0": time.time(), "cache": {}}
+    state = {"n": 0, "i": 0, "t0": time.time(), "cache": {}}
+
+    def _report():
+        state["i"] += 1
+        i = state["i"]
+        elapsed = time.time() - state["t0"]
+        eta = elapsed / (i - 1) * (len(names) - i + 1) if i > 1 else 0.0
+        print(f"   [{stage} {i:>2}/{len(names)}] {names[i - 1]:<23} "
+              f"{elapsed / 60:>5.1f} min elapsed"
+              + (f", ~{eta / 60:>4.1f} min left" if i > 1 else ""), flush=True)
 
     def wrapped(values, weights, pct):
-        if state["n"] % len(pcts) == 0:
-            allp = np.atleast_1d(
-                weighted_percentile(values, weights, np.asarray(pcts, dtype=float)))
+        if np.ndim(pct) > 0:                       # one call, all severities
+            result = weighted_percentile(values, weights, pct)
+            _report()
+            return result
+        if state["n"] % len(pcts) == 0:            # legacy: first of a group
+            allp = np.atleast_1d(weighted_percentile(
+                values, weights, np.asarray(pcts, dtype=float)))
             state["cache"] = dict(zip(pcts, [float(v) for v in allp]))
-            i = state["n"] // len(pcts) + 1
-            elapsed = time.time() - state["t0"]
-            eta = elapsed / max(i - 1, 1) * (len(names) - i + 1) if i > 1 else 0.0
-            print(f"   [{stage} {i:>2}/{len(names)}] {names[i - 1]:<23} "
-                  f"{elapsed / 60:>5.1f} min elapsed"
-                  + (f", ~{eta / 60:>4.1f} min left" if i > 1 else ""),
-                  flush=True)
+            _report()
         state["n"] += 1
         return state["cache"][pct]
 
@@ -414,7 +416,7 @@ def main() -> int:
         if name in pipeline.PRETRANSFORM:
             val = float(pipeline.PRETRANSFORM[name](np.asarray(val)))
         ours = val * pipeline.SCALE_TO_TABLE.get(name, 1.0)
-        theirs = W2017_TABLE2[name][2] / W2017_UNIT_FIXUP.get(name, 1.0)
+        theirs = W2017_TABLE2[name][2] * W2017_UNIT_MULTIPLIER.get(name, 1.0)
         ok = np.sign(ours) == np.sign(theirs)
         if not ok:
             sign_problems.append(name)

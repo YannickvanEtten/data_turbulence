@@ -178,6 +178,21 @@ Days 1/9/17/25 of each month, all 8 three-hourly steps: **48 days,
 - **`mkdir -p logs` before `sbatch`, not inside the script.** SLURM opens the
   output file before the script runs.
 - **Short, honest walltimes get backfilled.** 6 h waits; 1 h runs.
+- **HARD CAP: 8 CONCURRENTLY RUNNING JOBS PER USER.** The default `normal`
+  QOS sets `MaxJobsPU = 8`; confirmed both in `sacctmgr show qos` and in the
+  association manager (`yen230 ... MaxJobsPU=8`). Array tasks count as jobs,
+  so a 9th sits as `QOSMaxJobsPerUserLimit`.
+
+  **This makes any `%` throttle above 8 a no-op**, and §10.12's plan to run
+  the 504-month diagnostics array at `%16` unreachable as written.
+
+  **There is an `unlimited` QOS on this cluster** with no `MaxJobsPU`, and an
+  `ood` QOS capped at 2. Whether `yen230` may use `unlimited` is a question
+  for `itvo.ucit@vu.nl`, and it is the single highest-leverage thing to ask
+  before phase 4 — it is the difference between 8-way and node-limited
+  concurrency across 504 months. Check what is currently granted with:
+
+      sacctmgr show assoc user=yen230 format=User,Account,Partition,QOS,DefQOS
 
 ### 11.10 Measured costs, for sizing phase 4
 
@@ -189,13 +204,26 @@ Days 1/9/17/25 of each month, all 8 three-hourly steps: **48 days,
 | Calibration check, 12 global months | 117 min, 32 GB |
 | Diagnostics under 6-way concurrency | 15–36 min (vs 30 min alone) |
 
-**The I/O contention number matters for phase 4.** §10.12 plans the 504-month
-diagnostics array at `%16` reasoning purely from memory. Six concurrent tasks
-already showed contention on the shared SciStor mount — several minutes just to
-decode a 1.4 GB GRIB when six read at once. The right concurrency is an
-empirical question about the filesystem, not arithmetic about memory. Evidence
-so far says the penalty at 6-way is mild (~20 % on the worst task), so `%8` is
-defensible and `%16` should be measured before being trusted.
+**§10.12's phase-4 timing is wrong, for two independent reasons.** It plans
+the 504-month diagnostics array at `%16` and projects 4.3 h, reasoning purely
+from memory per node. But:
+
+1. **The QOS caps concurrency at 8** (§11.9), so `%16` cannot happen.
+2. **Shared-filesystem I/O contends.** Six concurrent tasks already stretched
+   a 30-minute job to 36, mostly in GRIB decode. Mild — ~20 % on the worst
+   task — but real, and it grows with concurrency.
+
+Corrected estimates at the 8-job ceiling:
+
+| Stage | 504 months at 8-way |
+|---|---|
+| Download (measured 7–23 min each, CDS-dependent) | **~8–16 h** |
+| Diagnostics (measured 5–8 min each) | **~7 h** |
+
+So roughly **a day, possibly spread over two** — comfortably inside the 7-day
+walltime cap, but not the 4.3 h §10.12 implies. If the `unlimited` QOS can be
+granted, the diagnostics stage shrinks toward the I/O ceiling instead; the
+download stage will not, because it is bounded by Copernicus, not by ADA.
 
 ### 11.11 New files
 

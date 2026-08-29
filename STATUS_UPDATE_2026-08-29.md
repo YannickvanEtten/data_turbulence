@@ -192,7 +192,38 @@ Days 1/9/17/25 of each month, all 8 three-hourly steps: **48 days,
   before phase 4 — it is the difference between 8-way and node-limited
   concurrency across 504 months. Check what is currently granted with:
 
-      sacctmgr show assoc user=yen230 format=User,Account,Partition,QOS,DefQOS
+      sacctmgr show assoc user=yen230 format=User,Account,Partition,QOS,DefaultQOS
+
+- **CDS REJECTS AT 8 CONCURRENT REQUESTS PER USER. `%4` IS VALIDATED.**
+  Measured, not guessed:
+
+  | Concurrent CDS requests | Outcome |
+  |---|---|
+  | 4 (global calib at `%4`) | 12/12 succeeded |
+  | 6 (that plus 2 NA) | all succeeded |
+  | **8** (no throttle, QOS-capped) | **8 of 8 failed** |
+
+  The failures are `400 Client Error: Bad Request` on
+  `/retrieve/v1/jobs/<id>/results` — Copernicus refusing, not a transient
+  gateway blip like the 502s that recover on attempt 1 of 8. Every task in the
+  eight-way burst failed; the four that ran afterwards, alone or in pairs,
+  succeeded.
+
+  **The 504-month production download would have lost roughly two thirds of
+  its months this way**, and only discovered it at the integrity check. `%4`
+  is not politeness, it is the working limit.
+
+- **⚠ `sbatch --array=...` ON THE COMMAND LINE DISCARDS THE `%N` IN THE
+  SCRIPT.** `01_download.sbatch` declares `--array=0-503%4`; overriding with
+  `--array=132,133,...` replaced the *entire* spec, throttle included, and the
+  array ran at whatever the QOS allowed. That is what caused the failures
+  above. Any override must re-append it:
+
+      sbatch --array=132,133,143,252,253,263,372,373,383,492,493,503%4 \
+             jobs/01_download.sbatch
+
+  This fails **silently** — you get the array you asked for and no warning
+  that the concurrency limit went with it.
 
 ### 11.10 Measured costs, for sizing phase 4
 

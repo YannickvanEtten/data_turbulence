@@ -631,12 +631,85 @@ def frontogenesis_2d(ds: xr.Dataset, target_level: int = 200) -> xr.DataArray:
 # ---------------------------------------------------------------------------
 # #20 (Q-F2D-5 replacement) — Isentropic frontogenesis, true Sharman A9
 # ---------------------------------------------------------------------------
-def frontogenesis_isentropic(ds: xr.Dataset, target_level: int = 200) -> xr.DataArray:
+# The four candidate readings of Sharman A9. See FORMULA_AUDIT.md §4 for why
+# more than one exists; ada/check_f2d_variants.py is what chooses between them.
+F2D_VARIANTS = {
+    "A": "+0.5 D/Dt[Q]        current: A10's algebra in theta coordinates",
+    "B": "-0.5 D/Dt[Q]        A9's leading minus sign applied",
+    "C": "|0.5 D/Dt[Q]|       magnitude — one-sided, as the published tables behave",
+    "D": "-D/Dt[sqrt(Q)]      literal A9 including the |dv/dtheta|^-1 normalisation",
+}
+F2D_DEFAULT_VARIANT = "A"
+
+
+def frontogenesis_isentropic(ds: xr.Dataset, target_level: int = 200,
+                             variant: str = F2D_DEFAULT_VARIANT) -> xr.DataArray:
     r"""Isentropic frontogenesis, Sharman (2006) A9 (Q-F2D-5).
 
         A9 = (1/2) D/Dt [ (du/dtheta)^2 + (dv/dtheta)^2 ]
 
-    with D/Dt = d/dt + u d/dx + v d/dy the material derivative.
+    with D/Dt = d/dt + u d/dx + v d/dy the material derivative, and
+    Q = (du/dtheta)^2 + (dv/dtheta)^2 throughout.
+
+    WHICH FORM IS THIS? -- FOUR CANDIDATES, ONE FLAG (FORMULA_AUDIT.md §4)
+    ---------------------------------------------------------------------
+    The expression above is NOT what A9 prints. A9 reads
+
+        F_theta  ~  -D/Dt [ Q ]^(1/2)
+                 =  |dv/dtheta|^-1 [ du/dtheta D/Dt(du/dtheta)
+                                   + dv/dtheta D/Dt(dv/dtheta) ]     (A9)
+
+    and differs from what this function computed before 2026-08-29 in two
+    independent ways:
+
+      1. A NORMALISATION. A9 carries |dv/dtheta|^-1; the expression above does
+         not. Since D/Dt(Q^1/2) = D/Dt(Q) / (2 Q^1/2), ours equals A9's times
+         |dv/dtheta| -- a spatially VARYING field, not a constant. It changes
+         RANKS, which is STATUS.md §5's category-1 error, the one a percentile
+         calibration cannot absorb.
+
+      2. A SIGN. A9's left-hand side carries a leading minus that its own
+         right-hand side does not; the two sides as printed are not equal. The
+         surrounding text ("...invoking continuity gives F_theta ~ -D/Dt...")
+         puts the minus on the physics, and physically it belongs: on an
+         isentropic surface a strengthening |grad theta| corresponds to a
+         WEAKENING |dv/dtheta|, so frontogenesis is a decrease of the bracket.
+
+    Sharman's Table B1 lists A9 in m^2 s^-3 K^-2, which are the units of the
+    UN-normalised form and not of literal A9 (m s^-2 K^-1). That settles the
+    algebra in favour of variants A/B/C -- and says nothing whatever about the
+    sign, which is why the sign stayed open. Note also that the un-normalised
+    form is structurally A10 (the constant-pressure midlevel form) evaluated in
+    theta rather than p.
+
+    Two further pieces of evidence, neither of which can be read off the paper:
+
+      - Williams (2017) Table 2 p97 / Williams & Joshi (2013) median = 770/56.6
+        = 13.6 for this diagnostic, from the same model, box, season and
+        daily-mean sampling. A SIGNED material derivative cannot produce a
+        finite ratio like that: D/Dt of a positive quantity in a statistically
+        stationary atmosphere is centred on zero, so its median goes to zero
+        and the ratio diverges. 13.6 is what a one-sided quantity looks like,
+        and it fits the algebraic-degree pattern of the other 20 exactly.
+      - Prosser (2023) Figure S5's frontogenesis panel is near-zero to slightly
+        negative over the North Atlantic, where variant A gives the second
+        largest positive trend of the 21.
+
+    So rather than guess, all four readings are available here and
+    `ada/check_f2d_variants.py` measures which one reproduces the published
+    distribution shape and the published sign of change. Variant A remains the
+    DEFAULT so that nothing silently changes under existing runs; switch it
+    deliberately once the check has reported.
+
+    Args:
+        variant: one of F2D_VARIANTS.
+            "A"  +0.5 D/Dt[Q]        (default, unchanged behaviour)
+            "B"  -0.5 D/Dt[Q]        A9's leading minus
+            "C"  |0.5 D/Dt[Q]|       magnitude
+            "D"  -D/Dt[sqrt(Q)]      literal A9, including the normalisation.
+                 NOTE: variant D has DIFFERENT UNITS (m s^-2 K^-1, not
+                 m^2 s^-3 K^-2), so its magnitude is not comparable with the
+                 published tables even though its ranks are meaningful.
 
     Q-F2D-2/3 (Opus, resolved 2026-07-03) confirmed the Miller physical-
     space form above (frontogenesis_2d) is the WRONG diagnostic -- Prosser
@@ -662,8 +735,15 @@ def frontogenesis_isentropic(ds: xr.Dataset, target_level: int = 200) -> xr.Data
     consecutive timesteps, i.e. a timestep strictly before AND after
     every evaluation time. See Q-DATA-1 / Q-F2D-5 data-requirements note.
 
-    Units: m^2 s^-3 K^-2.
+    Units: m^2 s^-3 K^-2 for variants A/B/C; m s^-2 K^-1 for variant D.
     """
+    if variant not in F2D_VARIANTS:
+        raise ValueError(
+            f"unknown f2d variant {variant!r}; expected one of "
+            f"{sorted(F2D_VARIANTS)}. " +
+            " | ".join(f"{k}: {d}" for k, d in F2D_VARIANTS.items())
+        )
+
     u = ds["eastward_wind"]
     v = ds["northward_wind"]
     t = ds["temperature"]
@@ -677,21 +757,41 @@ def frontogenesis_isentropic(ds: xr.Dataset, target_level: int = 200) -> xr.Data
     u_lvl = _sel_level(ds, "eastward_wind", target_level)
     v_lvl = _sel_level(ds, "northward_wind", target_level)
 
-    dq_dt = q_lvl.differentiate("time", datetime_unit="s")
-    dq_dx, dq_dy = _grad(q_lvl)
+    # Variant D differentiates |dv/dtheta| = sqrt(Q) DIRECTLY rather than
+    # forming D/Dt(Q)/(2 sqrt(Q)). Algebraically the same; numerically better,
+    # and it avoids dividing by a sqrt(Q) that can be arbitrarily small in
+    # low-shear cells, which would manufacture a spurious tail exactly where
+    # the diagnostic is least meaningful.
+    scalar = np.sqrt(q_lvl) if variant == "D" else q_lvl
 
-    material_derivative = dq_dt + u_lvl * dq_dx + v_lvl * dq_dy
-    a9 = 0.5 * material_derivative
+    d_dt = scalar.differentiate("time", datetime_unit="s")
+    d_dx, d_dy = _grad(scalar)
+    material_derivative = d_dt + u_lvl * d_dx + v_lvl * d_dy
+
+    if variant == "A":
+        a9 = 0.5 * material_derivative
+    elif variant == "B":
+        a9 = -0.5 * material_derivative
+    elif variant == "C":
+        a9 = np.abs(0.5 * material_derivative)
+    else:  # "D"
+        a9 = -material_derivative
+
     a9 = a9.rename("f2d")
     a9.attrs.update({
         "long_name": "Isentropic frontogenesis (A9)",
-        "units": "m2 s-3 K-2",
+        "units": "m s-2 K-1" if variant == "D" else "m2 s-3 K-2",
         "sharman_eq": "A9",
+        "f2d_variant": variant,
+        "f2d_variant_formula": F2D_VARIANTS[variant],
         "note": "Q-F2D-5: replaces Miller-form f2d as #20 target. "
                 "du/dtheta,dv/dtheta via chain rule (du/dp)/(dtheta/dp); "
                 "material derivative d/dt + V.grad; d/dt needs >=3 "
                 "consecutive timesteps for a true centered difference "
-                "(2-timestep data gives a one-sided estimate only).",
+                "(2-timestep data gives a one-sided estimate only). "
+                "Variant recorded above -- see FORMULA_AUDIT.md 4 and "
+                "ada/check_f2d_variants.py; A is the historical default and "
+                "does NOT match A9 as printed.",
     })
     return a9
 
@@ -807,9 +907,22 @@ def brown2(ds: xr.Dataset, brown1: xr.DataArray) -> xr.DataArray:
 # Master entry point — compute all 21 diagnostics
 # ===========================================================================
 def compute_all_21(
-    catdata: CATData, target_level: int = 200
+    catdata: CATData, target_level: int = 200,
+    f2d_variant: str = F2D_DEFAULT_VARIANT,
 ) -> tuple[dict[str, xr.DataArray], list[DiagnosticFailure]]:
     """Compute all 21 diagnostics: 14 from rojak, 7 hand-written.
+
+    TWO THINGS THIS FUNCTION DOES THAT compute_rojak_diagnostics DOES NOT
+    ---------------------------------------------------------------------
+    `compute_rojak_diagnostics` is a faithful passthrough of rojak and is
+    deliberately left that way, because `tests/test_analytic.py` and
+    `tests/report_errors.py` verify rojak against manufactured solutions
+    through it. This function is the PRODUCTION entry point -- everything that
+    reaches disk goes through here -- so the two corrections below live here
+    and nowhere else:
+
+      1. `deformation` is un-squared. See the block below.
+      2. `f2d`'s variant is selectable. See F2D_VARIANTS.
 
     Returns ({short_key: xr.DataArray}, [DiagnosticFailure, ...]) --
     Q-INTEG-4: the failures list is empty in the normal case, and carries
@@ -826,12 +939,54 @@ def compute_all_21(
 
     out, failures = compute_rojak_diagnostics(catdata)
 
+    # -----------------------------------------------------------------------
+    # #8 DEFORMATION -- persist DEF, not DEF^2   (FORMULA_AUDIT.md §5)
+    # -----------------------------------------------------------------------
+    # rojak's DEF diagnostic returns the SQUARE of total deformation
+    # (`DeformationSquared`), while Sharman A17 and every published table
+    # define DEF = (D_SH^2 + D_ST^2)^(1/2). Until 2026-08-29 the square root
+    # was applied only in 3_pipeline.py's PRETRANSFORM, i.e. only on the path
+    # that builds the W&J comparison table -- so every zarr written by
+    # ada/diagnostics_global.py held DEF^2 under the name `deformation`.
+    #
+    # WHY THIS WAS INVISIBLE, AND WHY IT STILL MATTERS. Squaring is strictly
+    # increasing on a non-negative field, so by STATUS.md §5.5 the exceedance
+    # field is IDENTICAL and nothing in the §11 calibration check or the §12
+    # trend check is affected -- which is exactly why it survived this long.
+    # It stops being harmless the moment magnitudes are used instead of ranks:
+    # STATUS.md §6 phase 5 plans peaks-over-threshold and GPD fitting on
+    # retained excesses, and a GPD fitted to DEF^2 is not a GPD fitted to DEF
+    # (the tail index doubles under squaring). Fixing it after the production
+    # run means re-deriving ~287 GB; fixing it here costs nothing.
+    #
+    # Note this does NOT touch TI1/TI2/NGM1/NGM2, which never had the problem:
+    # rojak hands those `CATData.total_deformation()`, which is
+    # `magnitude_of_vector(..., is_squared=False)` -- already un-squared.
+    # Verified by reading rojak at the pinned rev 25b8685, and pinned by
+    # tests/test_analytic.py::TestDeformationFamily.
+    if "deformation" in out:
+        _def_squared = out["deformation"]
+        _def = np.sqrt(np.abs(_def_squared)).rename("deformation")
+        _def.attrs.update(dict(_def_squared.attrs))     # np.sqrt drops attrs
+        _def.attrs.update({
+            "long_name": "Total deformation",
+            "units": "s-1",
+            "sharman_eq": "A17",
+            "note": "sqrt of rojak's DeformationSquared, so this is DEF not "
+                    "DEF^2 (FORMULA_AUDIT.md 5). abs() guards float noise "
+                    "only -- rojak's value is non-negative by construction. "
+                    "Zarr written before 2026-08-29 holds DEF^2 under this "
+                    "name; exceedance fields are unaffected, magnitudes are "
+                    "not.",
+        })
+        out["deformation"] = _def
+
     brown1 = DiagnosticFactory(catdata).create(TurbulenceDiagnostics.BROWN1).computed_value
     builders = {
         "negative_richardson": lambda: richardson(ds, negative=True),
         "colson_panofsky":     lambda: colson_panofsky(ds),
         "ubf":                 lambda: ubf(ds, target_level=target_level),
-        "f2d":                 lambda: frontogenesis_isentropic(ds, target_level=target_level),  # Q-UNITS-1 caught this: Q-F2D-5 added the isentropic A9 impl and wired it into 4_verify.py's hand-dict, but never updated THIS dispatch (used by 3_pipeline.py/cat_pipeline.py) -- was still silently calling the old Miller-form frontogenesis_2d()
+        "f2d":                 lambda: frontogenesis_isentropic(ds, target_level=target_level, variant=f2d_variant),  # Q-UNITS-1 caught this: Q-F2D-5 added the isentropic A9 impl and wired it into 4_verify.py's hand-dict, but never updated THIS dispatch (used by 3_pipeline.py/cat_pipeline.py) -- was still silently calling the old Miller-form frontogenesis_2d()
         "ncsu1":               lambda: ncsu1(ds, target_level=target_level),
         "rva_magnitude":       lambda: rva(ds, target_level=target_level),
         "brown2":              lambda: brown2(ds, brown1),

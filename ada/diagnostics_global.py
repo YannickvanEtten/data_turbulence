@@ -108,7 +108,8 @@ def _time_dim(da: xr.DataArray) -> str | None:
     return None
 
 
-def compute_chunked(diag, ds_raw: xr.Dataset, chunk_days: int, verbose=True):
+def compute_chunked(diag, ds_raw: xr.Dataset, chunk_days: int, verbose=True,
+                    f2d_variant: str | None = None):
     """Compute all 21 diagnostics, optionally in overlapping time chunks.
 
     chunk_days = 0 means one pass over the whole file.
@@ -151,7 +152,9 @@ def compute_chunked(diag, ds_raw: xr.Dataset, chunk_days: int, verbose=True):
 
         sub = ds_raw.isel({tname: slice(lo, hi)})
         catdata = diag.prepare_for_rojak(sub)
-        diagnostics, failures = diag.compute_all_21(catdata, target_level=200)
+        diagnostics, failures = diag.compute_all_21(
+            catdata, target_level=200,
+            f2d_variant=f2d_variant or diag.F2D_DEFAULT_VARIANT)
         all_failures.extend(failures)
 
         for key, da in diagnostics.items():
@@ -192,6 +195,13 @@ def main() -> int:
                         "unchunked run. 0 (default) = whole file at once. "
                         "Use 1 to keep peak memory near the North Atlantic "
                         "month's ~15 GB and schedule on any node.")
+    p.add_argument("--f2d-variant", default=None,
+                   help="which reading of Sharman A9 to use for #20 (see "
+                        "2_diagnostics.F2D_VARIANTS and FORMULA_AUDIT.md 4). "
+                        "Default is 2_diagnostics.F2D_DEFAULT_VARIANT. Only "
+                        "change this once ada/check_f2d_variants.py has "
+                        "reported -- and note the choice is recorded in the "
+                        "output zarr's attributes either way.")
     args = p.parse_args()
 
     in_path, out_path = Path(args.input), Path(args.output)
@@ -208,9 +218,17 @@ def main() -> int:
     print(f"    dims     : {dict(ds_raw.sizes)}")
     print(f"    [rss after load: {peak_rss_gb():.1f} GB]")
 
+    f2d_variant = args.f2d_variant or diag.F2D_DEFAULT_VARIANT
+    if f2d_variant not in diag.F2D_VARIANTS:
+        print(f"!! unknown --f2d-variant {f2d_variant!r}; "
+              f"expected one of {sorted(diag.F2D_VARIANTS)}")
+        return 1
+
     print(f"\n>>> computing 21 diagnostics at 200 hPa "
           f"(chunk_days={args.chunk_days or 'whole file'})")
-    diagnostics, failures = compute_chunked(diag, ds_raw, args.chunk_days)
+    print(f"    f2d variant {f2d_variant}: {diag.F2D_VARIANTS[f2d_variant]}")
+    diagnostics, failures = compute_chunked(diag, ds_raw, args.chunk_days,
+                                            f2d_variant=f2d_variant)
     print(f"    [rss after compute: {peak_rss_gb():.1f} GB]")
 
     if failures:
@@ -224,6 +242,19 @@ def main() -> int:
 
     print("\n>>> writing zarr (float32)")
     ds_out = xr.Dataset(diagnostics)
+
+    # Dataset-level provenance. Both entries record a decision that is
+    # invisible in the numbers themselves and unrecoverable afterwards: which
+    # reading of A9 produced #20, and whether #8 holds DEF or DEF^2. A zarr
+    # written before 2026-08-29 carries neither attribute, which is itself the
+    # signal that it is the old convention.
+    ds_out.attrs.update({
+        "f2d_variant": f2d_variant,
+        "f2d_variant_formula": diag.F2D_VARIANTS[f2d_variant],
+        "deformation_convention": "DEF (un-squared, Sharman A17)",
+        "source_file": in_path.name,
+        "target_level_hPa": 200,
+    })
 
     empty = [k for k, da in ds_out.data_vars.items()
              if not np.isfinite(da.values).any()]

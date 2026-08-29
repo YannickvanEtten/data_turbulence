@@ -175,9 +175,18 @@ class TestDeformationFamily:
     vector_derivatives() rather than the scalar _grad()."""
 
     def test_deformation_is_squared(self, rojak_out, expect):
-        """rojak's DEF returns total deformation SQUARED. 3_pipeline.py takes
-        the square root afterwards; this test is what stops that pairing from
-        silently drifting apart."""
+        """rojak's DEF returns total deformation SQUARED.
+
+        This asserts rojak's RAW output and stays that way deliberately --
+        `rojak_out` is compute_rojak_diagnostics, which is a faithful
+        passthrough. As of 2026-08-29 the square root is taken one level up,
+        in compute_all_21, so that everything reaching disk holds DEF rather
+        than DEF^2 (FORMULA_AUDIT.md §5). Before that it was taken in
+        3_pipeline.py, on the comparison-table path only.
+
+        The pairing this test used to guard now lives in
+        tests/test_audit_fixes.py::TestDeformationUnsquared, which checks both
+        halves at once."""
         check(at_target(rojak_out["deformation"]), expect.total_deformation ** 2,
               label="deformation (squared)")
 

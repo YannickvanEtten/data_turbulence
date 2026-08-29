@@ -88,9 +88,22 @@ def summarise(name: str, da: xr.DataArray) -> DiagStats:
 # units used in Williams & Joshi (2013) Table 1.  Multiply native value
 # by this to get the table-units value.
 #
-# A small number of diagnostics need a pre-transform first:
-#   - `deformation`: rojak returns DEF² (s⁻²), so we take √ first then × 1e6
-#     to compare against W&J's DEF in 10⁻⁶ s⁻¹.
+# DEFORMATION PRE-TRANSFORM REMOVED (2026-08-29)
+# ----------------------------------------------
+# This used to read: "`deformation`: rojak returns DEF² (s⁻²), so we take √
+# first then × 1e6 to compare against W&J's DEF in 10⁻⁶ s⁻¹."
+#
+# That is still true of *rojak's* DEF, but it is no longer true of what reaches
+# this function. `compute_all_21` now un-squares deformation itself
+# (FORMULA_AUDIT.md §5), because it is the production entry point and every
+# zarr written by ada/diagnostics_global.py was otherwise storing DEF² under
+# the name `deformation` — harmless for exceedance, wrong for the phase-5
+# magnitude work.
+#
+# The two changes MUST move together. Leaving the √ here as well would take the
+# fourth root of DEF² and the comparison table would silently drift, which is
+# the failure this file's own comment warned about from the other direction.
+# tests/test_audit_fixes.py pins the pairing.
 #
 # COLSON-PANOFSKY UNIT FIX (2026-08-28)
 # ------------------------------------
@@ -120,7 +133,7 @@ SCALE_TO_TABLE: dict[str, float] = {
     "horizontal_divergence": 1.0e6,   # s^-1 → 10^-6 s^-1
     "vertical_wind_shear":   1.0e3,   # s^-1 → 10^-3 s^-1
     "endlich":               1.0e3,   # rad/s → 10^-3 rad/s
-    "deformation":           1.0e6,   # special: √(rojak) × 1e6  (see PRETRANSFORM below)
+    "deformation":           1.0e6,   # s^-1 → 10^-6 s^-1 (already un-squared by compute_all_21)
     "wind_speed":            1.0,
     "ngm2":                  1.0e9,
     "negative_richardson":   1.0,
@@ -136,12 +149,15 @@ SCALE_TO_TABLE: dict[str, float] = {
     "ncsu1":                 1.0e18,
 }
 
-# Optional pre-transform applied to the native rojak value *before* scaling
-# (used where rojak returns the squared form of a quantity but W&J Table 1
-#  lists the un-squared form).
-PRETRANSFORM: dict[str, callable] = {
-    "deformation": lambda x: np.sqrt(np.abs(x)),
-}
+# Optional pre-transform applied to the native value *before* scaling.
+#
+# EMPTY AS OF 2026-08-29, deliberately kept rather than deleted. Its only entry
+# was `deformation`, now handled upstream in compute_all_21 (see the note
+# above). The mechanism stays because it is the right place for any future
+# "rojak returns a different power than the table prints" case — and because
+# an empty dict documents that the question was asked and answered, where a
+# deleted one would leave the next reader to rediscover it.
+PRETRANSFORM: dict[str, callable] = {}
 
 
 def build_comparison_table(stats: dict[str, DiagStats], diagnostics: dict[str, xr.DataArray]) -> pd.DataFrame:

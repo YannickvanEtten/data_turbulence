@@ -3,6 +3,11 @@
 Created 2026-08-29. Companion to `STATUS.md` §4 and §7 and to
 `CALIBRATION_REFERENCE.md`.
 
+> **§10 was added the same evening and reports the measured results. Where it
+> contradicts §4.4, §7.2 or §9 below, §10 wins** — two of the claims in those
+> sections were read off a colour figure by eye and did not survive checking.
+> The rest of the document stands.
+
 **Division of labour between the three documents.** `STATUS.md` §4 verifies
 *code against docstring* (does the implementation compute the formula it claims
 to?). `CALIBRATION_REFERENCE.md` compares *magnitudes* against published
@@ -28,11 +33,18 @@ A9, and the shape of the published frontogenesis distribution — say our
 implementation is not the quantity Williams and Prosser computed. §4.
 
 **Two more are flagged, both of which the 39 months already on disk can
-settle:** `ubf` (formula now confirmed correct, so the anomaly in §12.6 is
-elsewhere — and Prosser's Figure S5 independently says UBF should be one of the
-*strongest* positive signals over the North Atlantic, which is the opposite of
-what we get), and `deformation` (saved squared — harmless for the replication,
-not harmless for phase 5).
+settle:** `ubf` (formula confirmed correct, so the §12.6 anomaly is elsewhere)
+and `deformation` (saved squared — harmless for the replication, not harmless
+for phase 5).
+
+> **Measured 2026-08-29 evening, §10.** `f2d` is confirmed as the single
+> outlier and variant A is refuted quantitatively. `ubf` is **cleared** — none
+> of the three proposed mechanisms survives measurement, and the "fragile
+> residual" framing repeated from `STATUS.md` §4g is itself wrong: the residual
+> is 73 % of the largest term, not a near-cancellation. `deformation` is fixed
+> and confirmed three ways. The Figure S5 readings in §4.4 and §7.2 were done
+> by eye and one of them compared a relative change against a map of absolute
+> change; §10.6 corrects both.
 
 ---
 
@@ -543,3 +555,184 @@ The one genuinely blocking item is unchanged and is not in this document: the
 - rojak, ImperialCollegeLondon/rojak at rev `25b8685c670401883bf6d186a522ccfd4561c908`
   — `src/rojak/turbulence/diagnostic.py`, `src/rojak/turbulence/calculations.py`,
   `src/rojak/core/data.py`, read directly.
+
+---
+
+## 10. MEASURED — 2026-08-29 evening
+
+Jobs `cat-tests`, `cat-audit`, `cat-ubf`, `cat-f2d` on `node013`, repo
+`2f711f5`. Logs in `logs/tests-*.out`, `audit-*.out`, `ubf-*.out`, `f2d-*.out`.
+Total cost: about nine minutes of compute, no CDS requests, alongside a running
+production download.
+
+### 10.1 Headline
+
+**Twenty of the 21 have distribution shapes consistent with the published
+ones.** Every composition identity holds pointwise. `f2d` is the single
+outlier and the evidence against its current form is now quantitative rather
+than interpretive. `ubf` is **cleared** on all three mechanisms proposed for
+it — and two claims made earlier in this document, both read off Figure S5 by
+eye, do not survive being checked. §10.6.
+
+### 10.2 Composition identities — all five PASS
+
+On `diagnostics_na_1979-01.zarr`, all 9,032,408 cells, no sub-sampling:
+
+| identity | median rel. err | p99 | |
+|---|---|---|---|
+| I1a `ti1/vws == ngm1/wind_speed` | 2.54e-08 | 8.35e-08 | PASS |
+| I1b `deformation == (ti1/vws)^2` | 4.24e-08 | 1.28e-07 | PASS |
+| I2 `brown2/(brown1·vws²) == 1/24` | 4.95e-08 | 1.75e-07 | PASS |
+| I3 `\|(ti1-ti2)/vws\| == \|divergence\|` | 6.78e-08 | 4.58e-06 | PASS |
+| I4 `(ζ_a-f)² == vorticity_squared` | 2.31e-07 | 1.24e-05 | PASS |
+
+All at the float32 floor, in the tail as well as the bulk. `I5` gives a median
+`|∂T/∂z|` of **1.64e-03 K/m**, exactly the order expected near the tropopause.
+
+**`brown2` is now fully closed**: A14 confirmed against the paper (§2), its
+published magnitude explained as an implied Δz² (§6), and its composition
+confirmed pointwise here. It comes off the §7 suspect list.
+
+**The DEF² finding is confirmed on real data.** I1b fits the squared form and
+not the un-squared one, independently of reading rojak's source.
+
+### 10.3 Shape ratios — 20 of 21 in family
+
+**The daily-mean column is the valid comparison**, and the instantaneous run
+proves why rather than merely asserting it. Two diagnostics are clipped at zero
+(`nva` via A37, `ncsu1` via A36), so instantaneously their median sits at zero
+and the ratio explodes — `nva` reads **215** instantaneous against **7.03**
+daily-mean, versus a published 6.49. Averaging is not a cosmetic adjustment
+here; it is what makes those two comparable at all, and Williams' own fields
+are daily means.
+
+Daily-mean, Williams' box, DJF 2000, ours/published:
+
+| in family (0.5–1.7) | | outlier |
+|---|---|---|
+| `magnitude_pv` 0.96, `brown1` 1.08, `vertical_wind_shear` 1.02, `wind_speed` 0.86, `temperature_gradient` 0.88, `endlich` 0.82, `horizontal_divergence` 0.74, `ti1` 1.08, `ti2` 1.27, `ngm1` 0.70, `ngm2` 0.89, `nva` 1.08, `rva_magnitude` 0.85, `ubf` 0.67, `brown2` 1.60, `ncsu1` 1.71, `vorticity_squared` 0.50 | | **`f2d` 22.3** |
+
+**`deformation`'s apparent 1.93 is not an anomaly — it is the DEF² storage
+seen from a third direction.** Quantiles transform monotonically, so
+p97(DEF²)/p50(DEF²) = (p97/p50)². Taking the square root of the measured 5.27
+gives **2.30 against a published 2.74, i.e. 0.84** — squarely in family with
+the other degree-1 diagnostics. Three independent confirmations of §5 now: the
+source, identity I1b, and this.
+
+**Prediction 2 FAILED, and the failure is informative.** The shear family came
+in at **1.08**, not below 1.0. The 50 hPa stencil does *not* thin the bulk
+distribution's shape. That is consistent with §11.3 rather than against it:
+the stencil's effect is on **tail position relative to a fixed threshold**,
+which is what exceedance counting sees, not on the shape of the distribution
+itself. Worth stating in the write-up — it narrows what the stencil bias is.
+
+### 10.4 `f2d` — variant A is refuted, variant C indicated
+
+| variant | median | p97 | p97/median | frac > 0 |
+|---|---|---|---|---|
+| **A** `+½ D/Dt[Q]` (current) | 7.01e-08 | 5.29e-05 | **754** | 50.9 % |
+| B `−½ D/Dt[Q]` | −7.01e-08 | 5.79e-05 | −825 | 49.1 % |
+| **C** `\|½ D/Dt[Q]\|` | 3.98e-06 | 9.03e-05 | **22.7** | 100 % |
+| D `−D/Dt[√Q]` (literal A9) | −4.73e-07 | 8.05e-05 | −170 | 49.0 % |
+
+against a published **13.6**. Prosser's box gives the same verdict (C at 20.5,
+A at 599). §4.3's prediction — stated before running — held exactly: a signed
+material derivative is centred on zero (50.9 % positive), its median is noise,
+and the ratio runs to the hundreds. C is the only positive-definite reading
+among the four and lands within 1.5–1.7× of the published shape, in family with
+the other twenty.
+
+Two supporting numbers:
+
+- **A vs B tail overlap = 0.000**, exactly, in both boxes. The sign choice
+  selects two disjoint populations of grid cells. It cannot be left to a
+  default, which is the whole argument of §4.1.
+- **Spearman ρ(A, D) = −0.94.** Negative because D carries A9's minus; the
+  magnitude 0.94 says the `|∂v/∂θ|⁻¹` normalisation does reorder, but modestly.
+  The sign is the large effect, the normalisation the small one.
+
+**Not yet tested: a clipped variant**, `max(±½ D/Dt[Q], 0)`. Under daily-mean
+smoothing that could also produce a finite ratio — `nva` and `ncsu1` show
+exactly that behaviour. It is the obvious fifth candidate if C's trend does not
+hold up.
+
+### 10.5 `ubf` — all three mechanisms refuted
+
+| | 1979-01 | 2020-01 | |
+|---|---|---|---|
+| cancellation ratio, \|residual\|/largest term | **0.729** | **0.751** | not a near-cancellation |
+| Spearman ρ(float32, float64) | **1.000000** | **1.000000** | precision is a non-issue |
+| flagged-set overlap at p99.6 | 1.0000 | 1.0000 | identical tails |
+| \|f(ζ_ERA5 − ζ_derived)\| / \|residual\| | **0.012** | **0.011** | vorticity inconsistency is ~1 % |
+
+The decomposition matched `2_diagnostics.ubf()` at ρ = 1.000000, so the script
+was measuring the real thing.
+
+**The most useful result is the first row, and it corrects the project's own
+framing.** `STATUS.md` §4g, §7 and §12.6 all describe UBF as "a residual of
+near-cancelling large terms" and "the most fragile of the 21 by construction",
+and this document repeated it. **Measured, the residual is 73 % of the largest
+term.** It is not a near-cancellation, nothing is amplified by the reciprocal
+of a small number, and the fragility argument that has been used to justify
+suspicion of UBF does not hold. Its shape ratio (0.67 daily-mean, 0.98
+instantaneous) is also healthy.
+
+Both months agree to within 3 %, so nothing here grows across the record and
+none of it could produce a *trend* anomaly even if it were large.
+
+**Conclusion: there is no longer any measured evidence that `ubf` is wrong.**
+Its +11 % trend in §12.6 may simply be what ERA5 gives. It comes off the top of
+the §7 list and becomes an open question rather than a suspected defect.
+
+### 10.6 Two corrections to §4.4 and §7.2 — my own readings of Figure S5
+
+Both panels were re-examined at 3× magnification after the numbers came back.
+
+- **UBF.** §7.2 says S5 shows UBF "strongly positive over the NA and Europe"
+  and that it "should be near the TOP of the 21". Enlarged, the North Atlantic
+  patch is **positive and moderate**, comparable to the other positive panels;
+  the saturated red is in the equatorial band, not the North Atlantic. The
+  discrepancy against our +11 % is milder than stated — perhaps an order of
+  magnitude on absolute change, not a reversal.
+- **Frontogenesis.** §4.4 says S5's panel is "≈ 0 to slightly negative over the
+  NA" while ours is "+226 %, 2nd of 21", and calls that a disagreement. **That
+  comparison was invalid** — it puts a *relative* change against a map of
+  *absolute* change, the exact error §7.2 warns about two paragraphs earlier.
+  In absolute terms our f2d moves 0.026 % → 0.086 %, i.e. **+0.06 pp**, which
+  on S5's ±0.5 pp scale is very nearly white. Prosser's NA frontogenesis is
+  also nearly white. **They do not visibly disagree.**
+
+Neither correction weakens the case against variant A, because that case rests
+entirely on §10.4's shape measurement, which is quantitative and independent of
+any figure. But it removes S5 as *corroboration*, and it means the eyeball
+comparison in §7.2 should not be quoted until it is done properly — by sampling
+the panels against their colourbars rather than by looking at them.
+
+### 10.7 Revised suspect list
+
+| diagnostic | status after measurement |
+|---|---|
+| `f2d` | **the only open defect.** Variant A refuted quantitatively; C indicated; trend test outstanding |
+| `ubf` | **cleared.** No measured mechanism survives; the "fragile residual" framing is wrong |
+| `brown2` | **closed.** Formula, magnitude and composition all confirmed |
+| `deformation` | fix applied; three independent confirmations of the DEF² storage |
+| the other 17 | shapes consistent with published, identities hold, formulas confirmed against Sharman |
+
+### 10.8 What decides `f2d`, and the one thing to be careful about
+
+The remaining test is whether variant C's DJF exceedance and trend behave like
+its siblings. A concrete prediction to register before running: under A, `f2d`'s
+DJF 1979 MOG exceedance is **0.026 %**, the second-lowest of the 21 and roughly
+25× below the median of 0.642 % (`STATUS.md` §12.6) — a global-calibrated
+threshold that a North Atlantic winter almost never crosses. **Under C it
+should rise into the 0.1–1 % band where its siblings sit.** If it does not, C
+is wrong too and the clipped variant is next.
+
+**Do not run this by re-running all 21 into the existing paths.**
+`jobs/04` writes `derived/global/diagnostics_glob_2000-MM.zarr` and `jobs/07`
+writes `derived/north_atlantic/diagnostics_na_YYYY-MM.zarr` — the same paths
+the §11 and §12 results were computed from. Overwriting them under a different
+f2d variant would destroy the ability to compare, for a question that concerns
+one diagnostic out of 21. A focused `f2d`-only calibrate-and-fit, writing
+nothing into `derived/`, answers it at a fraction of the cost and with no risk
+to the existing record.

@@ -634,12 +634,38 @@ def frontogenesis_2d(ds: xr.Dataset, target_level: int = 200) -> xr.DataArray:
 # The four candidate readings of Sharman A9. See FORMULA_AUDIT.md §4 for why
 # more than one exists; ada/check_f2d_variants.py is what chooses between them.
 F2D_VARIANTS = {
-    "A": "+0.5 D/Dt[Q]        current: A10's algebra in theta coordinates",
+    "A": "+0.5 D/Dt[Q]        A10's algebra in theta coordinates (pre-2026-08-30)",
     "B": "-0.5 D/Dt[Q]        A9's leading minus sign applied",
-    "C": "|0.5 D/Dt[Q]|       magnitude — one-sided, as the published tables behave",
+    "C": "|0.5 D/Dt[Q]|       magnitude — matches the published distribution",
     "D": "-D/Dt[sqrt(Q)]      literal A9 including the |dv/dtheta|^-1 normalisation",
 }
-F2D_DEFAULT_VARIANT = "A"
+
+# DEFAULT CHANGED A -> C ON 2026-08-30. FORMULA_AUDIT.md 10.4 and the note in
+# frontogenesis_isentropic below. Three independent lines put it beyond doubt,
+# the decisive one being a figure rather than an equation:
+#
+#   1. Williams (2017) Fig. 1 plots the frontogenesis histogram on 0..300
+#      x10^-9 m^2 s^-3 K^-2, anchored at exactly zero and decaying from an
+#      18 % first bin. The same figure plots Negative Richardson on -300..0
+#      and Colson-Panofsky on -45..-25, so Williams does show signed
+#      diagnostics on their true negative ranges -- frontogenesis is simply
+#      not one of them. The smooth decay from a finite first bin is the
+#      density of |X| for a signed X; a clipped max(X,0) would put a ~50 %
+#      point mass in that bin instead.
+#   2. Measured p97/median: variant A 754, variant C 22.7, published 13.6.
+#      Only C is in family with the other twenty diagnostics.
+#   3. Sharman Table B1's units (m^2 s^-3 K^-2) require the un-normalised
+#      form, which A, B and C all satisfy and D does not.
+#
+# This also DISSOLVES the sign question that opened the whole investigation:
+# under a magnitude, A9's leading minus is irrelevant. That is presumably why
+# Sharman's printed inconsistency between A9's two sides never mattered
+# operationally.
+#
+# Anything computed before this date used A. The variant is recorded in each
+# output's attributes, so a zarr can always be traced to the reading that
+# produced it, and `--f2d-variant A` reproduces the old behaviour exactly.
+F2D_DEFAULT_VARIANT = "C"
 
 
 def frontogenesis_isentropic(ds: xr.Dataset, target_level: int = 200,
@@ -696,10 +722,16 @@ def frontogenesis_isentropic(ds: xr.Dataset, target_level: int = 200,
         largest positive trend of the 21.
 
     So rather than guess, all four readings are available here and
-    `ada/check_f2d_variants.py` measures which one reproduces the published
-    distribution shape and the published sign of change. Variant A remains the
-    DEFAULT so that nothing silently changes under existing runs; switch it
-    deliberately once the check has reported.
+    `ada/check_f2d_variants.py` measured which one reproduces the published
+    distribution.
+
+    **RESOLVED 2026-08-30: the answer is C, and the default is now C.**
+    Williams (2017) Figure 1 plots this diagnostic's histogram on 0..300,
+    anchored at zero and decaying from an 18 % first bin, in the same figure
+    where Negative Richardson runs -300..0 and Colson-Panofsky -45..-25. It is
+    a magnitude, not a signed tendency. Measured p97/median confirms it:
+    A 754, C 22.7, published 13.6. See the note on F2D_DEFAULT_VARIANT above
+    and FORMULA_AUDIT.md 10.4.
 
     Args:
         variant: one of F2D_VARIANTS.

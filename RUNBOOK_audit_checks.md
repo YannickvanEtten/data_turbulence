@@ -66,7 +66,14 @@ pins both.
 detects which convention a file uses and says so, so nothing depends on
 remembering.
 
-### 1.2 `f2d` has a variant flag; the default is unchanged
+### 1.2 `f2d` has a variant flag
+
+> **Superseded 2026-08-30: the default is now C, not A.** The evidence is in
+> `FORMULA_AUDIT.md` §10.4 — decisively, Williams (2017) Figure 1 plots this
+> diagnostic anchored at zero on 0..300 in the same figure where Negative
+> Richardson runs −300..0. It is a magnitude. The paragraph below describes the
+> state on 2026-08-29, when the flag was added and A was still the default;
+> §5 is the current instruction.
 
 **Files:** `2_diagnostics.py` (`F2D_VARIANTS`, `frontogenesis_isentropic`,
 `compute_all_21`), `ada/diagnostics_global.py` (`--f2d-variant`).
@@ -255,3 +262,108 @@ inputs with a glob rather than hard-coding a filename — STATUS §13.1 records 
 derived directory being deleted on 2026-08-29, and a hard-coded path is exactly
 how a script starts failing for a reason that has nothing to do with what it
 tests.
+
+---
+
+## 5. The production diagnostics run — `jobs/14`
+
+Added 2026-08-30, once `f2d` was resolved (`FORMULA_AUDIT.md` §10.4) and the
+default switched from variant A to C.
+
+### 5.1 Run it alongside the download, not after it
+
+The raw fetch is CDS-bound and takes days; the diagnostics are CPU-bound and
+take hours. There is no reason to serialise them, and `jobs/14` is built to
+interleave: a task whose GRIB has not landed yet prints `NOT-YET-DOWNLOADED`
+and exits 0, so you submit the same array again when the download finishes and
+it picks up only what is left.
+
+```bash
+sbatch jobs/12_tests.sbatch                              # 1. the gate
+sbatch --array=0-11%4 jobs/14_diagnostics_production.sbatch   # 2. canary
+sbatch jobs/14_diagnostics_production.sbatch             # 3. the full 504
+#   ... and again after jobs/01 completes
+```
+
+**Do step 2.** Twelve months costs half an hour and catches a configuration
+mistake before five hundred months of it. Check one output before releasing
+the rest:
+
+```bash
+pixi run python ada/check_composition.py \
+    $BASE/derived/north_atlantic/diagnostics_na_1979-01.zarr
+```
+
+Expect all five identities at ~1e-8, and — this is the new part — the
+deformation line should now read **DEF, un-squared**, not DEF². If it still
+says DEF², the run picked up stale output and `--skip-if-matching` is not doing
+its job.
+
+### 5.2 Why "output already exists" is not a safe skip any more
+
+`jobs/07` skips whenever the output directory is present. That was correct when
+every output had been built identically. It is wrong now, because two
+conventions changed underneath:
+
+| written before | holds |
+|---|---|
+| 2026-08-29 | `deformation` = DEF², not DEF (§5) |
+| 2026-08-30 | `f2d` = variant A, not C (§10.4) |
+
+The 27 DJF months already in `derived/north_atlantic/` are **both**. A
+directory check would preserve them and hand back a 504-month series that is 27
+months of one definition and 477 of another — a real, plausible-looking dataset
+quietly built from two conventions, which is the same failure shape as
+Q-INTEG-3's silent level substitution.
+
+So `ada/diagnostics_global.py --skip-if-matching` reads the output's recorded
+provenance instead of its existence, and distinguishes three states:
+
+```
+no output                     -> compute
+output from an older config   -> RECOMPUTE
+output from this config       -> skip in ~1 s
+incomplete store              -> RECOMPUTE
+```
+
+Unit-tested against all five cases before the first submission.
+
+### 5.3 Concurrency
+
+The QOS caps you at 8 running jobs and the download array holds 4. `jobs/14`
+asks for `%4`, which fills the cap exactly and leaves nothing spare. If you
+need a slot for a check job:
+
+```bash
+scontrol update JobId=<jobid> ArrayTaskThrottle=3
+```
+
+Expect some stretching from filesystem contention — §13.2 measured six
+concurrent tasks turning a 30-minute job into 36, mostly in GRIB decode.
+
+### 5.4 What still has to be re-run afterwards
+
+`jobs/14` covers the North Atlantic series. Two things are still on variant A
+and need re-running before the replication numbers can be quoted under the new
+configuration:
+
+```bash
+sbatch --array=0-11%4 jobs/04_diagnostics_global.sbatch   # global calibration
+sbatch jobs/06_calibration_check.sbatch                   # thresholds
+sbatch jobs/08_trend_check.sbatch --per-diagnostic        # the trend
+```
+
+`jobs/04` overwrites by default, so no flag is needed — the default variant is
+now C. `jobs/08` reads whatever `jobs/14` wrote.
+
+**The prediction to check when `08` reports** (registered in `FORMULA_AUDIT.md`
+§10.8, before any of this was run): under variant A, `f2d`'s DJF 1979 MOG
+exceedance was **0.026 %**, second-lowest of the 21 and ~25× below the median
+of 0.642 %. Under C it should land in the **0.1–1 %** band where its siblings
+sit. If it does not, C is wrong too and the clipped variant
+`max(±½ D/Dt[Q], 0)` is next.
+
+Also worth watching: whether the §11 calibration agreement (24 %) and the §12
+trend result move at all. One diagnostic out of 21 should shift the ensemble by
+roughly 5 %, no more. A larger move would mean `f2d` had been doing more work
+in the ensemble than its share, which would itself be worth knowing.

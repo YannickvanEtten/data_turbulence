@@ -96,15 +96,33 @@ class TestF2dVariants:
     an empirical question and is deliberately not asserted here.
     """
 
-    def test_default_is_A_and_is_unchanged(self, diag, prepared):
-        """The default must reproduce the pre-2026-08-29 behaviour exactly, so
-        that adding the flag cannot itself move any published number."""
-        assert diag.F2D_DEFAULT_VARIANT == "A"
+    def test_default_is_C(self, diag, prepared):
+        """The default is C as of 2026-08-30 (FORMULA_AUDIT.md §10.4).
+
+        Williams (2017) Fig. 1 plots this diagnostic on 0..300, anchored at
+        zero, in the same figure where Negative Richardson runs -300..0 — so
+        the published quantity is a magnitude, not a signed tendency. The
+        measured p97/median agrees: A 754, C 22.7, published 13.6.
+
+        Pinned as a test because the default is the thing every production run
+        silently inherits, and because reverting it would quietly change what
+        504 months of output mean."""
+        assert diag.F2D_DEFAULT_VARIANT == "C"
         ds = prepared._dataset
         default = diag.frontogenesis_isentropic(ds)
-        explicit = diag.frontogenesis_isentropic(ds, variant="A")
+        explicit = diag.frontogenesis_isentropic(ds, variant="C")
         np.testing.assert_allclose(default.values, explicit.values,
                                    rtol=0, atol=0)
+
+    def test_variant_A_still_reproduces_the_old_behaviour(self, diag, prepared):
+        """Switching the default must not remove the ability to regenerate
+        anything computed before 2026-08-30. `--f2d-variant A` is the escape
+        hatch that makes the change reversible, so it is worth a test of its
+        own: C is the absolute value of A, exactly."""
+        ds = prepared._dataset
+        a = diag.frontogenesis_isentropic(ds, variant="A").values
+        c = diag.frontogenesis_isentropic(ds, variant="C").values
+        np.testing.assert_allclose(c, np.abs(a), rtol=0, atol=0)
 
     def test_B_is_exactly_minus_A(self, diag, prepared):
         ds = prepared._dataset

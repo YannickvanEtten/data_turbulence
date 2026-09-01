@@ -67,6 +67,7 @@ from __future__ import annotations
 
 import argparse
 import importlib.util
+import json
 import resource
 import sys
 import time
@@ -99,6 +100,51 @@ def _load(name: str, filename: str):
 def peak_rss_gb() -> float:
     """Peak RSS of this process so far, in GB. Linux reports ru_maxrss in kB."""
     return resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1e6
+
+
+def existing_output_matches(out_path: Path, f2d_variant: str) -> tuple[bool, str]:
+    """Is there already a COMPLETE output here built with THIS configuration?
+
+    The production array is submitted repeatedly -- while the download is still
+    running, and again after it finishes -- so it has to distinguish three
+    states, not two:
+
+        no output                  -> compute
+        output from an older config -> RECOMPUTE, do not skip
+        output from this config     -> skip in a second
+
+    The middle case is the one a plain `if [ -d "$OUT" ]` gets wrong, and it is
+    not hypothetical: every zarr written before 2026-08-29 holds DEF^2 rather
+    than DEF, and every zarr written before 2026-08-30 holds f2d variant A
+    rather than C. A directory-exists check would silently preserve both and
+    hand back a dataset that is half one convention and half the other -- the
+    same shape of failure as Q-INTEG-3's silent level substitution.
+
+    Completeness is judged by the consolidated-metadata marker, so a store
+    killed part-way through a write is recomputed rather than trusted.
+    """
+    if not out_path.exists():
+        return False, "no output yet"
+
+    complete = (out_path / ".zmetadata").exists() or (out_path / "zarr.json").exists()
+    if not complete:
+        return False, "incomplete store (no consolidated metadata) — will rewrite"
+
+    zattrs = out_path / ".zattrs"
+    if not zattrs.exists():
+        return False, "no .zattrs — written before 2026-08-29, config unknown"
+    try:
+        attrs = json.loads(zattrs.read_text())
+    except (OSError, ValueError) as exc:
+        return False, f"unreadable .zattrs ({type(exc).__name__}) — will rewrite"
+
+    have_variant = attrs.get("f2d_variant")
+    have_def = attrs.get("deformation_convention")
+    if have_variant is None or have_def is None:
+        return False, "provenance attributes absent — pre-2026-08-29 output"
+    if have_variant != f2d_variant:
+        return False, f"f2d_variant {have_variant!r} != requested {f2d_variant!r}"
+    return True, f"f2d_variant={have_variant}, deformation={have_def}"
 
 
 def _time_dim(da: xr.DataArray) -> str | None:
@@ -202,6 +248,13 @@ def main() -> int:
                         "change this once ada/check_f2d_variants.py has "
                         "reported -- and note the choice is recorded in the "
                         "output zarr's attributes either way.")
+    p.add_argument("--skip-if-matching", action="store_true",
+                   help="exit 0 immediately if a COMPLETE output already exists "
+                        "that was built with this same configuration. An output "
+                        "from an older configuration is recomputed, not skipped "
+                        "— see existing_output_matches(). This is what makes the "
+                        "production array safe to resubmit while the download is "
+                        "still running.")
     args = p.parse_args()
 
     in_path, out_path = Path(args.input), Path(args.output)
@@ -210,6 +263,14 @@ def main() -> int:
         return 1
 
     diag = _load("diagnostics", "2_diagnostics.py")
+
+    if args.skip_if_matching:
+        variant = args.f2d_variant or diag.F2D_DEFAULT_VARIANT
+        matches, why = existing_output_matches(out_path, variant)
+        print(f">>> existing output: {why}")
+        if matches:
+            print(f"    SKIP — {out_path.name} is already current")
+            return 0
 
     t0 = time.time()
     print(f">>> loading {in_path.name}  ({in_path.stat().st_size / 1e9:.2f} GB)")

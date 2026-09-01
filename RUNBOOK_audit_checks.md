@@ -99,8 +99,9 @@ Why the question is open at all: `FORMULA_AUDIT.md` §4.
 ### Step 0 — `jobs/12_tests.sbatch`  (under a minute, 8 GB)
 
 The cheapest possible place for the two code changes to fail. **Do not queue
-09–11 until this is green.** Expect ~67 tests: the existing 56 plus 11 new ones
-in `tests/test_audit_fixes.py`, none of which need ERA5.
+09–11 until this is green.** Expect **69 tests** as of 2026-08-30: the original
+56, 12 in `tests/test_audit_fixes.py`, and one added to `tests/test_analytic.py`
+when the f2d default moved to C. None of them need ERA5.
 
 ```bash
 mkdir -p logs && sbatch jobs/12_tests.sbatch

@@ -94,10 +94,34 @@ class TestTierC:
         """Isentropic frontogenesis, Sharman A9:
             0.5 D/Dt [ (du/dtheta)^2 + (dv/dtheta)^2 ]
         Interior timesteps only -- d/dt is one-sided at the first and last
-        step, which is first-order and would dominate the comparison."""
+        step, which is first-order and would dominate the comparison.
+
+        VARIANT A EXPLICITLY, not the default. synthetic.py's manufactured
+        solution is the SIGNED closed form, and since 2026-08-30 the default is
+        variant C = |A| (FORMULA_AUDIT.md 10.4). Calling the default here would
+        compare a magnitude against a signed expectation and report ~200 %
+        error on every cell where the true value is negative -- which is
+        exactly what it did, in the first run after the default changed.
+
+        Pinning variant A keeps this test doing the job it was built for:
+        verifying the material-derivative arithmetic against a closed form.
+        The production quantity is covered by the next test.
+        """
+        got = diag.frontogenesis_isentropic(prepared._dataset, variant="A")
+        got = got.transpose("latitude", "longitude", "time").isel(time=slice(1, -1)).values
+        check(got, expect.f2d_isentropic[:, :, 1:-1], label="f2d (variant A)")
+
+    def test_f2d_default_is_the_magnitude(self, diag, prepared, expect):
+        """#20 as it now reaches disk, against the same closed form under an
+        absolute value.
+
+        Splitting the two matters for diagnosis, not just for bookkeeping: if
+        this passes and the one above fails, the material derivative is wrong;
+        if the one above passes and this fails, the variant wiring is wrong.
+        A single combined assertion could not tell those apart."""
         got = diag.frontogenesis_isentropic(prepared._dataset)
         got = got.transpose("latitude", "longitude", "time").isel(time=slice(1, -1)).values
-        check(got, expect.f2d_isentropic[:, :, 1:-1], label="f2d")
+        check(got, np.abs(expect.f2d_isentropic[:, :, 1:-1]), label="f2d (default)")
 
     def test_f2d_material_derivative_parts(self, diag, prepared, expect):
         """Decompose A9 so a failure localises to d/dt, d/dx or d/dy rather

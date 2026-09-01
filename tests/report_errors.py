@@ -53,10 +53,16 @@ def build_rows():
         # key, tier, formula, computed, expected
         ("rva_magnitude", "C", "|u dz/dx + v dz/dy|",
          at(diag.rva(prepared._dataset)), E.rva),
-        ("f2d", "C", "0.5 D/Dt[(du/dth)^2+(dv/dth)^2]",
+        # Tier "C" here is the VERIFICATION TIER (no second implementation
+        # exists), not the f2d variant -- an unfortunate collision of letters
+        # since 2026-08-30. The computed side is the DEFAULT, i.e. f2d variant
+        # C = |0.5 D/Dt[Q]|, so the expected side takes an absolute value too;
+        # this row records the accuracy of the quantity that actually reaches
+        # disk. FORMULA_AUDIT.md 10.4.
+        ("f2d", "C", "|0.5 D/Dt[(du/dth)^2+(dv/dth)^2]|  (variant C, default)",
          diag.frontogenesis_isentropic(prepared._dataset)
              .transpose("latitude", "longitude", "time").isel(time=slice(1, -1)).values,
-         E.f2d_isentropic[:, :, 1:-1]),
+         np.abs(E.f2d_isentropic[:, :, 1:-1])),
         ("wind_speed", "B", "sqrt(u^2+v^2)", at(out["wind_speed"]), E.wind_speed),
         ("vorticity_squared", "B", "zeta^2", at(out["vorticity_squared"]), E.vorticity ** 2),
         ("horizontal_divergence", "B", "|delta| (ERA5 field)",

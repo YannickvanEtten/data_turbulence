@@ -64,9 +64,37 @@ echo "=== tail_thresholds MODE=$MODE on $(hostname) at $(date -Is) ==="
 if [ "$MODE" = "validate" ]; then
     # Reproduce the existing 48-day thresholds through the new code path.
     # No archive is written: this run exists to answer one question.
+    #
+    # Which directory holds the 48-day stores depends on whether the rename
+    # ahead of jobs/19 has happened yet, so find them rather than assume.
+    # Override with SUB=... if they are somewhere else again.
+    SUB=${SUB:-}
+    if [ -z "$SUB" ]; then
+        for cand in derived/global_sub48 derived/global; do
+            if compgen -G "$BASE/$cand/diagnostics_glob_*.zarr" > /dev/null; then
+                SUB=$cand; break
+            fi
+        done
+    fi
+    if [ -z "$SUB" ]; then
+        echo "FATAL: no diagnostics_glob_*.zarr under $BASE/derived/global_sub48" >&2
+        echo "       or $BASE/derived/global. Pass SUB=<subdir> explicitly." >&2
+        ls -d "$BASE"/derived/*/ 2>/dev/null | sed 's/^/   /' >&2
+        exit 1
+    fi
+    n=$(compgen -G "$BASE/$SUB/diagnostics_glob_*.zarr" | wc -l)
+    echo "validating against the $n stores in $SUB"
+    if [ "$n" -ne 12 ]; then
+        # 12 is the 48-day calibration set thresholds_2026-09-03.json was built
+        # from. A different count means this is not that dataset, and the
+        # comparison would be meaningless rather than merely wrong.
+        echo "FATAL: expected 12 stores, found $n -- refusing to compare against" >&2
+        echo "       thresholds_2026-09-03.json, which was built from 12." >&2
+        exit 1
+    fi
     pixi run python ada/tail_thresholds.py \
         --base "$BASE" \
-        --derived-subdir derived/global_sub48 \
+        --derived-subdir "$SUB" \
         --cut-percentile 88 \
         --no-archive \
         --validate-against calibration/thresholds_2026-09-03.json

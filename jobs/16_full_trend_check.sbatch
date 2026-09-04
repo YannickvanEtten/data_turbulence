@@ -26,7 +26,13 @@
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=48G
-#SBATCH --time=04:00:00
+# 04:00:00 was NOT enough. Job 1098191 was still running at 3:20 on the first
+# real 504-month attempt -- 42 calendar years opened one at a time, sliced into
+# five seasons, against 9 DJF seasons in ada/trend_check.py. Raised to 12 h on
+# 2026-09-04. Short honest walltimes get backfilled (STATUS 11.9), so this is
+# not free, but a job killed at 3:59 with nothing written costs far more.
+# Tighten once a real elapsed time has actually been measured and logged.
+#SBATCH --time=12:00:00
 #SBATCH --output=logs/full-trend-%j.out
 #SBATCH --error=logs/full-trend-%j.out
 

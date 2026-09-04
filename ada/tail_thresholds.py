@@ -118,6 +118,7 @@ import argparse
 import datetime as dt
 import importlib.util
 import json
+import resource
 import sys
 import time
 from pathlib import Path
@@ -162,6 +163,17 @@ SEVERITIES = {
 # ---------------------------------------------------------------------------
 # Streaming machinery
 # ---------------------------------------------------------------------------
+def peak_rss_gb() -> float:
+    """Peak RSS of this process, in GB.
+
+    Job-step accounting is DISABLED cluster-wide on ADA -- sacct and sstat both
+    return empty MaxRSS -- so every driver has to measure and print its own
+    (STATUS 11.9). Without this the only way to size the full-year run is to
+    submit it and watch it die.
+    """
+    return resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / (1024.0 ** 2)
+
+
 def month_paths(base: Path, subdir: str) -> list[Path]:
     paths = sorted((base / subdir).glob("diagnostics_glob_*.zarr"))
     if not paths:
@@ -309,14 +321,21 @@ def main() -> int:
     ap.add_argument("--cut-percentile", type=float, default=88.0,
                     help="cut placed here; ~12%% retained, covering p97..p99.9 "
                          "plus Lee's p95 plus room to vary an EVT threshold")
-    ap.add_argument("--cut-sample-stride", type=int, default=8,
-                    help="every Nth timestep when locating the cut")
+    ap.add_argument("--cut-sample-stride", type=int, default=7,
+                    help="every Nth timestep when locating the cut. MUST NOT be "
+                         "a multiple of 8 -- see the check below")
     ap.add_argument("--time-chunk", type=int, default=64,
                     help="timesteps per block in the full pass; sets peak RSS")
     ap.add_argument("--margin", type=float, default=0.005,
                     help="required headroom below the lowest percentile")
     ap.add_argument("--no-archive", action="store_true",
                     help="compute thresholds but do not write the .npz tails")
+    ap.add_argument("--compress-archive", action="store_true",
+                    help="zlib the .npz tails. OFF by default: the payload is "
+                         "float32 mantissas from a continuous distribution plus "
+                         "a value-sorted (hence scrambled) int16 latitude index, "
+                         "so it compresses poorly -- a few GB saved for tens of "
+                         "minutes of CPU across the 21.")
     ap.add_argument("--validate-against", default=None,
                     help="path to an existing thresholds_*.json; compare and "
                          "exit non-zero on disagreement")
@@ -324,6 +343,26 @@ def main() -> int:
                     help="max relative difference accepted in --validate-against; "
                          "see the module docstring for why this is not zero")
     args = ap.parse_args()
+
+    if args.cut_sample_stride % 8 == 0:
+        # The data is 3-hourly: 8 steps per day. A stride that is a multiple of
+        # 8 samples ONE time of day and nothing else, so the cut is set from a
+        # diurnally phase-locked slice of the distribution. Harmless for a
+        # threshold (the cut only has to sit below the lowest percentile, and
+        # the guard checks that) but it silently makes the retained fraction
+        # wrong for anything with a diurnal cycle.
+        #
+        # Measured, run 1098461 at stride 8 on the 48-day stores: 20 of 21
+        # diagnostics retained 11.8-12.2%, f2d retained 11.19%. On the 4-day
+        # files that stride lands on steps 0, 8, 16, 24 -- the file start plus
+        # the first step after each of the three 8-day gaps, i.e. exactly the
+        # timesteps where f2d's time derivative is one-sided or straddles a
+        # gap. 100% of its cut sample was drawn from the pathological steps.
+        raise SystemExit(
+            f"--cut-sample-stride {args.cut_sample_stride} is a multiple of 8, "
+            f"the number of 3-hourly steps per day.\nThat samples a single time "
+            f"of day. Use a stride coprime with 8 (7, 9, 11, ...) so the "
+            f"sub-sample walks the diurnal cycle.")
 
     base = Path(args.base)
     paths = month_paths(base, args.derived_subdir)
@@ -368,17 +407,30 @@ def main() -> int:
         sample_sizes[name] = int(n_finite)
 
         if not args.no_archive:
-            np.savez_compressed(
+            writer = np.savez_compressed if args.compress_archive else np.savez
+            writer(
                 archive / f"{name}.npz",
                 values=v_sorted, lat_index=i_sorted,
                 w_below=np.float64(w_below), w_total=np.float64(w_total),
                 cut=np.float64(cut), n_finite=np.int64(n_finite))
 
+        kept = 1.0 - w_below / w_total
+        flag = ""
+        if kept > 0.40:
+            # Almost always a clipped diagnostic (nva, ncsu1 apply max(.,0)):
+            # if more than (100 - cut_percentile)% of the field is EXACTLY
+            # zero, the cut lands on that tie mass and `>= cut` retains the
+            # whole field. Harmless here, fatal on the full year -- it is a
+            # 3e9-element sort instead of a 3.6e8 one.
+            flag = "  <-- RETENTION HIGH: cut probably landed on a tie mass"
         print(f"  [{k:2d}/{len(names)}] {name:24s} cut={cut: .6g}  "
-              f"kept={1.0 - w_below / w_total:6.2%}  "
-              f"n={n_finite:,}  p1={p_first:.5f}  {time.time() - t_d:5.1f}s")
+              f"kept={kept:6.2%}  n={n_finite:,}  p1={p_first:.5f}  "
+              f"{time.time() - t_d:5.1f}s  rss={peak_rss_gb():.1f}G{flag}")
 
-    print(f"    all diagnostics in {(time.time() - t0) / 60:.1f} min")
+    print(f"    all diagnostics in {(time.time() - t0) / 60:.1f} min, "
+          f"peak RSS {peak_rss_gb():.1f} GB")
+    print(f"    (a full year is 7.62x this data volume: scale time roughly "
+          f"linearly, and the per-diagnostic tail with it)")
 
     if args.validate_against:
         ref_path = Path(args.validate_against)

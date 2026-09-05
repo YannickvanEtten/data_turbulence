@@ -50,12 +50,51 @@
 #
 #   sbatch jobs/19_diagnostics_global_fullyear.sbatch
 # ---------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
+# MEASURED 2026-09-05, job 1098823_0 (January 2000, the first full month):
+#
+#     248 timesteps -> 31 chunks     PEAK RSS 42.7 GB     wall 196 min
+#     output 17 GB zarr              exit 0
+#
+# --mem was 32G for that run and the job was NOT killed. ** MEMORY LIMITS ARE
+# NOT ENFORCED ON THIS CLUSTER. ** That is a trap, not a licence: an
+# under-requested job that overruns pushes the NODE into OOM and the kernel
+# picks a victim, which may be another user's job. Request honestly.
+#
+# WHY 42.7 GB AND NOT THE 17.7 GB THE 4-DAY MONTHS PEAKED AT
+#     compute_chunked accumulates every chunk's 21 diagnostics in `per_chunk`
+#     and concatenates at the end, so the floor is the whole month's output
+#     held in RAM: 21 x 248 x 721 x 1440 x 4 B = 21.6 GB, plus ~21 GB of
+#     working set. The RSS trace shows exactly this -- a steady +0.7 GB per
+#     chunk from 14.9 to 36.4, then 42.7 at the concat. It is the design, not
+#     a leak, and --chunk-days cannot reduce it: smaller chunks mean MORE
+#     accumulated pieces, not fewer.
+#
+#     Every month is 28-31 days, so 42.7 GB is representative rather than a
+#     January outlier. 64G gives ~50% headroom; do not go lower.
+#
+#     If this ever needs to shrink, the fix is to append each chunk to the
+#     zarr store instead of accumulating -- but that changes the production
+#     driver whose output is bit-identical to an unchunked run (STATUS 11.11),
+#     so it is not something to do in the middle of a calibration.
+#
+# WHY %4
+#     Not a CDS limit -- there are no downloads here. It is memory and shared
+#     filesystem I/O: 4 x 64G schedules comfortably on the 252 GB nodes, and
+#     six concurrent tasks once stretched a 30-minute job to 36 (STATUS 13.2).
+#     11 tasks in 3 waves at ~3.3 h is ~10 h. Raise to %6 if you want it
+#     faster and the queue is empty.
+#
+# TASK 0 IS ALREADY DONE and will skip-exit in seconds via
+# existing_output_matches(), so submit the whole 0-11 range bare rather than
+# overriding --array (which would discard the %4, STATUS 11.9).
+# ---------------------------------------------------------------------------
 #SBATCH --job-name=cat-diag-glob-yr
 #SBATCH --partition=defq
-#SBATCH --array=0-11
+#SBATCH --array=0-11%4
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=4
-#SBATCH --mem=32G
+#SBATCH --mem=64G
 #SBATCH --time=08:00:00
 #SBATCH --output=logs/diag-glob-yr-%A_%a.out
 #SBATCH --error=logs/diag-glob-yr-%A_%a.out

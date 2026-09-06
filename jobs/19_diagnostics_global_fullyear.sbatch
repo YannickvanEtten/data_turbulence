@@ -95,7 +95,18 @@
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=64G
-#SBATCH --time=08:00:00
+# 08:00:00 was too tight. Measured across job 1098825 (12 full months, %4):
+#
+#     wave 1 (tasks 0-3)   3:24 - 4:01
+#     wave 2 (tasks 4-7)   3:18 - 5:00, and task 4 (MAY) TIMEOUT at 08:00:04
+#     wave 3 (tasks 8-11)  4:29 - 5:01
+#
+# Later waves run slower as derived/global grows and shared-filesystem load
+# rises, so 5:01 against an 8 h cap was only 63% margin -- and one task blew
+# through it anyway. A TIMEOUT is the worst failure available here: the task
+# writes nothing after burning 8 h. Short honest walltimes get backfilled
+# (STATUS 11.9), so this is not free, but 12 h is the right trade.
+#SBATCH --time=12:00:00
 #SBATCH --output=logs/diag-glob-yr-%A_%a.out
 #SBATCH --error=logs/diag-glob-yr-%A_%a.out
 
@@ -128,7 +139,19 @@ ls -lh "$IN" | sed 's/^/     /'
 mkdir -p "$BASE/derived/global"
 
 start=$(date +%s)
-pixi run python ada/diagnostics_global.py "$IN" "$OUT" --chunk-days 1
+# --skip-if-matching makes a resubmission RESUME instead of recompute. The skip
+# is not a plain directory-exists check: existing_output_matches() reads the
+# store's .zattrs and recomputes anyway if f2d_variant or
+# deformation_convention differ from what this run would produce, so a store
+# written under the pre-2026-08-30 conventions is correctly rebuilt rather than
+# silently kept (RUNBOOK_audit_checks.md §1).
+#
+# ADDED 2026-09-05. jobs/04 does not pass it either, which is why job
+# 1098825_0 recomputed January for 3.3 h when 1098823_0 had already produced
+# an identical store. Harmless there -- 12 tasks at %4 is 3 waves and so is 11
+# -- but it means no jobs/19 or jobs/04 resubmission has ever actually resumed.
+# jobs/04 should get the same flag.
+pixi run python ada/diagnostics_global.py "$IN" "$OUT" --chunk-days 1 --skip-if-matching
 status=$?
 end=$(date +%s)
 

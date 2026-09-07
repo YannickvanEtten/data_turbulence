@@ -5,10 +5,20 @@
 no longer findable. Those references are not retrievable; this file replaces
 them. When a decision gets made, it gets written here, not into a docstring.
 
-Last updated: 2026-08-29 (stage 2 validated against Prosser; the trend check
-run at nine seasons; phase 4 unblocked). §13 is the run ledger and the measured
-disk inventory — read that first if the question is "what exists and what did
-it cost".
+Last updated: 2026-09-07. **READ §15 FIRST** — it is the current state, and it
+records that this file has FORKED: the copy in the Claude project contains a
+§14 (session of 2026-09-03/04) that was never written back to the repo, and
+this repo copy contains a §15 (session of 2026-09-05/07) that is not in the
+project copy. Neither is wrong; they are disjoint, and §15's header says how to
+reconcile them.
+
+Current state in one line: the year-2000 reference calibration now uses the
+FULL contiguous year (`calibration/thresholds_2026-09-07.json`), the 42-year
+all-season trend reproduces Prosser at 25/25 significant and 25/25 inside the
+95% interval, and TWO recorded findings — §12.5's trend excess and §12.6's
+`ubf` anomaly — turned out to be sub-sample artifacts and are corrected in §15.
+
+§13 is the run ledger and disk inventory as of 2026-08-29 — historical.
 
 ---
 
@@ -1377,3 +1387,331 @@ jobs/08_trend_check.sbatch             the trend comparison
 
 Production uses `01` for raw and `07`'s driver (`ada/diagnostics_global.py`)
 for derived — **not** `03`, which writes both formats.
+
+---
+
+## 15. Session of 2026-09-05/07 — the FULL reference year, and two subsample artifacts overturned
+
+> **⚠ THIS FILE HAS FORKED. Read this first.**
+> The copy of `STATUS.md` in the git repo (this one) ran to §13 and was last
+> updated 2026-08-29. The copy held in the Claude project contains a **§14**
+> recording the 2026-09-03/04 session — convention regeneration, the 49-month
+> North Atlantic gap and its closure, and a full disk audit — which was never
+> written back to the repo. **§14 exists only in the project copy; §15 exists
+> only here.** Neither is wrong; they are disjoint. Reconciling them is a
+> copy-paste of §14 from the project copy into this file, immediately above
+> this section, and should be done before anyone treats either as complete.
+>
+> Companion documents in the project, both current: `RESULT_full_trend_42yr.md`
+> (the 42-year trend result) and `PLAN_full_year_calibration.md` (the design
+> and sizing of the full-year calibration).
+
+**Headline: the year-2000 reference calibration is no longer a 48-day
+sub-sample.** The full contiguous year has been downloaded, merged, processed
+and calibrated, and the thresholds are in
+`calibration/thresholds_2026-09-07.json`. Two conclusions that this project had
+written down as findings turn out to be artifacts of the nine-season /
+48-day sub-samples, and are corrected in §15.5 and §15.6.
+
+---
+
+### 15.1 What was run, in order
+
+| step | job | outcome |
+|---|---|---|
+| 42-year all-season trend, 1st attempt | `1098191` | **TIMEOUT at 04:00:09** — died at 40 of 42 years, wrote nothing |
+| same, walltime raised to 12 h | `1098646` | **COMPLETED 4 h 06 m** — the result in `RESULT_full_trend_42yr.md` |
+| tail-threshold method validation | `1098461` | **PASS** — reproduces `thresholds_2026-09-03.json` from the tail path, worst rel. diff 2.16e-07 |
+| full-year global download, `jobs/17` | `1098647_0`, `1098650_0-35` | 36/36 tasks, all exit 0:0, 5–21 min each; `%4` held |
+| merge blocks → contiguous months, `jobs/18` | `1098821` | 12/12, byte counts exact |
+| full-year global diagnostics, `jobs/19` | `1098825` | **11/12 — task 4 (May) TIMEOUT at 8 h** |
+| May backfill | `1099766` | 11 months skip-exited in ~6 s each, May recomputed |
+| completeness gate, `jobs/15` | `1100921` | **ALL CLEAR** |
+| full-year tail calibration, `jobs/20` | full run | 117 min, `thresholds_2026-09-07.json` + 41 GB tail archive |
+| threshold comparison | `compare_thresholds.py` | §15.4 |
+| per-diagnostic trend, DJF | `1101425` | 20 min, §15.6 |
+| per-diagnostic trend, Annual | `1101424` | 72 min, §15.6 |
+| 42-year trend on the NEW thresholds | `1101414` | **running at time of writing — the one open item** |
+
+---
+
+### 15.2 The full-year calibration is exact, not an estimate
+
+`calibration.compute_thresholds` cannot ravel a full global year: 721 × 1440 ×
+2928 = **3.04 × 10⁹ points per diagnostic**, over 100 GB peak (see
+`CALIBRATION_REFERENCE.md` §8.4). That single fact is why the calibration had
+been a 48-day sub-sample since 2026-08-29.
+
+**`ada/tail_thresholds.py` removes the constraint without approximating
+anything.** The Hazen plotting position `calib_weighted_percentile` uses,
+
+```
+P_i = (C_i - 0.5*w_i) / W_total
+```
+
+depends on everything below a retained upper tail through exactly two scalars,
+`W_total` and `W_below`. One streaming pass that keeps `(value, latitude row)`
+above a cut, plus those two sums, reproduces `weighted_percentile` for any
+percentile whose bracket lies inside the tail. Not a t-digest, not a histogram
+— the same arithmetic on the same numbers.
+
+**Validated before use** (job `1098461`): reproduced the existing 48-day
+thresholds through the new path, worst relative difference **2.16 × 10⁻⁷**
+against a 1e-6 tolerance. The residual is `np.interp` amplification where
+plotting positions thin out, worst at `ncsu1`/MSOG — cubic in gradients,
+so the heaviest tail of the 21.
+
+**The guard is the point of the file.** If the cut lands above the requested
+percentile, `np.interp` clamps to the cut and returns a completely plausible
+wrong threshold. Tested: at a p98.5 cut the clamped LOG threshold came back as
+**22.10 against a true 16.33**. The run now fails loudly instead.
+
+Full-year run: all 21 diagnostics retained 11.97–12.01 % at a p88 cut, every
+`p1` ≈ 0.880 against a 0.965 guard, `n = 3,039,966,720` per diagnostic.
+
+**Outputs:** `calibration/thresholds_2026-09-07.json`, and
+`calibration/tails_2026-09-07/` — 41 GB of per-diagnostic sorted tail values
+with latitude indices. That archive is the peaks-over-threshold dataset phase 5
+needs (§6, phase 5 table); it is a by-product of calibrating, not extra work.
+
+### 15.3 `f2d`'s sub-sample anomaly — diagnosed and resolved
+
+The 48-day files are **non-contiguous** (days 1, 9, 17, 25), and
+`frontogenesis_isentropic` is the only diagnostic taking a time derivative.
+`.differentiate("time")` returns a one-sided value at a file's ends rather than
+NaN, so `f2d` is finite everywhere — its `n_finite` matched the other twenty
+exactly. Of 384 timesteps: 24 one-sided file ends + 72 straddling the 8-day
+gaps = **96, i.e. 25 % of the calibration sample, on a stencil that is not a
+clean centred 3-hourly difference**. On the contiguous year that falls to
+24/2928 = **0.8 %**.
+
+Visible in the runs: on the sub-sample `f2d` retained 11.19 % with `p1` =
+0.88810 where the other twenty were 11.8–12.2 % / 0.879–0.882. **On the
+contiguous year it retained 11.97 % with `p1` = 0.88031 — indistinguishable
+from the pack.** Prediction made and confirmed.
+
+It also exposed a defect in `tail_thresholds.py`'s own default: at
+`--cut-sample-stride 8` on 32-step files the sub-sample lands on steps
+0, 8, 16, 24 — the file start plus the first step after each gap, i.e. exactly
+the pathological timesteps. More generally, **3-hourly data has 8 steps per
+day, so any stride that is a multiple of 8 samples a single time of day**. The
+default is now 7 and a multiple of 8 is refused outright.
+
+### 15.4 The 48-day sub-sample was systematically different, not merely noisier
+
+`ada/compare_thresholds.py` diffs two threshold sets and converts the
+difference into implied exceedance-frequency change, using each diagnostic's
+own severity ladder to estimate the local elasticity (central difference on the
+raw scale, so it works for the three diagnostics with negative thresholds).
+
+| | threshold move | per-diagnostic frequency | ensemble of 21 |
+|---|---|---|---|
+| median | 0.39 % | 1.94 % | **0.42 %** |
+| p90 | 2.27 % | 8.36 % | 1.83 % |
+| max | 7.69 % | 18.36 % | |
+
+The magnitudes are small and were predicted. **The pattern was not.** 16 of 21
+diagnostics move the same direction at every severity, and the size grows
+monotonically with severity:
+
+| ensemble mean Δ frequency | LOG | LMOG | MOG | MSOG | SOG |
+|---|---|---|---|---|---|
+| | −0.0 % | +1.2 % | +1.7 % | +2.2 % | **+4.6 %** |
+
+The 48-day sample **overestimated the extreme tail** for the shear- and
+deformation-based diagnostics. The two exceptions — `colson_panofsky`
+(−18.4 % at SOG) and `negative_richardson` (−7.9 %) — are both functions of
+Richardson number, and `vertical_wind_shear`'s SOG threshold moved **−0.09 %**,
+i.e. nothing. Since Ri = N²/Sv² and the shear term did not move, **the
+difference is in N², the static stability**: the 48 sampled days
+under-represented weakly-stratified conditions.
+
+This is the substantive justification for the full year, over and above
+precision: 48 days spread 8 apart is ~50 independent synoptic states, not
+3 × 10⁹ independent samples, and the effective sample size for an extreme
+quantile of a spatially correlated field is set by the number of weather
+realisations.
+
+### 15.5 §12.5 does not hold — the "trend excess" was a nine-season artifact
+
+Recorded in full in `RESULT_full_trend_42yr.md` §3.1. In brief: §12.5 reported
+that the trend ratio rose **above** 1 as the level ratio fell below it, and
+read this as "one parameter seen twice". On the full 42-year record the trend
+excess is absent. DJF, like for like:
+
+| | trend ratio n = 9 | trend ratio n = 42 | shift |
+|---|---|---|---|
+| LOG | 1.03 | 0.84 | −0.19 |
+| MOG | 1.16 | 0.92 | −0.24 |
+| SOG | 1.43 | 0.98 | −0.45 |
+
+**§12.4 predicted this and named the mechanism** — the nine-season fit leaned
+on two strongly positive-NAO winters at the end of the sample. §12.4 stands;
+§12.5 is its casualty. Also to correct in §12.5: the MOG level ratio does *not*
+"improve across the record", it goes 0.823 → 0.820, i.e. flat.
+
+The replacement statement is cleaner and better: **the stencil bias is stable
+in time. It biases the exceedance LEVEL by 12–24 %, deepening with severity,
+and cancels out of the RELATIVE CHANGE to within 0–4 %.** §5 point 5's
+2026-08-29 amendment was built on §12.5 and needs re-amending accordingly.
+
+### 15.6 §12.6 does not survive either — and `ubf` is not the outlier
+
+§12.6 is a **nine-season, DJF-only, 1979-vs-2020 endpoint** table, and it is
+the sole basis for §7 promoting `ubf` to top open item. `ada/per_diagnostic_trend.py`
+refits it over all 42 years with intervals (`jobs/21`).
+
+**20 of 21 fitted trends came in BELOW their §12.6 endpoint numbers, in both
+DJF and Annual. `ubf` is the only one that rose** (+11 % → +18 % DJF,
++20 % Annual). Median ratio fitted/endpoint ≈ 0.57 — **nine-season endpoints
+inflate trends by ~1.8× across the board.**
+
+§12.6's two specific claims, checked:
+
+| claim | DJF n=42 | Annual n=42 |
+|---|---|---|
+| "`ubf` is LAST on trend" | rank **3**/21 | rank **2**/21 — FALSE |
+| "siblings run +38 % to +226 %" | +10 % to +83 % | **+5 % to +74 %** — FALSE |
+
+**The consistent low outlier is `horizontal_divergence`, not `ubf`:**
+
+| | Annual | DJF | significant? |
+|---|---|---|---|
+| `horizontal_divergence` | **+5 %**, z = −3.67 | **+10 %** | **no in either** (t = 0.99 / 1.26, R² = 0.02 / 0.04) |
+| `ubf` | +20 %, z = −2.00 | +18 % | yes Annual (t = 2.33), no DJF |
+
+(z is the robust score `(change − median)/MAD` over the 21.)
+
+`horizontal_divergence` is lowest in both seasons and fails significance in
+both. It is also **the only diagnostic that is purely ERA5's own archived
+divergence field**, with no gradient computed by this pipeline. Divergence at
+200 hPa is weakly constrained by observations and largely model-determined in
+reanalysis, which makes it the diagnostic most exposed to **§5's risk 3, ERA5's
+observing-system changes across 1979–2020**. That is a hypothesis, not a
+finding, but it is more specific than anything §7 currently records about `ubf`.
+
+**Recommended amendments:** §7 should drop `ubf` from the top of its list — the
+promotion rested entirely on §12.6. §12.6 itself should be replaced by the
+fitted tables in `cat_outputs/per_diagnostic_{annual,djf}_moderate.csv`.
+`horizontal_divergence` is worth a look, at the level of "understand it", not
+"suspect a bug".
+
+The anti-correlation §12.6 described does survive, weakened: Spearman(level,
+change) = **−0.43** at n=42 against −0.53 at n=9. Sparser diagnostics still
+carry larger relative trends.
+
+**A note on method, which is the durable lesson.** Two automated verdicts were
+written into `per_diagnostic_trend.py` for "is `ubf` anomalous", and **both
+failed on real data**: the first turned on a knife-edge `0.18 < 0.18`; the
+second (does the 95 % CI exclude the ensemble median) *contains* it on DJF and
+*excludes it by one percentage point* on Annual — the same diagnostic, the same
+data, flipping verdict on rounding. The script now prints the statistic and no
+verdict. §12.8's rule applies to this project's own tooling: report an
+interval, do not automate a judgement.
+
+### 15.7 Operational findings — each of these cost real time
+
+Add to §11.9's list. All measured this session.
+
+1. **MEMORY LIMITS ARE NOT ENFORCED ON THIS CLUSTER.** `jobs/19` ran at
+   `--mem=32G` with a **42.7 GB** peak and was not killed; `jobs/20` ran at
+   `--mem=48G` with a **55.7 GB** peak and was not killed. This is a trap, not
+   a licence: an under-requested job that overruns pushes the *node* into OOM
+   and the kernel picks a victim, possibly another user's job. Every driver
+   must print its own peak RSS (already required by §11.9 because `sacct`
+   accounting is off) and every `--mem` must be set from a measured peak.
+2. **Walltimes were all too short.** `jobs/16` needed 12 h, not 4 (first
+   attempt TIMEOUT at 40 of 42 years, wrote nothing). `jobs/19` needed 12 h,
+   not 8 — measured spread was 3:18–5:01 with **later waves slower as
+   `derived/global` grows**, and one task blew through 8 h anyway. A TIMEOUT is
+   the worst available failure: full cost, zero output.
+3. **`--skip-if-matching` was never passed by `jobs/04` or `jobs/19`.** The
+   skip logic in `diagnostics_global.py` is gated behind that flag, so **no
+   diagnostics resubmission had ever actually resumed** — the resumability
+   measured in §11.9/§14.7 is real but belongs to the *download* stage only.
+   Now passed by `jobs/19`; **`jobs/04` still needs it.** With it, a
+   12-task resubmit skip-exits 11 stores in ~6 s each.
+4. **Real sizing numbers**, for anything that re-runs these stages:
+
+   | | measured |
+   |---|---|
+   | `jobs/19` per full global month | 42.7 GB peak, 3:18–5:01, 17 GB zarr out |
+   | `jobs/20` full year, all 21 | 55.7 GB peak, 117 min |
+   | `jobs/16` 42 years × 5 seasons | 4 h 06 m |
+   | `jobs/21` per-diagnostic, Annual | 72 min; DJF 20 min |
+   | `jobs/17` per 10-day global block | 5–21 min, 3.3 GB |
+
+5. **A full global month is 5,208 fields / ~10.6 GB in one CDS request, and was
+   never tested.** `jobs/17` splits each month into three ~10-day blocks
+   (1,680 fields, ~3.4 GB) and `jobs/18` concatenates them. **GRIB is a
+   sequence of self-describing messages, so plain `cat` produces a valid file**
+   — no decode, no re-encode, no new code path. CDS accepted 1,680 fields
+   without complaint (accepted → successful in under 3 min).
+6. **WORKFLOW: files written into the Windows repo do not reach ADA until they
+   are committed and pushed.** A `git pull` on ADA fetches nothing if nothing
+   was pushed. This silently cost a resubmission that recomputed instead of
+   skipping. `git status` on Windows before every `sbatch` of something newly
+   changed.
+
+### 15.8 New files
+
+```
+ada/tail_thresholds.py          exact percentile calibration from retained
+                                tails; --validate-against reproduces an
+                                existing threshold set through the new path
+ada/compare_thresholds.py       diffs two threshold sets, converts to implied
+                                exceedance-frequency change via each
+                                diagnostic's own ladder
+ada/per_diagnostic_trend.py     fitted per-diagnostic trend, n=42, with
+                                intervals; reuses full_trend_check.py's box,
+                                weighting, season slicing and OLS by import
+jobs/17_download_global_fullyear.sbatch    12 months x 3 day-blocks, %4
+jobs/18_merge_global_months.sbatch         cat blocks -> contiguous months
+jobs/19_diagnostics_global_fullyear.sbatch 64G, 12 h, --skip-if-matching
+jobs/20_tail_thresholds.sbatch             80G, MODE=validate | full
+jobs/21_per_diagnostic_trend.sbatch        64G, SEASON=/SEVERITY= overrides
+
+cat_outputs/threshold_shift_2026-09-07.csv
+cat_outputs/per_diagnostic_{annual,djf}_moderate.csv        (+ _series.csv)
+```
+
+### 15.9 Disk
+
+| | |
+|---|---|
+| share | **928 GB of 2.5 TB, 38 %** (measured 2026-09-06) |
+| `raw/global/` | 36 day-blocks (119 GB) **kept deliberately** + 12 merged months |
+| `derived/global/` | 12 full-year stores, ~200 GB |
+| `calibration/tails_2026-09-07/` | 41 GB |
+
+The day-blocks are **not** in the way and were deliberately not deleted — they
+let a merged month be re-verified byte-for-byte without a CDS round trip, and
+there is 1.6 TB free. The `df` line printed by every `jobs/17` task shows the
+whole group share was at 511 GB before this session, i.e. **essentially all of
+it is this project's**; the group-quota worry in §8 is smaller than assumed,
+though the ITvO question is still unasked.
+
+### 15.10 Open
+
+1. **`jobs/16` re-run on `thresholds_2026-09-07.json` — running.** This is the
+   only thing outstanding from this session. `RESULT_full_trend_42yr.md`
+   carries a provenance warning until it lands: every figure in it was computed
+   on the **48-day** thresholds. Predicted (from §15.4): annual level ratios
+   improve at high severity — SOG 0.757 → ~0.79, MOG 0.823 → ~0.84, LOG
+   unchanged — and the trend ratios (0.96–1.00) barely move. If the trend
+   ratios *do* shift materially, the level/trend separation in
+   `RESULT_full_trend_42yr.md` §2 needs rethinking, and that is the more
+   interesting outcome.
+2. **Reconcile the two `STATUS.md` copies** (see the note at the top of §15).
+3. **`jobs/04` still lacks `--skip-if-matching`.**
+4. **§7's remaining literature items, unchanged and still the highest value per
+   unit effort**: re-derive all 21 `REFERENCE_TABLE` sign entries (two have
+   already been found wrong; a flipped sign is invisible in magnitude and fatal
+   in rank), and obtain **Brown (1973), *Meteorological Magazine* 102,
+   347–360**, which is not in `Articles/` and is the sole authority for
+   `brown1`'s 0.3 coefficient.
+5. **The ITvO email** — `unlimited` QOS, retention/backup policy, and the
+   group's actual allocation and current usage. All three need the same
+   contact and none is answerable from public documentation (§14.6).
+6. **`horizontal_divergence`** (§15.6) — new, low priority, "understand it"
+   rather than "suspect it".

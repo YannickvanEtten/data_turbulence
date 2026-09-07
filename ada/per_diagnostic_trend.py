@@ -229,38 +229,49 @@ def main() -> int:
               f"{u['change']:+.0%}")
         print(f"   95% CI [{u['lo']:+.0%}, {u['hi']:+.0%}], t={u['fit']['t']:.2f}, "
               f"{'significant' if abs(u['fit']['t']) > tc else 'NOT significant'}")
-        lo = sorted(changes.values())
-        med = float(np.median(lo))
-        print(f"   spread of the 21 fitted changes: {lo[0]:+.0%} to {lo[-1]:+.0%}, "
-              f"median {med:+.0%}")
+        vals = np.array(sorted(changes.values()), float)
+        med = float(np.median(vals))
+        mad = float(np.median(np.abs(vals - med)))
+        print(f"   spread of the 21 fitted changes: {vals[0]:+.0%} to {vals[-1]:+.0%}, "
+              f"median {med:+.0%}, MAD {mad:+.0%}")
         print()
-        # THE TEST IS THE INTERVAL, NOT A RANK.
+
+        # NO AUTOMATED VERDICT HERE, DELIBERATELY.
         #
-        # An earlier version of this block called ubf anomalous when it ranked
-        # in the bottom three AND its change was under half the median. Both
-        # halves are arbitrary, and on the first real run the second was a
-        # knife-edge float comparison (0.18 < 0.18) that decided the verdict.
-        # STATUS §12.8's rule applies to this script as much as to any other:
-        # a comparison of point estimates is not a test. The question is
-        # whether ubf is DISTINGUISHABLE from the rest of the ensemble, and
-        # that is answered by whether its interval excludes the pack.
-        outside = (u["hi"] < med) or (u["lo"] > med)
-        print(f"   is ubf distinguishable from a typical diagnostic?")
-        print(f"     its 95% CI [{u['lo']:+.0%}, {u['hi']:+.0%}] "
-              f"{'EXCLUDES' if outside else 'CONTAINS'} the ensemble median "
-              f"{med:+.0%}")
+        # Two were tried and both failed on real data:
+        #   1. "bottom-three rank AND change < median/2" -- decided by a
+        #      knife-edge 0.18 < 0.18 on the DJF run.
+        #   2. "does the 95% CI exclude the ensemble median" -- CONTAINS it on
+        #      DJF (+36% median, CI [-5%, +41%]) and EXCLUDES it by ONE
+        #      percentage point on Annual (+38% median, CI [+3%, +37%]).
+        #      The same diagnostic on the same data flips verdict between two
+        #      seasons. A test that does that is measuring rounding.
+        #
+        # STATUS §12.8's lesson generalises: report the statistic and let a
+        # human read it. A robust z, (change - median)/MAD, is printed for
+        # every diagnostic so `ubf` is judged against its peers rather than
+        # against a threshold someone invented.
+        print("   ROBUST OUTLIER SCORE  z = (change - median) / MAD")
+        print("   (a diagnostic is worth investigating when |z| is large AND")
+        print("    the same sign appears in more than one season)")
+        ranked = sorted(changes, key=lambda k: (changes[k] - med) / mad if mad else 0)
+        for n in ranked[:4]:
+            z = (changes[n] - med) / mad if mad else float("nan")
+            star = "  <-- " + n if n == "ubf" else ""
+            print(f"     {n:<24}{changes[n]:+7.0%}   z={z:+5.2f}"
+                  f"   t={out[n]['fit']['t']:5.2f}{star}")
+        print(f"     ...")
+        for n in ranked[-2:]:
+            z = (changes[n] - med) / mad if mad else float("nan")
+            print(f"     {n:<24}{changes[n]:+7.0%}   z={z:+5.2f}"
+                  f"   t={out[n]['fit']['t']:5.2f}")
         print()
-        if outside and rank <= 3:
-            print("   ubf REMAINS anomalous on the full record. §7's top item stands,")
-            print("   and the geometry rewrite of 2026-08-26 (§4g) is the first")
-            print("   place to look — it is a residual of near-cancelling terms and")
-            print("   its known error mode scales with tan(phi).")
-        else:
-            print("   ubf is NOT distinguishable from the rest of the ensemble.")
-            print("   §12.6's two specific claims -- that ubf is LAST on trend and")
-            print("   that every sibling runs +38% to +226% -- should both be")
-            print("   checked against the table above before being repeated.")
-            print("   §7's promotion of ubf to top open item rested on that table.")
+        print("   §12.6's TWO SPECIFIC CLAIMS, checked against this run:")
+        print(f"     'ubf is LAST on trend'          -> it is rank {rank}/21 "
+              f"({'TRUE' if rank == 1 else 'FALSE'})")
+        print(f"     'siblings run +38% to +226%'    -> observed range "
+              f"{vals[0]:+.0%} to {vals[-1]:+.0%} "
+              f"({'TRUE' if vals[0] >= 0.38 else 'FALSE'})")
 
     if args.csv:
         p = Path(args.csv)

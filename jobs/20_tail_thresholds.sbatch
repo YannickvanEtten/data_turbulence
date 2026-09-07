@@ -42,7 +42,15 @@
 #SBATCH --partition=defq
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=4
-#SBATCH --mem=48G
+# MEASURED 2026-09-07, the full-year run: PEAK RSS 55.7 GB, wall 117 min.
+# That OVERRAN the 48G this line used to request by 16%, and was not killed --
+# memory limits are not enforced on this cluster (same finding as jobs/19).
+# The estimate in the header below was ~15 GB and the truth was ~3.7x that:
+# np.unique on 3.6e8 float64 returns BOTH the unique values and an int64
+# inverse index, and the argsort index is live alongside the sorted copy, so
+# four full-length arrays coexist rather than the two the estimate assumed.
+# 80G gives ~44% headroom. Do not go back below 64G.
+#SBATCH --mem=80G
 #SBATCH --time=12:00:00
 #SBATCH --output=logs/tailcalib-%j.out
 #SBATCH --error=logs/tailcalib-%j.out

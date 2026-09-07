@@ -429,8 +429,13 @@ def main() -> int:
 
     print(f"    all diagnostics in {(time.time() - t0) / 60:.1f} min, "
           f"peak RSS {peak_rss_gb():.1f} GB")
-    print(f"    (a full year is 7.62x this data volume: scale time roughly "
-          f"linearly, and the per-diagnostic tail with it)")
+    n_steps_total = sum(xr.open_zarr(p).sizes["time"] for p in paths)
+    if n_steps_total < 1000:
+        # Only meaningful when this IS the sub-sample. Printing it on a
+        # full-year run says a full year is 7.62x a full year.
+        print(f"    (a full year is {2928 / n_steps_total:.2f}x this data "
+              f"volume: scale time roughly linearly, and the per-diagnostic "
+              f"tail with it)")
 
     if args.validate_against:
         ref_path = Path(args.validate_against)

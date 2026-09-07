@@ -1431,7 +1431,7 @@ written down as findings turn out to be artifacts of the nine-season /
 | threshold comparison | `compare_thresholds.py` | §15.4 |
 | per-diagnostic trend, DJF | `1101425` | 20 min, §15.6 |
 | per-diagnostic trend, Annual | `1101424` | 72 min, §15.6 |
-| 42-year trend on the NEW thresholds | `1101414` | **running at time of writing — the one open item** |
+| 42-year trend on the NEW thresholds | `1101414` | **COMPLETED 6 h 20 m — §15.11** |
 
 ---
 
@@ -1715,3 +1715,70 @@ though the ITvO question is still unasked.
    contact and none is answerable from public documentation (§14.6).
 6. **`horizontal_divergence`** (§15.6) — new, low priority, "understand it"
    rather than "suspect it".
+
+### 15.11 CLOSED — the re-run on the full-year thresholds. Job `1101414`
+
+`jobs/16` re-run on `calibration/thresholds_2026-09-07.json`. **6 h 20 m,
+exit 0.** This closes §15.10 item 1 and discharges the provenance warning on
+`RESULT_full_trend_42yr.md`, which now reports these figures.
+
+**Both predictions made in §15.4 were confirmed.**
+
+Annual 1979 exceedance level, 48-day → full-year thresholds:
+
+| | predicted | actual |
+|---|---|---|
+| LOG | −0.00 % | **−0.06 %** |
+| LMOG | +1.24 % | **+1.01 %** |
+| MOG | +1.68 % | **+2.13 %** |
+| MSOG | +2.17 % | **+3.43 %** |
+| SOG | +4.60 % | **+4.58 %** |
+
+Annual level ratio against Prosser — the deficit shrank at high severity:
+
+| | 48-day | predicted | full-year |
+|---|---|---|---|
+| LOG | 0.881 | 0.881 | **0.881** |
+| MOG | 0.823 | 0.837 | **0.841** |
+| SOG | 0.757 | 0.792 | **0.797** |
+
+**And the trend did not move.** Across all 25 season × severity cells:
+**16 identical, 9 changed by exactly one percentage point, none by more.**
+Annual trend ratios 0.96 / 0.96 / 0.98 / 0.99 / 1.00 → 0.96 / 0.96 / 0.98 /
+0.98 / 0.99. Significance stayed **25/25**, Prosser-inside-CI stayed **25/25**.
+No verdict anywhere changed.
+
+**The level/trend separation of `RESULT_full_trend_42yr.md` §2 is therefore
+confirmed quantitatively rather than argued.** The threshold change moved the
+level by up to 4.6 % and the trend by ≤ 1 percentage point, exactly as a
+common scaling of exceedance should: `P₂₀₂₀/P₁₉₇₉` is invariant to a common
+factor, and only the difference in local tail slope between the two years
+survives.
+
+**The reportable sentence:** *recalibrating the reference year from a 48-day
+sub-sample to the full contiguous year changes the fitted trend by at most one
+percentage point at any season or severity, and changes no significance
+verdict.* Measured, not asserted — and the direct answer to the obvious
+referee question.
+
+**A walltime lesson to add to §15.7 item 2.** `1101414` ran **54 % slower than
+`1098646` on identical data and code** (6 h 20 m vs 4 h 06 m). Cause: three
+`jobs/21` tasks were reading **the same** `derived/north_atlantic` stores
+concurrently — heavier than §13.2's benchmark, which measured tasks merely
+sharing the filesystem. Once they cleared, the rate returned to ~6 min/year.
+**What else is running against the same data matters as much as the job
+itself**, and at the original 4 h limit this run would have died at 33 of 42
+years — the second time that walltime would have destroyed a completed
+computation.
+
+### 15.12 State at close of session
+
+Everything in §15.10 is closed except items 2–6, which are unchanged:
+reconcile the two `STATUS.md` copies; add `--skip-if-matching` to `jobs/04`;
+the §7 literature items (21 sign entries, Brown 1973); the ITvO email; and
+`horizontal_divergence`.
+
+**The replication is complete.** 25/25 significant, 25/25 containing Prosser's
+published value, on the full 42 years, all seasons, calibrated on the full
+reference year, with the sub-sample sensitivity measured. Phase 5 — the
+econometrics — is no longer gated on anything in the pipeline.

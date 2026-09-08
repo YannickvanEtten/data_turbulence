@@ -39,6 +39,9 @@ check* (an independently predicted ratio), never as a verdict.
 | **Ko, H.-C. et al. (2023), *Atmos. Chem. Phys.* **23**, 12589** — retrieved 2026-09-08 | radiosonde-vs-ERA5 evidence on how vertical resolution damages shear and N² differently |
 | **Wong, H. L. et al. (2025), *JOSS* **10**(116), 9282** — on disk, previously unread | rojak's own paper: confirms it uses 175/200/225 hPa at 200 hPa, and that its methodology follows Williams & Storer (2022) |
 | **Williams, P. D. & Storer, L. N. (2022), *Q. J. R. Meteorol. Soc.* **148**, 1424–1438, Eqs. (1)–(7), pp. 1427–1428; Tables 1 and 2, p. 1431** — obtained 2026-09-08 | **the only paper in Williams' own lineage that writes these diagnostics as equations.** Settles frontogenesis and NCSU1; independently reproduces the thermodynamic/dynamical split; and reports a published coarse-vs-fine resolution experiment |
+| **Storer, Williams & Joshi (2017), *GRL* **44**, 9976–9984** — obtained 2026-09-08 | writes **no** equations ("the same basket of CAT diagnostics indices as Williams and Joshi (2013) and Williams (2017)"), but records that this lineage **dropped \|PV\| and used 20 diagnostics, not 21** — see §4.10 |
+| **Jaeger & Sprenger (2007), *JGR* **112**, D20106, Eq. (3)** — obtained 2026-09-08 | uses only four indicators (Ri, PV, N², TI) and defines **no** Brown index; its PV is the truncated `(1/ρ)(ζ+f)∂θ/∂z`, a third independent statement of the form A18 uses |
+| ~~Pearson & Sharman (2017), *JAMC* **56**, 339–351~~ — obtained 2026-09-08, **wrong paper** | this is **Part II** (nowcasting). It confirms an EDR remapping exists and cites Part I for it, but does not give it. **Part I** — Sharman & Pearson (2017), *JAMC* **56**, 317–337, "…Part I: Forecasting Nonconvective Turbulence" — is still the one needed |
 | Prosser et al. (2023), *GRL* **50**, e2023GL103814 | the study being replicated: levels, method, Fig. 4 |
 
 **Sources NOT on disk:**
@@ -642,6 +645,7 @@ Carried to §6.
 | **clipping** | None. See "variant". |
 | **inputs** | Brown1 (archived ζ + computed DEF) × locally computed Sv². |
 | **units** | **s⁻³** as implemented (Φ in s⁻¹ × Sv² in s⁻²). Williams Table 2 and W&J Table 1 both give **10⁻⁶ J kg⁻¹ s⁻¹ = 10⁻⁶ m² s⁻³**. A14 as printed cannot produce m² s⁻³ — it yields s⁻³. There is an **unstated length² factor** in the published units. The code keeps native s⁻³ and does not invent one. |
+| **checked 2026-09-08, still open** | Three further papers were searched for the missing length²: **Storer et al. (2017)** writes no equations; **Jaeger & Sprenger (2007)** uses four indicators and none of them is Brown's; **Pearson & Sharman (2017)** is Part II and only cites Part I for the EDR remapping. The gap is unchanged. The two candidates that could still close it are **Sharman & Pearson (2017) Part I**, *JAMC* **56**, 317–337 (where GTG's diagnostic-to-EDR remapping is described) and **Brown (1973)** itself. |
 | **verdict** | **MATCHES** Sharman A14, p. 283, as printed. The units disagreement with Williams/W&J is **AMBIGUOUS-IN-SOURCE**: A14 is dimensionally s⁻³ and the published tables are m² s⁻³, and nothing on disk supplies the missing L². Since an unknown *constant* L² cancels from every percentile, this is inert for the exceedance field and fatal only for magnitude comparison — which is how the code treats it. Correct handling; the ambiguity is real and belongs in the record. |
 
 ---
@@ -710,7 +714,22 @@ Carried to §6.
 | **clipping** | `np.abs`, specified by A18's `|PV|`. |
 | **inputs** | archived `pv`. |
 | **units** | ERA5 `pv` is K m² kg⁻¹ s⁻¹ (SI); Williams and W&J tabulate **PVU = 10⁻⁶ SI**. No conversion applied; a constant factor, inert for percentiles. |
-| **verdict** | **DIFFERS (defensibly)** from Sharman A18, p. 283: the implemented quantity is the full Ertel PV, not `−g ζₐ ∂θ/∂p`. Not a bug; an undocumented substitution. |
+| **verdict** | **DIFFERS (defensibly)** from Sharman A18, p. 283: the implemented quantity is the full Ertel PV, not `−g ζₐ ∂θ/∂p`. Not a bug; an undocumented substitution. A18's truncated form is stated three times independently — Sharman p. 283, Lee et al. (2023) Eq. 6 p. 3, and Jaeger & Sprenger (2007) Eq. (3) — so there is no doubt what the published diagnostic is. |
+
+**A finding that reframes this one rather than fixing it.** Storer, Williams &
+Joshi (2017), p. 2 states: "we calculate the same basket of CAT diagnostics
+indices as Williams and Joshi (2013) and Williams (2017), **except that we
+exclude the potential vorticity diagnostic because it was found to give
+unrealistic results**" — and they work with **20** diagnostics, not 21. So
+Williams' own group, in the paper sitting between W&J (2013) and Williams
+(2017), judged this diagnostic unreliable and dropped it. Prosser (2023) put it
+back. That is worth knowing before F3 is run: `magnitude_pv` is the one
+diagnostic in the set whose own originators removed it, it is the one that costs
+this replication its 17th significant trend (t = 1.97 against 2.021), and a
+large flip under F3 is at least as likely to be telling you something about the
+diagnostic as about this pipeline. **F3 still stands** — A18 is what Prosser
+must have computed, and matching his definition is the point — but the result
+should be read with Storer's sentence beside it.
 
 ---
 
@@ -1294,10 +1313,15 @@ been applied.
 * **Reaches:** 1 (`ncsu1`), the largest single disagreement in the table.
 * **Confidence:** this is a **measurement**, not a fix. A36 is transcribed
   verbatim (§4.19) and must not be "corrected".
-* **Proposed change:** add a diagnostic counter to `ncsu1()` recording the
-  fraction of cells where `ri.clip(min=1e-5)` binds, and export the mask, for
-  the year-2000 global calibration field and for the North Atlantic box
-  separately.
+* **IMPLEMENTED 2026-09-08** as `ada/ncsu1_floor_probe.py`. It reports the
+  cos φ-weighted fraction of cells where the floor binds, the fraction of those
+  that are convectively unstable, a latitude-band breakdown, and — the decisive
+  number — **the fraction of NCSU1's own p97 exceedance set that sits on the
+  floor**, with a printed verdict against the three thresholds below. Must be
+  run on a **global** file, because NCSU1 is calibrated on global percentiles.
+  On `era5_validation_subset.nc` (mid-latitude, summer, 2 timesteps) the floor
+  never binds at all — which is the expected null and confirms the instrument
+  reads zero correctly, nothing more.
 * **Confirming evidence and what each outcome means:** if the floor binds on
   ≳ 3 % of *global* cells, it alone sets the light threshold and the 6.07 is
   explained; if it binds on ≪ 1 %, candidate 1 of §5.6 is dead and the `|∇ζ|`

@@ -31,6 +31,7 @@ References: Sharman et al. (2006) Wea. Forecasting App. A; Williams & Joshi
 """
 from __future__ import annotations
 
+from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
 import numpy as np
@@ -44,6 +45,7 @@ from rojak.core.derivatives import (
 from rojak.turbulence.calculations import (
     altitude_derivative_on_pressure_level,
     potential_temperature as _potential_temperature,
+    potential_vorticity as _rojak_potential_vorticity,
 )
 from rojak.core.constants import GRAVITATIONAL_ACCELERATION
 from rojak.orchestrator.configuration import TurbulenceDiagnostics
@@ -56,6 +58,157 @@ from rojak.turbulence.diagnostic import DiagnosticFactory
 OMEGA   = 7.292115e-05        # Earth angular velocity  [s^-1]
 R_EARTH = 6371008.7714        # Earth mean radius       [m]
 G       = 9.80665             # gravity                 [m s^-2]
+
+# WGS84 equatorial radius. This is the radius pyproj's map scale factors are
+# defined against, and it is NOT R_EARTH. It matters in exactly one place --
+# the F1 metric-term fix below -- so it is defined here rather than reused
+# from R_EARTH, which would silently reintroduce a 0.1 % error.
+A_WGS84 = 6378137.0           # [m]
+
+
+# ===========================================================================
+# Audit fixes (AUDIT_diagnostics_vs_literature.md 2026-09-08) -- ALL OFF
+# ===========================================================================
+# Every flag below defaults to FALSE, i.e. to the behaviour that produced the
+# archived 42-year run. Nothing changes until a flag is deliberately switched
+# on, and the flag set that produced any output is recorded in that output's
+# attributes by ada/diagnostics_global.py. Turning one on is a scientific
+# decision, and each is justified by a citation, not by what it does to a plot.
+@dataclass(frozen=True)
+class FixSet:
+    """Which audit fixes are active for this computation.
+
+    meridional_metric (F1)
+        Audit 3.1. rojak's `nominal_grid_spacing` returns dy as the TRUE
+        geodesic meridional arc M(phi)*dphi, and `spatial_gradient` then also
+        multiplies by the meridional map-scale factor a/M(phi) -- a double
+        correction. dx does not have this problem because it is taken at the
+        equator, where it IS the map distance a*dlambda. Measured error on
+        d/dy: +0.4213 % at 30N falling to -0.2678 % at 75N, i.e. a monotone,
+        latitude-structured ~0.7 % tilt. Reaches 15 of the 21 through
+        spatial_gradient and vector_derivatives.
+        Fix: make dy the map distance a*dphi so a/M converts it correctly.
+        Pass/fail criterion: tests/test_metric_terms.py.
+
+    ubf_computed_vorticity (F2)
+        Audit 4.17 / 5.5. UBF is the residual of an EQUATION -- Koch &
+        Caracena (2002) 2 define it as "a pronounced residual in the computed
+        sum of the terms". Today the f*zeta term uses ERA5's archived
+        (spectrally derived) vorticity while 2J and grad^2(Phi) are 0.25 deg
+        finite differences, so the residual partly measures the difference
+        between two operators rather than atmospheric imbalance. Prosser
+        (2023) p. 2 lists only u, v, T and z as inputs, so all three of his
+        terms come from one operator.
+        Fix: build zeta from the same vector_derivatives call that builds J.
+
+    pv_sharman_a18 (F3)
+        Audit 4.10 / 5.5. ERA5's archived `pv` is the FULL Ertel PV; Sharman
+        (2006) A18, p. 283 defines PV = -g*zeta_a*dtheta/dp, the vertical term
+        only, and Prosser cannot have used anything else, having downloaded no
+        PV. Lee et al. (2023) Eq. 6, p. 3 writes the same truncated form.
+        Fix: compute A18 via rojak's own potential_vorticity(), which
+        implements it exactly and is currently unused.
+        WARNING, and this is a genuine two-sided prediction: A18 contains
+        dtheta/dp, so this fix moves magnitude_pv OUT of the no-vertical-
+        derivative group and INTO the 50 hPa stencil group (audit 5.3). It may
+        score WORSE against Prosser's panel (j). Keep A18 anyway -- it is his
+        definition -- but compute both and report both.
+
+    endlich_component_shear (F10)
+        Audit 4.14 / 5.3 / 6 F10. #14 is the ONLY one of the 21 whose vertical
+        derivative is not a plain finite difference: it routes through rojak's
+        `angles_gradient`, whose `_WrapAroundAngleArray.__sub__` returns the
+        SHORTER of |dpsi| and 2pi-|dpsi|. Under the flag, |dpsi/dz| is instead
+        computed in closed form from the wind components,
+
+            |dpsi/dz| = |u dv/dz - v du/dz| / (u^2 + v^2)
+
+        which is exact for the vector angle atan2(v,u) and therefore for the
+        meteorological direction too (they differ by a constant offset and a
+        sign). No arctangent, no 2pi seam, nothing to wrap.
+
+        These are NOT the same estimator and the difference is not small:
+        measured on era5_validation_subset.nc, rho = 0.9636, median relative
+        difference 14.6 %, and 69 % of the p97 exceedance set flips. rojak
+        takes the secant of the ANGLE across the 50 hPa layer; the closed form
+        takes the angle-rate implied by the secants of the COMPONENTS. Both are
+        defensible readings of "centred second-order finite differences"
+        (Williams & Storer 2022, p. 1428). NEITHER IS DECLARED WRONG HERE.
+        The reason to have both is empirical: W&S Table 1 p. 1431 ranks wind
+        speed x directional shear among their MOST resolution-robust
+        diagnostics, while this pipeline has it at a level ratio of 0.51
+        against Prosser -- so the stencil does not explain #14, and this is the
+        only other moving part it has.
+    """
+    meridional_metric: bool = False        # F1
+    ubf_computed_vorticity: bool = False   # F2
+    pv_sharman_a18: bool = False           # F3
+    endlich_component_shear: bool = False  # F10
+
+    def label(self) -> str:
+        on = [k for k in ("meridional_metric", "ubf_computed_vorticity",
+                          "pv_sharman_a18", "endlich_component_shear")
+              if getattr(self, k)]
+        return "+".join(on) if on else "baseline"
+
+    def as_attrs(self) -> dict:
+        return {"audit_fixes": self.label(),
+                "audit_fix_meridional_metric": int(self.meridional_metric),
+                "audit_fix_ubf_computed_vorticity": int(self.ubf_computed_vorticity),
+                "audit_fix_pv_sharman_a18": int(self.pv_sharman_a18),
+                "audit_fix_endlich_component_shear": int(self.endlich_component_shear)}
+
+
+BASELINE_FIXES = FixSet()
+
+
+@contextmanager
+def meridional_metric_patch(enabled: bool = True):
+    """F1. Patch rojak's `nominal_grid_spacing` so dy is the MAP distance
+    a*dphi rather than the true meridional arc M(phi)*dphi.
+
+    WHY THIS IS THE RIGHT PLACE TO PATCH. `spatial_gradient` builds the raw
+    derivative as np.gradient(f, cumsum(delta)) and then multiplies by a PROJ
+    scale factor. For x the raw delta is the equatorial geodesic a*dlambda --
+    the plate-carree MAP distance -- and parallel_scale = a/(N cos phi)
+    converts it exactly (verified: machine zero). For y the raw delta is the
+    GROUND distance M*dphi, which is already d/dy, and multiplying by
+    meridional_scale = a/M applies a second correction. Making dy the map
+    distance puts both axes in the same coordinate, after which each scale
+    factor does exactly one job.
+
+    Patching `nominal_grid_spacing` rather than `spatial_gradient` reaches
+    vector_derivatives too, because that calls spatial_gradient internally --
+    so deformation, the Jacobian and the spherical Laplacian are all covered
+    by one patch. Module-level name lookup makes this work.
+
+    Sign convention is preserved: np.diff on a descending latitude coordinate
+    gives negative dy, exactly as rojak's own azimuth flip does.
+
+    In-memory and reversible. Never leave this on implicitly -- it is gated by
+    FixSet.meridional_metric and recorded in the output attributes.
+    """
+    if not enabled:
+        yield False
+        return
+
+    import rojak.core.derivatives as _der
+
+    original = _der.nominal_grid_spacing
+
+    def _map_distance_spacing(latitude, longitude, units, geod=None):
+        spacing = original(latitude, longitude, units, geod=geod)
+        lat = np.asarray(latitude, dtype=float)
+        if lat.ndim != 1:
+            raise ValueError("meridional_metric_patch expects 1-D latitude")
+        dy_map = A_WGS84 * np.deg2rad(np.diff(lat))
+        return _der.GridSpacing(spacing.dx, dy_map)
+
+    _der.nominal_grid_spacing = _map_distance_spacing
+    try:
+        yield True
+    finally:
+        _der.nominal_grid_spacing = original
 
 
 # ===========================================================================
@@ -197,7 +350,55 @@ def prepare_for_rojak(ds: xr.Dataset) -> CATData:
     # Transpose to rojak's expected order
     ds = ds.transpose("latitude", "longitude", "time", "pressure_level")
 
+    _assert_grid_assumptions(ds)
+
     return CATData(ds, pressure_level_prefix=100.0)  # pressure_level in hPa
+
+
+def _assert_grid_assumptions(ds: xr.Dataset) -> None:
+    """F8 (audit 4.14, 3.5, 7 item 10). Two assumptions the pipeline relies on
+    silently. Both hold for every domain this project uses; both fail QUIETLY,
+    with a plausible-looking wrong answer, on a domain it does not.
+
+    1. UNIFORM PRESSURE LEVELS. rojak's Endlich/DirectionalShear wrap the
+       wind-direction difference through `_WrapAroundAngleArray.__sub__`, which
+       NumPy only calls when it has reduced the coordinate array to a scalar --
+       and it only does that when the spacing is uniform. On a non-uniform
+       vertical coordinate NumPy switches to the three-point weighted form
+       a*f + b*f + c*f, which contains no subtraction at all, and the
+       wrap-around silently stops working. 175/200/225 is uniform, so this is
+       currently correct; the assertion is what keeps it correct.
+
+    2. LATITUDE IN DEGREES, DETECTABLY. rojak's coriolis_parameter decides
+       degrees-versus-radians with `if latitude.max() > np.pi`. It uses max(),
+       not abs().max(), so ANY domain lying entirely south of about 3.14 N
+       would be read as radians and f would be wrong by a factor of ~57.
+       Global (max 90) and North Atlantic (max 60) are safe. A southern-
+       hemisphere box would not be, and nothing would say so.
+    """
+    levels = np.asarray(ds["pressure_level"].values, dtype=float)
+    if levels.size >= 3:
+        gaps = np.diff(levels)
+        if not np.allclose(gaps, gaps[0], rtol=1e-9, atol=1e-9):
+            raise ValueError(
+                f"prepare_for_rojak: pressure levels {levels.tolist()} are not "
+                f"uniformly spaced (gaps {gaps.tolist()}). rojak's Endlich / "
+                f"DirectionalShear angle wrap-around depends on NumPy reducing "
+                f"a uniform coordinate to a scalar; on a non-uniform grid it "
+                f"silently stops wrapping and #14 becomes wrong at the "
+                f"0/2pi seam. See AUDIT_diagnostics_vs_literature.md 4.14."
+            )
+
+    lat_max = float(np.asarray(ds["latitude"].values, dtype=float).max())
+    if lat_max <= 4.0:
+        raise ValueError(
+            f"prepare_for_rojak: max latitude is {lat_max} deg. rojak's "
+            f"coriolis_parameter tests `latitude.max() > pi` to decide whether "
+            f"its input is degrees or radians, so this domain would be read as "
+            f"RADIANS and f would be wrong by ~57x. Affects #5 brown1, #6 "
+            f"brown2, #17 ubf and #20 nva. See "
+            f"AUDIT_diagnostics_vs_literature.md 7 item 10."
+        )
 
 
 def _icao_altitude(p_hpa: np.ndarray) -> np.ndarray:
@@ -295,6 +496,7 @@ class DiagnosticFailure:
 
 def compute_rojak_diagnostics(
     catdata: CATData,
+    unsquare_deformation: bool = False,
 ) -> tuple[dict[str, xr.DataArray], list[DiagnosticFailure]]:
     """Run all 14 cleared rojak diagnostics. Returns
     ({short_key: DataArray}, [DiagnosticFailure, ...]).
@@ -379,6 +581,41 @@ def compute_rojak_diagnostics(
                   f"(shape={tuple(placeholder.shape)}, templated from "
                   f"'{template.name}'); will be excluded via skipna "
                   f"downstream (Q-INTEG-3), not counted as non-exceedance")
+
+    # -----------------------------------------------------------------------
+    # F4 (audit 4.9). rojak's DEF diagnostic is `DeformationSquared` -- it
+    # returns DEF^2 (s^-2), while Sharman A17 p. 283 and Williams (2017)
+    # Table 2 (10^-6 s^-1) both define DEF = (D_SH^2 + D_ST^2)^(1/2). The
+    # correction used to live in compute_all_21, which meant this function --
+    # a public entry point -- handed out DEF^2 under the name `deformation`
+    # to anyone who called it directly. Harmless for an exceedance field
+    # (squaring is monotone on a non-negative field, and `deformation`
+    # verifies at a level ratio of 0.999 against Prosser) but wrong the
+    # moment magnitudes are used, e.g. a GPD fit, whose tail index doubles
+    # under squaring.
+    #
+    # The convention now lives HERE, in one place, and is recorded in the
+    # attributes either way. Default False keeps the faithful-passthrough
+    # behaviour that tests/test_analytic.py::test_deformation_is_squared and
+    # tests/report_errors.py deliberately pin; compute_all_21 passes True.
+    if "deformation" in out:
+        _def = out["deformation"]
+        if unsquare_deformation:
+            _attrs = dict(_def.attrs)
+            _def = np.sqrt(np.abs(_def)).rename("deformation")  # abs: float noise only
+            _def.attrs.update(_attrs)                            # np.sqrt drops attrs
+            _def.attrs.update({
+                "long_name": "Total deformation",
+                "units": "s-1",
+                "sharman_eq": "A17",
+                "deformation_convention": "DEF (un-squared, Sharman A17 p. 283)",
+            })
+        else:
+            _def.attrs["deformation_convention"] = (
+                "DEF^2 (rojak DeformationSquared) -- NOT Sharman A17. "
+                "Call with unsquare_deformation=True for the published quantity."
+            )
+        out["deformation"] = _def
 
     return out, failures
 
@@ -473,6 +710,25 @@ def colson_panofsky(ds: xr.Dataset, ri_crit: float = 0.5) -> xr.DataArray:
     length_scale = alt.diff("pressure_level", label="upper")
     lvl = length_scale["pressure_level"]
 
+    # F8 (audit 4.3, 7 Q4). lambda comes from the ICAO standard atmosphere, so
+    # it is a function of pressure ALONE -- constant in space and time. That is
+    # what makes two known inconsistencies inert: (a) lambda is one 25 hPa gap
+    # while Sv^2 and N^2 are centred over the full 50 hPa stencil, and (b) the
+    # output is native m2 s-2 where Williams (2017) Table 2 tabulates 10^3 kt^2
+    # (1 m2 s-2 = 3.7785 kt^2). Both are pure multiplicative constants and
+    # cancel EXACTLY out of a percentile-calibrated exceedance field. The
+    # moment lambda is sourced from real geopotential thickness instead, it
+    # stops being constant and both stop being inert -- so this assertion is
+    # the tripwire for that change, not decoration.
+    if set(length_scale.dims) - {"pressure_level"}:
+        raise ValueError(
+            f"colson_panofsky: length scale lambda has dims "
+            f"{tuple(length_scale.dims)}, expected pressure_level only. A "
+            f"state-dependent lambda makes the stencil mismatch and the "
+            f"unit convention real rather than inert; see "
+            f"AUDIT_diagnostics_vs_literature.md 4.3."
+        )
+
     # Single consistent (full 3-level) stencil for BOTH terms -- computed
     # before any level selection, exactly like richardson()'s n2/sv_squared.
     du_dz = altitude_derivative_on_pressure_level(u, ds["geopotential"])
@@ -497,7 +753,8 @@ def colson_panofsky(ds: xr.Dataset, ri_crit: float = 0.5) -> xr.DataArray:
 # ---------------------------------------------------------------------------
 # #13 — UBF, residual of nonlinear balance equation  (Sharman A30)
 # ---------------------------------------------------------------------------
-def ubf(ds: xr.Dataset, target_level: int = 200) -> xr.DataArray:
+def ubf(ds: xr.Dataset, target_level: int = 200,
+        vorticity_source: str = "archived") -> xr.DataArray:
     r"""Unbalanced-flow diagnostic, Sharman (2006) A30 / Koch & Caracena (2002).
 
         UBF = | ∇²Φ − 2 J(u,v) − f ζ + β u |                        (A30)
@@ -529,10 +786,13 @@ def ubf(ds: xr.Dataset, target_level: int = 200) -> xr.DataArray:
 
     Units: s⁻².
     """
+    if vorticity_source not in ("archived", "computed"):
+        raise ValueError(f"ubf: vorticity_source must be 'archived' or "
+                         f"'computed', got {vorticity_source!r}")
+
     u    = _sel_level(ds, "eastward_wind", target_level)
     v    = _sel_level(ds, "northward_wind", target_level)
     phi  = _sel_level(ds, "geopotential", target_level)
-    zeta = _sel_level(ds, "vorticity", target_level)
 
     lat_rad = np.deg2rad(ds["latitude"])
     f    = (2 * OMEGA * np.sin(lat_rad)).broadcast_like(u.isel(time=0))
@@ -576,6 +836,26 @@ def ubf(ds: xr.Dataset, target_level: int = 200) -> xr.DataArray:
     dv_dy = vd[VelocityDerivative.DV_DY]
     jac = du_dx * dv_dy - du_dy * dv_dx
 
+    # F2 (audit 4.17, 5.5). Koch & Caracena (2002) 2 define UBF as the
+    # residual in "the computed sum of the terms in the nonlinear balance
+    # equation". A residual of near-cancelling terms is the worst possible
+    # place to mix two derivative operators: ERA5's archived vorticity is
+    # spectrally derived and carries small-scale power that a 0.25 deg centred
+    # difference cannot represent, while 2J and grad^2(Phi) here ARE 0.25 deg
+    # centred differences. Under "computed", zeta is built from the SAME
+    # vector_derivatives call as the Jacobian, so all three terms share one
+    # geometry and the residual measures imbalance rather than the difference
+    # between two vorticity estimates. Prosser (2023) p. 2 downloaded only
+    # u, v, T and z, so his three terms necessarily share one operator.
+    if vorticity_source == "computed":
+        vd_zeta = vector_derivatives(
+            u, v, "deg",
+            components=[VelocityDerivative.DV_DX, VelocityDerivative.DU_DY])
+        zeta = (vd_zeta[VelocityDerivative.DV_DX]
+                - vd_zeta[VelocityDerivative.DU_DY])
+    else:
+        zeta = _sel_level(ds, "vorticity", target_level)
+
     residual = d2phi - 2 * jac - f * zeta + beta * u
     out = np.abs(residual).rename("ubf")
     out.attrs.update({
@@ -583,6 +863,7 @@ def ubf(ds: xr.Dataset, target_level: int = 200) -> xr.DataArray:
         "units": "s-2",
         "sharman_eq": "A30",
         "note": "residual form; true Laplacian; beta=2*Omega*cos(phi)/R",
+        "vorticity_source": vorticity_source,
     })
     return out
 
@@ -640,32 +921,53 @@ F2D_VARIANTS = {
     "D": "-D/Dt[sqrt(Q)]      literal A9 including the |dv/dtheta|^-1 normalisation",
 }
 
-# DEFAULT CHANGED A -> C ON 2026-08-30. FORMULA_AUDIT.md 10.4 and the note in
-# frontogenesis_isentropic below. Three independent lines put it beyond doubt,
-# the decisive one being a figure rather than an equation:
+# DEFAULT CHANGED C -> A ON 2026-09-08, SUPERSEDING THE 2026-08-30 CHANGE.
 #
-#   1. Williams (2017) Fig. 1 plots the frontogenesis histogram on 0..300
-#      x10^-9 m^2 s^-3 K^-2, anchored at exactly zero and decaying from an
-#      18 % first bin. The same figure plots Negative Richardson on -300..0
-#      and Colson-Panofsky on -45..-25, so Williams does show signed
-#      diagnostics on their true negative ranges -- frontogenesis is simply
-#      not one of them. The smooth decay from a finite first bin is the
-#      density of |X| for a signed X; a clipped max(X,0) would put a ~50 %
-#      point mass in that bin instead.
-#   2. Measured p97/median: variant A 754, variant C 22.7, published 13.6.
-#      Only C is in family with the other twenty diagnostics.
-#   3. Sharman Table B1's units (m^2 s^-3 K^-2) require the un-normalised
-#      form, which A, B and C all satisfy and D does not.
+# THE 2026-08-30 REASONING IS NOW WITHDRAWN. It set the default to C on three
+# indirect arguments -- the 0..300 x-axis of Williams (2017) Fig. 1, a measured
+# p97/median of 22.7 for C against a published 13.6, and Sharman Table B1's
+# units. None of those is an equation, and an equation has since turned up.
 #
-# This also DISSOLVES the sign question that opened the whole investigation:
-# under a magnitude, A9's leading minus is irrelevant. That is presumably why
-# Sharman's printed inconsistency between A9's two sides never mattered
-# operationally.
+#   Williams & Storer (2022), Q. J. R. Meteorol. Soc. 148, 1424-1438,
+#   Eq. (3), p. 1427:
 #
-# Anything computed before this date used A. The variant is recorded in each
-# output's attributes, so a zarr can always be traced to the reading that
-# produced it, and `--f2d-variant A` reproduces the old behaviour exactly.
-F2D_DEFAULT_VARIANT = "C"
+#       F_theta = D/Dt |du/dtheta|^2
+#
+#   "where t is time, D/Dt denotes the Lagrangian time derivative, and the
+#   partial derivative is taken at fixed horizontal position using potential
+#   temperature as a vertical coordinate."
+#
+# Since u = (u, v), |du/dtheta|^2 is exactly Q. So the published diagnostic is
+# D/Dt[Q]: SIGNED, un-normalised, with no leading minus, no absolute value and
+# no clip. That is variant A, up to the constant 1/2 which cannot change a
+# rank. This is the only place in the replicated lineage where this diagnostic
+# is written as an equation, it is by Williams himself, it is one year before
+# Prosser (2023), and Williams is a co-author of Prosser. A written equation
+# from that lineage outranks an inference from a figure's axis limits.
+#
+# WHAT THIS DOES NOT EXPLAIN, AND MUST NOT BE QUIETLY DROPPED. Williams (2017)
+# Fig. 1 really does plot this diagnostic on 0..300 x10^-9, anchored at zero,
+# in a figure where Negative Richardson runs -300..0 and Colson-Panofsky runs
+# -45..-25 -- so Williams does plot signed diagnostics on negative axes, and
+# this one is not among them. And Williams (2017) Table 2's p97 over Williams &
+# Joshi (2013) Table 1's median is 13.6, which a material derivative centred
+# near zero in a statistically stationary atmosphere cannot produce. THAT IS AN
+# INCONSISTENCY BETWEEN TWO WILLIAMS PAPERS, not an ambiguity in this project's
+# reading of one, and it belongs in any write-up.
+#
+# CONSEQUENCES OF THIS LINE. (1) Every zarr written before 2026-09-08 holds
+# variant C under the name `f2d`; ada/diagnostics_global.py's
+# existing_output_matches() compares the recorded f2d_variant and will treat
+# those as stale rather than silently reusing them, which is the intended
+# behaviour. (2) `--f2d-variant C` reproduces the archived run exactly. (3) The
+# empirical check is ada/ab_compare.py with --f2d-variant-baseline C
+# --f2d-variant-variant A: Prosser's Fig. 4 panel (d) is FLAT (+0.3 %, p = 1.0)
+# where C gives +26 %, so if A reproduces a flat insignificant trend the
+# equation and the replication agree and the matter closes.
+#
+# The variant is recorded in each output's attributes, so any zarr can always
+# be traced to the reading that produced it.
+F2D_DEFAULT_VARIANT = "A"
 
 
 def frontogenesis_isentropic(ds: xr.Dataset, target_level: int = 200,
@@ -725,13 +1027,14 @@ def frontogenesis_isentropic(ds: xr.Dataset, target_level: int = 200,
     `ada/check_f2d_variants.py` measured which one reproduces the published
     distribution.
 
-    **RESOLVED 2026-08-30: the answer is C, and the default is now C.**
-    Williams (2017) Figure 1 plots this diagnostic's histogram on 0..300,
-    anchored at zero and decaying from an 18 % first bin, in the same figure
-    where Negative Richardson runs -300..0 and Colson-Panofsky -45..-25. It is
-    a magnitude, not a signed tendency. Measured p97/median confirms it:
-    A 754, C 22.7, published 13.6. See the note on F2D_DEFAULT_VARIANT above
-    and FORMULA_AUDIT.md 10.4.
+    **RESOLVED 2026-09-08: the answer is A, and the default is now A.**
+    Williams & Storer (2022) Eq. (3), p. 1427 states the diagnostic outright as
+    F_theta = D/Dt |du/dtheta|^2 -- signed, un-normalised, no absolute value,
+    no clip. That is variant A up to the constant 1/2. It supersedes the
+    2026-08-30 switch to C, which rested on Williams (2017) Fig. 1's axis
+    limits and a p97/median ratio rather than on an equation. The tension with
+    that figure is real and unresolved; see the note on F2D_DEFAULT_VARIANT
+    above and AUDIT_diagnostics_vs_literature.md 4.4, 6 F6 and 7 Q2.
 
     Args:
         variant: one of F2D_VARIANTS.
@@ -878,6 +1181,110 @@ def ncsu1(ds: xr.Dataset, target_level: int = 200, ri_floor: float = 1e-5) -> xr
 
 
 # ---------------------------------------------------------------------------
+# #1 (W&J) / #10 (Williams 2017) — |PV| from Sharman A18, not ERA5's archive
+# ---------------------------------------------------------------------------
+def magnitude_pv_a18(ds: xr.Dataset) -> xr.DataArray:
+    r"""|PV| with PV as Sharman (2006) A18 defines it, p. 283:
+
+        PV = -g (zeta + f) dtheta/dp                                   (A18)
+
+    F3 (audit 4.10, 5.5). The shipped path takes ERA5's ARCHIVED `pv`, which
+    is the FULL Ertel PV -- it includes the horizontal-vorticity x
+    horizontal-theta-gradient contributions that A18 drops. Those two are
+    different fields, and they differ most where the horizontal vorticity and
+    the horizontal theta gradient are largest, i.e. in the jet, i.e. in the
+    diagnostic's own upper tail. Prosser (2023) p. 2 downloaded only u, v, T
+    and z, so A18 (or Lee et al. 2023 Eq. 6, its hydrostatic equivalent) is
+    the only form he can have used.
+
+    Computed through rojak's own `potential_vorticity`, which transcribes A18
+    exactly and which no rojak diagnostic currently calls -- so this is a
+    re-use of verified code, not a second implementation of it.
+
+    NOTE THE TRADE, and do not treat it as a free win: A18 contains dtheta/dp,
+    so this moves #10 out of the no-vertical-derivative group and into the
+    50 hPa stencil group (audit 5.3), where the median level ratio against
+    Prosser is 0.50 rather than 0.93. It may verify WORSE. It is still his
+    definition. Compute both, report both, keep A18.
+
+    Units: rojak's potential_vorticity() differentiates theta with respect to
+    `pressure_level`, which this project carries in hPa, so the result is 100x
+    the SI value (K m2 kg-1 s-1) -- and Williams and W&J tabulate PVU = 1e-6 SI
+    on top of that. Both are CONSTANT factors: inert for a percentile
+    calibration, and deliberately not applied. Do not compare this magnitude
+    with a published PVU number without putting both factors back.
+    """
+    theta = _potential_temperature(ds["temperature"],
+                                  ds["temperature"]["pressure_level"])
+    pv = _rojak_potential_vorticity(ds["vorticity"], theta)
+    out = np.abs(pv).rename("magnitude_pv")
+    out.attrs.update({
+        "long_name": "Magnitude of potential vorticity (Sharman A18)",
+        "units": "K m2 kg-1 s-1",
+        "sharman_eq": "A18",
+        "pv_source": "computed_a18",
+        "note": "-g*(zeta+f)*dtheta/dp via rojak potential_vorticity(); "
+                "NOT ERA5's archived full Ertel pv",
+    })
+    return out
+
+
+# ---------------------------------------------------------------------------
+# #14 (Williams 2017 order) — Endlich with a closed-form directional shear
+# ---------------------------------------------------------------------------
+def endlich_component_shear(ds: xr.Dataset) -> xr.DataArray:
+    r"""Wind speed x directional shear, Sharman (2006) A25 p. 283 and
+    Williams & Storer (2022) Eq. (5) p. 1427:
+
+        |v| |dpsi/dz|
+
+    computed WITHOUT ever forming the angle (F10; audit 4.14, 6 F10).
+
+    For the vector angle alpha = atan2(v, u),
+
+        d(alpha)/dz = (u dv/dz - v du/dz) / (u^2 + v^2)
+
+    exactly. The meteorological wind direction psi differs from alpha by a
+    constant offset and a sign, so |dpsi/dz| = |d(alpha)/dz|. Multiplying by
+    the speed sqrt(u^2 + v^2) collapses the whole diagnostic to
+
+        |v| |dpsi/dz| = |u dv/dz - v du/dz| / sqrt(u^2 + v^2)
+
+    with no arctangent, no branch cut and no 2pi seam to wrap.
+
+    This is an ALTERNATIVE to rojak's `angles_gradient`, not a correction of
+    it. rojak differences the angle itself across the layer (a secant of psi);
+    this differences the components and forms the angle-rate analytically. They
+    agree only in the limit of small turning across the stencil, and on real
+    data at 50 hPa they do not: rho = 0.9636, median relative difference
+    14.6 %, 69 % of the p97 exceedance set flips. Which one Williams' pipeline
+    uses is not stated anywhere -- W&S p. 1428 says only "centred second-order
+    finite differences", which describes both. See audit 6 F10 for the
+    experiment that decides it against Prosser's panel (n).
+
+    Units: m s-1 x rad s-1 (the published "10^-3 rad s-1" label in Williams
+    2017 Table 2 and W&J Table 1 is dimensionally incomplete -- audit 4.14).
+    """
+    u = ds["eastward_wind"]
+    v = ds["northward_wind"]
+    du_dz = altitude_derivative_on_pressure_level(u, ds["geopotential"])
+    dv_dz = altitude_derivative_on_pressure_level(v, ds["geopotential"])
+
+    speed = np.hypot(u, v)
+    out = np.abs(u * dv_dz - v * du_dz) / xr.where(speed > 0, speed, np.nan)
+    out = out.rename("endlich")
+    out.attrs.update({
+        "long_name": "Wind speed x directional shear (closed-form)",
+        "units": "m s-2",
+        "sharman_eq": "A25",
+        "directional_shear_method": "component_closed_form",
+        "note": "|u dv/dz - v du/dz| / |v|; no arctangent, no 2pi wrap. "
+                "Alternative to rojak angles_gradient, not a correction of it.",
+    })
+    return out
+
+
+# ---------------------------------------------------------------------------
 # #12 — Relative vorticity advection magnitude  (not in rojak)
 # ---------------------------------------------------------------------------
 def rva(ds: xr.Dataset, target_level: int = 200) -> xr.DataArray:
@@ -941,6 +1348,30 @@ def brown2(ds: xr.Dataset, brown1: xr.DataArray) -> xr.DataArray:
 def compute_all_21(
     catdata: CATData, target_level: int = 200,
     f2d_variant: str = F2D_DEFAULT_VARIANT,
+    fixes: FixSet = BASELINE_FIXES,
+) -> tuple[dict[str, xr.DataArray], list[DiagnosticFailure]]:
+    """Public entry point. Applies `fixes` and delegates.
+
+    F1 has to be a patch rather than an argument, because the quantity it
+    corrects (`nominal_grid_spacing`) is reached from inside rojak's own
+    diagnostics, not just from this module's code. Scoping it to a context
+    manager here means it covers every one of the 21 for the duration of the
+    call and nothing outside it -- and that the archived behaviour is exactly
+    `fixes=BASELINE_FIXES`, which is the default.
+    """
+    with meridional_metric_patch(enabled=fixes.meridional_metric):
+        out, failures = _compute_all_21_inner(
+            catdata, target_level=target_level, f2d_variant=f2d_variant,
+            fixes=fixes)
+    for _da in out.values():
+        _da.attrs.update(fixes.as_attrs())
+    return out, failures
+
+
+def _compute_all_21_inner(
+    catdata: CATData, target_level: int = 200,
+    f2d_variant: str = F2D_DEFAULT_VARIANT,
+    fixes: FixSet = BASELINE_FIXES,
 ) -> tuple[dict[str, xr.DataArray], list[DiagnosticFailure]]:
     """Compute all 21 diagnostics: 14 from rojak, 7 hand-written.
 
@@ -969,7 +1400,7 @@ def compute_all_21(
     """
     ds = catdata._dataset
 
-    out, failures = compute_rojak_diagnostics(catdata)
+    out, failures = compute_rojak_diagnostics(catdata, unsquare_deformation=True)
 
     # -----------------------------------------------------------------------
     # #8 DEFORMATION -- persist DEF, not DEF^2   (FORMULA_AUDIT.md §5)
@@ -996,28 +1427,16 @@ def compute_all_21(
     # `magnitude_of_vector(..., is_squared=False)` -- already un-squared.
     # Verified by reading rojak at the pinned rev 25b8685, and pinned by
     # tests/test_analytic.py::TestDeformationFamily.
-    if "deformation" in out:
-        _def_squared = out["deformation"]
-        _def = np.sqrt(np.abs(_def_squared)).rename("deformation")
-        _def.attrs.update(dict(_def_squared.attrs))     # np.sqrt drops attrs
-        _def.attrs.update({
-            "long_name": "Total deformation",
-            "units": "s-1",
-            "sharman_eq": "A17",
-            "note": "sqrt of rojak's DeformationSquared, so this is DEF not "
-                    "DEF^2 (FORMULA_AUDIT.md 5). abs() guards float noise "
-                    "only -- rojak's value is non-negative by construction. "
-                    "Zarr written before 2026-08-29 holds DEF^2 under this "
-                    "name; exceedance fields are unaffected, magnitudes are "
-                    "not.",
-        })
-        out["deformation"] = _def
+    # F4: the un-squaring now happens inside compute_rojak_diagnostics, which
+    # is called above with unsquare_deformation=True. One place, not two.
 
     brown1 = DiagnosticFactory(catdata).create(TurbulenceDiagnostics.BROWN1).computed_value
     builders = {
         "negative_richardson": lambda: richardson(ds, negative=True),
         "colson_panofsky":     lambda: colson_panofsky(ds),
-        "ubf":                 lambda: ubf(ds, target_level=target_level),
+        "ubf":                 lambda: ubf(ds, target_level=target_level,
+                                           vorticity_source=("computed" if fixes.ubf_computed_vorticity
+                                                             else "archived")),
         "f2d":                 lambda: frontogenesis_isentropic(ds, target_level=target_level, variant=f2d_variant),  # Q-UNITS-1 caught this: Q-F2D-5 added the isentropic A9 impl and wired it into 4_verify.py's hand-dict, but never updated THIS dispatch (used by 3_pipeline.py/cat_pipeline.py) -- was still silently calling the old Miller-form frontogenesis_2d()
         "ncsu1":               lambda: ncsu1(ds, target_level=target_level),
         "rva_magnitude":       lambda: rva(ds, target_level=target_level),
@@ -1025,6 +1444,17 @@ def compute_all_21(
     }
     for key, builder in builders.items():
         out[key] = builder().rename(key)
+
+    # F3: replace rojak's |archived Ertel PV| with |A18|. Done here rather than
+    # in `builders` because #10 is a ROJAK diagnostic in the baseline -- the
+    # fix substitutes it, it does not add one.
+    if fixes.pv_sharman_a18:
+        out["magnitude_pv"] = magnitude_pv_a18(ds).rename("magnitude_pv")
+
+    # F10: same pattern -- #14 is a rojak diagnostic in the baseline, so the
+    # flag SUBSTITUTES it rather than adding one.
+    if fixes.endlich_component_shear:
+        out["endlich"] = endlich_component_shear(ds).rename("endlich")
 
     for k, da in list(out.items()):
         if "pressure_level" in da.dims:

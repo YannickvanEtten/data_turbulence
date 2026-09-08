@@ -1609,6 +1609,66 @@ data, flipping verdict on rounding. The script now prints the statistic and no
 verdict. §12.8's rule applies to this project's own tooling: report an
 interval, do not automate a judgement.
 
+#### 15.6a CONFIRMED across all four seasons and both severities (2026-09-08)
+
+`jobs/21` was run for MAM, JJA, SON and for SOG at Annual and DJF, giving seven
+independent fits. They settle both questions.
+
+**`horizontal_divergence` has no trend, anywhere.**
+
+| run | change | 95 % CI | t | |
+|---|---|---|---|---|
+| DJF MOG | +10 % | [−6, +26] | 1.26 | not sig |
+| MAM MOG | +20 % | [−3, +44] | 1.74 | not sig |
+| JJA MOG | **−9 %** | [−23, +5] | −1.28 | not sig |
+| SON MOG | **−2 %** | [−16, +12] | −0.32 | not sig |
+| Annual MOG | +5 % | [−5, +16] | 0.99 | not sig |
+| DJF SOG | +9 % | [−13, +31] | 0.84 | not sig |
+| Annual SOG | +6 % | [−7, +20] | 0.91 | not sig |
+
+**Not significant in 0 of 7 runs, R² between 0.00 and 0.04 throughout, and the
+point estimate is NEGATIVE in two seasons** — the only negative trend anywhere
+in the ensemble.
+
+**And sparseness does not explain it.** The decisive comparison is two
+diagnostics at effectively the same exceedance level in the Annual SOG fit:
+
+| | 1979 level | change | t |
+|---|---|---|---|
+| `horizontal_divergence` | 0.099 % | **+6 %** | **0.91** |
+| `vorticity_squared` | 0.098 % | **+73 %** | **6.68** |
+
+Same level, same sample size, same 42 years. One has the strongest trend in the
+set, the other has none. Whatever is going on with `horizontal_divergence` is a
+property of the field, not of its sample. It is also **the only diagnostic that
+is purely ERA5's own archived divergence**, and divergence at 200 hPa is weakly
+observation-constrained and largely model-determined in reanalysis — which is
+the §5 risk 3 exposure (observing-system changes across 1979–2020). Still a
+hypothesis; now a well-supported one.
+
+**`ubf` is cleared.** Across the same seven runs it is significant in 2
+(MAM +49 %, Annual MOG +20 %), spans **+6 % to +49 %**, and at Annual SOG sits
+19th of 21 on level — genuinely sparse, so wide intervals are expected. It
+behaves like a noisy sparse diagnostic, not an anomalous one. **§7 should drop
+it from the top of the list.**
+
+**A third strike against §12.6: its anti-correlation is not robust — it
+reverses.** Spearman(level, change) is **−0.43 at Annual MOG** but **+0.34 at
+Annual SOG**. §12.6 read the MOG pattern as a coherent mechanism (tail
+convexity: sparser diagnostics show larger relative change), and §12.5 leaned
+on the same idea. A relationship that flips sign between two severities of the
+same fit is not a mechanism. At SOG the sparse diagnostics have small point
+estimates with enormous intervals (`f2d` +25 % [−52, +102], `negative_richardson`
++18 % [−69, +105]) — consistent with noise, not with convexity.
+
+**Note on the logs.** The overnight runs pre-date the removal of the automated
+`ubf` verdict, so their closing lines disagree with each other — "REMAINS
+anomalous" on JJA and Annual-SOG, "NOT distinguishable" on MAM, SON and
+DJF-SOG. That inconsistency across runs of the same data is itself the evidence
+for removing it, which the current `ada/per_diagnostic_trend.py` does. **Ignore
+those lines; read the table.**
+
+
 ### 15.7 Operational findings — each of these cost real time
 
 Add to §11.9's list. All measured this session.
@@ -1713,8 +1773,12 @@ though the ITvO question is still unasked.
 5. **The ITvO email** — `unlimited` QOS, retention/backup policy, and the
    group's actual allocation and current usage. All three need the same
    contact and none is answerable from public documentation (§14.6).
-6. **`horizontal_divergence`** (§15.6) — new, low priority, "understand it"
-   rather than "suspect it".
+6. **`horizontal_divergence`** (§15.6a) — **promoted.** Zero trend in 0/7
+   fits, negative in two seasons, and not explicable by sparseness. The
+   testable next step is §5 risk 3: check whether its 42-year series has a
+   discontinuity where ERA5's observing system changes (satellite instruments
+   entering the assimilation stream). The per-year series is already on disk in
+   `cat_outputs/per_diagnostic_*_series.csv` — this needs a plot, not a job.
 
 ### 15.11 CLOSED — the re-run on the full-year thresholds. Job `1101414`
 

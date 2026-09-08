@@ -168,8 +168,9 @@ def fit_summary(years: np.ndarray, rate: np.ndarray) -> dict:
 # input
 # --------------------------------------------------------------------------
 
-def read_series(path: Path) -> tuple[np.ndarray, dict[str, np.ndarray]]:
+def read_series(path) -> tuple[np.ndarray, dict[str, np.ndarray]]:
     """Read a *_series.csv into (years, {column: values})."""
+    path = Path(path)
     with path.open() as fh:
         rows = list(csv.DictReader(fh))
     if not rows:
@@ -183,8 +184,9 @@ def read_series(path: Path) -> tuple[np.ndarray, dict[str, np.ndarray]]:
     return years, data
 
 
-def read_fit(path: Path) -> dict[str, dict]:
+def read_fit(path) -> dict[str, dict]:
     """Read the companion fit CSV, if it is there. Returns {} if not."""
+    path = Path(path)
     if not path.exists():
         return {}
     with path.open() as fh:
@@ -301,6 +303,177 @@ def figure_per_diagnostic(years, data, season, severity, figdir, fig_id):
 
 
 # --------------------------------------------------------------------------
+# the per-diagnostic comparison itself — shared by the script and the notebook
+# so the two can never disagree about the same run
+# --------------------------------------------------------------------------
+
+def compare_to_prosser(years, data, published, stencil, ylims=None):
+    """One row per diagnostic: ours, his, the ratios, and transparent flags.
+
+    NO SCORE AND NO VERDICT. §12.8's lesson, applied to this project's own
+    tooling: report the statistic and let a human read it. The flags below are
+    plain thresholds, each one checkable by eye against the columns beside it.
+
+      LEVEL  our 1979 exceedance level is more than 2x from his either way.
+             This is the one that carries information about the FORMULA.
+             Thresholds are percentiles of our own data, so a constant scale
+             error - units, resolution, any uniform bias - cancels exactly out
+             of the exceedance field (STATUS §5 point 5) and CANNOT move this.
+      TREND  the fitted relative change is more than 2x from his, counted only
+             where his own trend is big enough for a ratio to mean anything.
+      SIG    we and he disagree on significance at p = 0.05.
+      AXIS   our data does not fit on his published y axis, materially: the
+             fitted line leaves it, or more than a tenth of the points do.
+             His limits are read off a figure, so smaller overhangs are noise.
+    """
+    rows = []
+    for name, (panel, title, rel, abs_, p, lvl) in published.items():
+        f = fit_summary(years, data[name])
+        our_rel = f["rel"] * 100.0
+        our_lvl = f["y0"] * 100.0
+        our_p = pvalue(f["fit"]["t"], f["fit"]["df"])
+        level_ratio = our_lvl / lvl if lvl else float("nan")
+        trend_ratio = our_rel / rel if rel else float("nan")
+
+        flags = []
+        if not (0.5 <= level_ratio <= 2.0):
+            flags.append("LEVEL")
+        if abs(rel) > 5 and not (0.5 <= trend_ratio <= 2.0):
+            flags.append("TREND")
+        if f["significant"] != (p < 0.05):
+            flags.append("SIG")
+        if ylims is not None:
+            vals = data[name] * 100.0
+            lo, hi = ylims[name]
+            n_out = int(((vals < lo) | (vals > hi)).sum())
+            fit_out = not (lo <= f["y0"] * 100 <= hi
+                           and lo <= f["y1"] * 100 <= hi)
+            if fit_out or n_out > 0.1 * len(vals):
+                flags.append("AXIS")
+
+        rows.append(dict(
+            diagnostic=name, panel=panel, prosser_title=title,
+            uses_vertical_stencil=stencil[name],
+            ours_change_pct=our_rel, prosser_change_pct=rel,
+            trend_ratio=trend_ratio,
+            ours_ci_lo_pct=f["lo"] * 100, ours_ci_hi_pct=f["hi"] * 100,
+            ours_level_1979_pct=our_lvl, prosser_level_1979_pct=lvl,
+            level_ratio=level_ratio,
+            ours_abs_pct_per_yr=f["fit"]["slope"] * 100,
+            prosser_abs_pct_per_yr=abs_,
+            ours_t=f["fit"]["t"], ours_p=our_p, prosser_p=p,
+            ours_significant=f["significant"], prosser_significant=p < 0.05,
+            flags=" ".join(flags), n_flags=len(flags)))
+    rows.sort(key=lambda r: (-r["n_flags"], r["panel"]))
+    return rows
+
+
+# --------------------------------------------------------------------------
+# side-by-side layout: his order, his titles, his axes, both sets of numbers
+# --------------------------------------------------------------------------
+
+def pvalue(t: float, df: int) -> float:
+    """Two-sided p for a t statistic. scipy if present, else a normal approx."""
+    try:
+        from scipy import stats  # noqa: PLC0415
+        return float(2 * stats.t.sf(abs(t), df))
+    except Exception:
+        z = abs(t)
+        return float(math.erfc(z / math.sqrt(2)))
+
+
+def _fmt_p(p: float) -> str:
+    if p >= 0.01:
+        return f"{p:.2g}"
+    return f"{p:.0e}".replace("e-0", "e-")
+
+
+def figure_prosser_layout(years, data, figdir, published, ylims,
+                          match_axes: bool = True):
+    """Our 21 panels in Prosser's Figure 4 layout, for direct comparison.
+
+    His figure fills 7 rows x 3 columns COLUMN-MAJOR: (a)-(g) down the first
+    column, (h)-(n) the second, (o)-(u) the third. Same order here, same
+    titles, and — when match_axes — the same y limits, so the two figures can
+    be laid side by side and read panel for panel.
+
+    Under each panel, two lines: his printed rel/abs/p, then ours computed the
+    same way. `abs` is the slope in percentage points per year, which is what
+    his caption says his is.
+
+    A panel whose data will not fit on his axis is flagged in red with our
+    actual range. That is a finding, not a plotting failure: it means the
+    LEVEL disagrees, and where the whole panel is off scale it belongs on the
+    investigate list.
+    """
+    import matplotlib.pyplot as plt
+
+    order = sorted(published, key=lambda k: published[k][0])   # a..u
+    ncol, nrow = 3, 7
+    fig, axes = plt.subplots(nrow, ncol, figsize=(16.5, 26), squeeze=False)
+
+    offscale = {}
+    for i, name in enumerate(order):
+        ax = axes[i % nrow][i // nrow]                          # column-major
+        panel, title, rel, abs_, p, lvl = published[name]
+        s = fit_summary(years, data[name])
+        _panel(ax, years, data[name], s, "", compact=True)
+        ax.set_title(f"{title}\n({panel})", fontsize=9, linespacing=1.3)
+
+        vals = data[name] * 100.0
+        lo, hi = ylims[name]
+        n_out = int(((vals < lo) | (vals > hi)).sum())
+        fit_out = not (lo <= s["y0"] * 100 <= hi and lo <= s["y1"] * 100 <= hi)
+        if match_axes:
+            ax.set_ylim(lo, hi)
+        if n_out:
+            offscale[name] = dict(n_out=n_out, fit_out=fit_out,
+                                  ours=(float(vals.min()), float(vals.max())),
+                                  his=(lo, hi))
+            # His y limits were read off a rendered figure, so a point or two
+            # over the edge means nothing. Only flag a MATERIAL disagreement:
+            # the fitted line off scale, or more than a tenth of the points.
+            material = fit_out or n_out > 0.1 * len(vals)
+            if match_axes and material:
+                severity = ("ENTIRELY OFF SCALE" if n_out == len(vals)
+                            else f"{n_out}/{len(vals)} points off scale")
+                ax.text(0.5, 0.5, f"{severity}\nours {vals.min():.3f}–{vals.max():.3f}",
+                        transform=ax.transAxes, ha="center", va="center",
+                        fontsize=8.5, color=RED, weight="bold",
+                        bbox=dict(fc="white", ec=RED, alpha=0.85, lw=0.8))
+
+        our_abs = s["fit"]["slope"] * 100.0
+        our_p = pvalue(s["fit"]["t"], s["fit"]["df"])
+        ax.text(0.0, -0.30,
+                f"his   rel={rel:+.1f}   abs={abs_:+.3f}   p={_fmt_p(p)}",
+                transform=ax.transAxes, fontsize=8.5, family="monospace",
+                color="#333333")
+        ax.text(0.0, -0.42,
+                f"ours  rel={s['rel'] * 100:+.1f}   abs={our_abs:+.3f}   "
+                f"p={_fmt_p(our_p)}",
+                transform=ax.transAxes, fontsize=8.5, family="monospace",
+                color=BLUE if abs(s["rel"] * 100 - rel) < 10 else RED)
+
+    axis_note = ("drawn on HIS y axes" if match_axes else "drawn on OUR y axes")
+    fig.suptitle(
+        "Prosser (2023) Figure 4 — his layout, his titles, "
+        f"{axis_note}\n"
+        "blue crosses: our 42 annual values · red crosses: our fitted 1979 and "
+        "2020 · solid green: significant at p=0.05\n"
+        "under each panel: his printed rel/abs/p, then ours "
+        "(rel = % change 1979→2020, abs = slope in %/yr)",
+        fontsize=12, y=0.997)
+    fig.tight_layout(rect=(0, 0, 1, 0.972), h_pad=5.2)
+
+    suffix = "his_axes" if match_axes else "our_axes"
+    out = figdir / f"fig4_prosser_layout_{suffix}.png"
+    fig.savefig(out, dpi=170)
+    fig.savefig(out.with_suffix(".pdf"))
+    plt.close(fig)
+    return out, offscale
+
+
+# --------------------------------------------------------------------------
 
 def crosscheck(summaries: dict[str, dict], fit_csv: dict[str, dict],
                tol_pp: float = 0.5) -> list[str]:
@@ -399,6 +572,45 @@ def main() -> int:
         n_sig = sum(1 for s in s_diag.values() if s["significant"])
         print(f"    {p2.name:<48} {diag_id}")
         print(f"      {n_sig}/{len(s_diag)} per-diagnostic trends significant")
+
+        # The direct comparison: only annual MOG has a published counterpart.
+        if (season, severity) == ("annual", "moderate"):
+            try:
+                sys.path.insert(0, str(Path(__file__).resolve().parent))
+                from prosser_published import (FIGURE4, FIGURE4_SUMMARY,
+                                               FIGURE4_YLIM)
+            except ImportError:
+                print("      (ada/prosser_published.py not found — skipping "
+                      "the side-by-side layout)")
+            else:
+                for match in (True, False):
+                    p3, offscale = figure_prosser_layout(
+                        years, data, figdir, FIGURE4, FIGURE4_YLIM,
+                        match_axes=match)
+                    print(f"    {p3.name:<48} "
+                          f"{'his axes' if match else 'our axes'}")
+                print(f"      Prosser states {FIGURE4_SUMMARY['n_significant']}"
+                      f"/{FIGURE4_SUMMARY['n_total']} significant, max "
+                      f"{FIGURE4_SUMMARY['max_change']:+.1f}%; "
+                      f"ours {n_sig}/{len(s_diag)}, max "
+                      f"{max(v['rel'] for v in s_diag.values()) * 100:+.1f}%")
+                if offscale:
+                    material = {k: v for k, v in offscale.items()
+                                if v["fit_out"] or v["n_out"] > 0.1 * len(years)}
+                    print(f"      PANELS THAT DO NOT FIT HIS AXIS: "
+                          f"{len(material)} material, {len(offscale)} including "
+                          f"one-or-two-point overhangs (his limits are read off "
+                          f"a figure, so small overhangs mean nothing).")
+                    for nm, d in sorted(
+                            material.items(),
+                            key=lambda kv: -kv[1]["n_out"]):
+                        tag = ("ENTIRELY off" if d["n_out"] == len(years)
+                               else f"{d['n_out']}/{len(years)} off")
+                        fit = "  fitted line off too" if d["fit_out"] else ""
+                        print(f"        {nm:<23}{tag:<16}"
+                              f"ours {d['ours'][0]:.3f}-{d['ours'][1]:.3f}  "
+                              f"his axis {d['his'][0]:.3f}-{d['his'][1]:.3f}"
+                              f"{fit}")
 
         probs = crosscheck(s_diag, fit_csv)
         if probs:

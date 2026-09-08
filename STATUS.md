@@ -2287,3 +2287,147 @@ point. Storage is at 40 % with 1.5 TB free, and every size lands within 2 % of
 what this project projected for itself.
 
 Nothing in the pipeline gates phase 5. What gates it is §16.4 item 4.
+
+---
+
+## 17. Session of 2026-09-08 (afternoon) — Prosser's Figure 4 compared panel by panel, and seven diagnostics put on an investigate list
+
+`ada/prosser_figures.py`, `ada/prosser_scorecard.py` and `ada/prosser_published.py`
+turn the archived CSV reductions into Prosser's own figures and score them
+against his published values. **No new data, no new compute** — this is the
+"free" per-diagnostic check §12.6 and `PLAN_full_year_calibration.md` §4 both
+asked for, finally run.
+
+### 17.1 Prosser's Figure 4 prints its own numbers, so this is an exact check
+
+His Figure 4 has 21 panels, one per diagnostic, each printing `rel=` (the
+fitted 1979→2020 relative change, %), `abs=` (the slope, %/yr) and `p=` (the
+Wald test on the slope). All 21 are transcribed in
+`ada/prosser_published.py`, together with the panel letters, his exact titles,
+and his y-axis limits. **`rel`, `abs` and `p` are exact — read from a 400 dpi
+render of page 6.** His 1979 *levels* are read off the position of his red
+crosses and are good to about ±0.02; the module marks which is which, because
+the two must not be quoted with the same confidence.
+
+### 17.2 The three numbers he states in the text — all reproduced
+
+| | Prosser | ours |
+|---|---|---|
+| diagnostics with significant upward trends | 17 / 21 | **16 / 21** |
+| largest relative change | +75.6 % | **+73.9 %** (`wind_speed`) |
+| significant *downward* trends | 0 | **0** |
+
+Significance agrees on **18 of 21**. The one-diagnostic gap in the first row is
+`magnitude_pv` at **t = 1.97** against a critical 2.021 — it misses by 0.05.
+
+### 17.3 THE STENCIL TEST — PASSED, and it was pre-registered
+
+`PLAN_full_year_calibration.md` §4 observed that this project's standing
+explanation for its 12–20 % level deficit — the vertical stencil, ours 50 hPa
+against Prosser's 18 hPa — can only reach **ten of the twenty-one**
+diagnostics, and stated the falsification condition explicitly: if the deficit
+were spread evenly across both groups, the explanation is wrong.
+
+| group | median level ratio (ours ÷ his, 1979) | median trend ratio |
+|---|---|---|
+| **single-level, 200 hPa only (11)** | **0.93** | 0.99 |
+| **uses the 175/225 stencil (10)** | **0.73** | 1.05 |
+
+**The deficit concentrates where the stencil can reach it and nearly vanishes
+where it cannot.** The explanation in §11.3 / §12.5 / `RESULT_full_trend_42yr.md`
+§2 is now measured per diagnostic rather than argued from the ensemble. Trend
+ratios sit at ~1.0 in *both* groups, which is the level/trend separation of
+`RESULT` §2 seen a third independent way.
+
+Note the ceiling: the single-level group cannot reach 1.00 either, because
+Prosser evaluates on model level 74 — a terrain-following hybrid surface at
+~197 hPa — where we evaluate on a genuinely isobaric 200 hPa, on a different
+horizontal grid, in ERA5 rather than ERA5.1 (§11.6, §11.7). **0.93 is close to
+the best available.**
+
+### 17.4 `horizontal_divergence` is CLEARED — §15.6a's promotion is withdrawn
+
+| | trend | significant? | level ratio |
+|---|---|---|---|
+| Prosser, panel (r) | **+6.7 %**, p = 0.2 | **no** | — |
+| ours | **+5 %**, t = 0.99 | **no** | 0.87 |
+
+§15.6a promoted `horizontal_divergence` to a standing suspect on the strength
+of zero significant trends in 7 of 7 fits, and hypothesised §5 risk 3 (ERA5
+observing-system changes) as the cause. **Prosser gets the same flat,
+insignificant line from the same field.** Whatever it is, it is a property of
+ERA5's archived divergence that both studies inherit, not an error in this
+pipeline. §15.10 item 6 and §15.6a's promotion are withdrawn. Checking its
+series for an observing-system discontinuity is still interesting physics; it
+is no longer a suspected defect.
+
+### 17.5 The investigate list — seven diagnostics, ranked
+
+**The reasoning that makes this list sharp.** Thresholds are percentiles of our
+own data, so a constant scale error cancels exactly out of the exceedance field
+(§5 point 5). Resolution, units and a uniform bias therefore CANNOT produce a
+disagreement in exceedance *level*. A level ratio far from 1 is evidence about
+the **shape** of the diagnostic's distribution — which means the formula — and
+that is why the entries below are worth opening the code for.
+
+| # | diagnostic | level ratio | our trend vs his | why it is suspect |
+|---|---|---|---|---|
+| 1 | **`ncsu1`** (s) | **6.07 — the only one HIGH** | +39 % sig vs **+4.3 % p=0.7** | Entirely off his axis. The one diagnostic where both level and trend disagree and the sign of the error is opposite to everything else. §7's open `max(·,0)` clipping question (Sharman A36) is the first place to look. Cubic in gradients, so also the most resolution-sensitive — but resolution cancels, and a 6× level gap does not. |
+| 2 | **`ubf`** (q) | **0.19** | +20 % sig vs +31.6 % sig | Entirely off his axis, and **single-level, so the stencil cannot explain it**. A residual of near-cancelling terms, geometry rewritten 2026-08-26 (§4g), and rojak's β docstring still contradicts its code (§10.4). |
+| 3 | **`colson_panofsky`** (c) | **0.14** | +62 % n.s. vs +45.4 % sig | Entirely off his axis. Richardson-based. Its scale factor was already wrong once (§11.5 #1). |
+| 4 | **`negative_richardson`** (a) | 0.49 | **+41 % vs −7.5 %** — opposite sign, both n.s. | Richardson-based. |
+| 5 | **`f2d`** (d) | 0.43 | +26 % n.s. vs **+0.3 %, p=1** | His is exactly flat; ours is not. Three known open issues already: the 0.637 diurnal damping at 3-hourly sampling (§4d), the A→C variant (`FORMULA_AUDIT.md` §10.4), and the unchecked leading minus sign in Sharman A9 (§7). |
+| 6 | `endlich` (n) | 0.51 | +38 % sig vs +27.7 % sig | Worse than its stencil peers (group median 0.73). Differentiates wind *direction* through an arctangent (§4b). |
+| 7 | `magnitude_pv` (j) | 0.61 | +26 % n.s. vs +50.6 % sig | The only single-level diagnostic besides `ubf` that is off, and the one that costs us the 17th significant trend. PV is ERA5's own archived field, like `horizontal_divergence`, so a formula error is unlikely — which makes it more interesting, not less. |
+
+**The pattern worth noticing: entries 1, 3 and 4 are the entire Richardson
+family.** §10.4 lists exactly `negative_richardson`, `colson_panofsky` and
+`ncsu1` as the three diagnostics that inherit Ri. All three are on this list
+and nothing else in that family exists. Independently, §15.4 found that when
+the calibration moved from 48 days to the full year, **the only two diagnostics
+that moved opposite to the other nineteen were `colson_panofsky` and
+`negative_richardson`**, and concluded the difference was in **N², the static
+stability**. Two unrelated routes now point at the same place. N² is a vertical
+temperature derivative, so it is also the quantity the 50 hPa stencil damages
+most — which may mean this is the stencil at its most extreme rather than a
+coding error. `ncsu1` being 6× HIGH does not fit that story and is the reason
+it is ranked first.
+
+**Not on the list, deliberately:** `rva_magnitude` has 16 of 42 points below his
+axis but a level ratio of 0.90 and a trend ratio of 1.00. His axis simply
+starts at 0.8. The axis-fit test flags it spuriously, and his y limits are
+themselves read off a figure, so one- and two-point overhangs mean nothing.
+Only a fitted line off scale, or more than a tenth of the points, counts.
+
+### 17.6 What was built
+
+```
+ada/prosser_published.py   his 21 panel values, titles, panel letters, axis
+                           limits and the stencil/single-level split, each
+                           marked exact or read-off
+ada/prosser_figures.py     + figure_prosser_layout(): our 21 panels in HIS
+                           7x3 column-major order, HIS titles, optionally HIS
+                           y axes, with his rel/abs/p and ours printed under
+                           each panel, and off-scale panels flagged
+ada/prosser_scorecard.py   one row per published item, with the precision of
+                           that particular comparison stated
+explore_prosser.ipynb      the Windows-side notebook; imports the fitting code
+                           above rather than reimplementing it, so it cannot
+                           disagree with the archived figures
+data_prosser/              the CSVs from ADA, the figures, SCORECARD.md and
+                           per_diagnostic_vs_prosser.csv
+```
+
+### 17.7 Next
+
+1. **Work the investigate list from the top**, and note that entries 1, 3, 4
+   and 5 are all already in §7 as literature questions. The per-diagnostic
+   comparison and the literature audit independently converged on the same
+   handful, which is the strongest reason yet to spend a day on §7 rather than
+   on more infrastructure.
+2. Re-run `ada/prosser_figures.py` once `jobs/21` at `--severity light` lands,
+   for the S3-LOG and S4-LOG panels.
+3. The USA box (Figure 3b) and the global maps (Figures 1, 2, S1, S2, S5)
+   remain as costed in `PLAN_prosser_replication.md`. **S5 is the only
+   published per-diagnostic map**, so if the investigate list turns out to be
+   spatially structured, that is the figure that would show it.

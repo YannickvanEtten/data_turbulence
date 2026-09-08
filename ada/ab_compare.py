@@ -156,9 +156,20 @@ def compare_one(base: xr.DataArray, var: xr.DataArray) -> dict:
     }
 
     edges = np.arange(-90.0, 90.0 + LAT_BAND_WIDTH, LAT_BAND_WIDTH)
-    for name, pct in SEVERITIES.items():
-        thr_a = float(weighted_percentile(a, wa, pct))
-        thr_b = float(weighted_percentile(b, wb, pct))
+
+    # ONE call with all five percentiles, not one call per severity.
+    # `weighted_percentile` argsorts (and np.uniques) its whole input on every
+    # call, so asking for the severities one at a time sorts the same 30-million
+    # element array ten times instead of twice. STATUS.md 11.5 #2 records this
+    # exact mistake taking out job 1092585 on walltime at 1:01:55; do not
+    # reintroduce it by moving these back inside the loop.
+    _pcts = np.asarray(list(SEVERITIES.values()), dtype=float)
+    _thr_a = np.atleast_1d(weighted_percentile(a, wa, _pcts))
+    _thr_b = np.atleast_1d(weighted_percentile(b, wb, _pcts))
+
+    for _k, (name, pct) in enumerate(SEVERITIES.items()):
+        thr_a = float(_thr_a[_k])
+        thr_b = float(_thr_b[_k])
         # Upper tail for all 21 -- audit 4.0.
         A = finite & (a >= thr_a)
         B = finite & (b >= thr_b)
@@ -196,8 +207,42 @@ def compare_one(base: xr.DataArray, var: xr.DataArray) -> dict:
     return out
 
 
+def _cap_timesteps(ds, max_timesteps: int | None):
+    """Take the first N timesteps, if asked.
+
+    WHY THIS EXISTS. A flip rate needs enough cells in the tail to be a rate
+    rather than a quantised count (see MIN_EXCEED_CELLS), and it needs the full
+    LATITUDE range for the F1 tilt table -- but it does not need a long record.
+    A global month at 0.25 deg is 721 x 1440 x 248, and this tool holds TWO
+    complete result sets plus two persisted input datasets, so an uncapped
+    global month is ~43 GB of diagnostic arrays before any intermediate. 32
+    timesteps is 33 million cells per diagnostic, whose p99.9 set alone is
+    ~33,000 cells -- an order of magnitude above the guard -- and it fits the
+    48 GB request that schedules immediately on this cluster (STATUS 11.9:
+    120 GB waited 22 hours where 24 GB started in 13 seconds).
+    """
+    if max_timesteps is None:
+        return ds
+    if max_timesteps < 3:
+        raise SystemExit(
+            f"--max-timesteps {max_timesteps} is unusable: f2d takes a material "
+            f"derivative and xarray.differentiate needs at least 3 timesteps for "
+            f"a centred difference (2 gives the same one-sided slope at both "
+            f"points; 1 fails outright). Use 32 or more.")
+    for name in ("time", "valid_time"):
+        if name in ds.dims:
+            n = ds.sizes[name]
+            if n > max_timesteps:
+                print(f"  capping {name}: {n} -> {max_timesteps} timesteps "
+                      f"(--max-timesteps)")
+                return ds.isel({name: slice(0, max_timesteps)})
+            return ds
+    return ds
+
+
 def run(path: Path, fixes_on: list[str], target_level: int, out_dir: Path | None,
-        f2d_variant: str | None, f2d_pair: tuple[str, str] | None = None) -> dict:
+        f2d_variant: str | None, f2d_pair: tuple[str, str] | None = None,
+        max_timesteps: int | None = None) -> dict:
     diag = _load("diagnostics", "2_diagnostics.py")
 
     baseline_fixes = diag.FixSet()
@@ -216,7 +261,7 @@ def run(path: Path, fixes_on: list[str], target_level: int, out_dir: Path | None
     print(f"target level {target_level} hPa")
     print(f"decision rule: flip >= {100 * FLIP_INERT:.1f} % at any severity = MATERIAL\n")
 
-    ds_raw = diag.load_era5(path)
+    ds_raw = _cap_timesteps(diag.load_era5(path), max_timesteps)
     kw_base = {"target_level": target_level}
     kw_var = {"target_level": target_level}
     if f2d_variant:
@@ -305,6 +350,8 @@ def run(path: Path, fixes_on: list[str], target_level: int, out_dir: Path | None
     if out_dir is not None:
         out_dir.mkdir(parents=True, exist_ok=True)
         stem = f"ab_{path.stem}_{variant_label}"
+        if max_timesteps:
+            stem += f"_n{max_timesteps}"
         (out_dir / f"{stem}.json").write_text(json.dumps(payload, indent=2))
         rows = ["diagnostic,identical,spearman_rho,median_rel_diff," +
                 ",".join(f"flip_{s}" for s in SEVERITIES) + ",verdict"]
@@ -342,6 +389,11 @@ def main() -> int:
                         "A9 (audit 6 F6), e.g. C against A.")
     p.add_argument("--f2d-variant-variant", default=None,
                    help="f2d variant for the variant side")
+    p.add_argument("--max-timesteps", type=int, default=None,
+                   help="use only the first N timesteps. REQUIRED in practice "
+                        "for a global month: this tool holds two full result "
+                        "sets, and 248 global timesteps is ~43 GB of arrays "
+                        "before intermediates. 32 is ample for a flip rate.")
     p.add_argument("--out", type=Path, default=None,
                    help="directory for the JSON and CSV; omit to print only")
     a = p.parse_args()
@@ -359,7 +411,7 @@ def main() -> int:
                 "--f2d-variant-baseline/--f2d-variant-variant pair")
 
     run(a.input, sorted(set(fixes)), a.target_level, a.out, a.f2d_variant,
-        f2d_pair if all(f2d_pair) else None)
+        f2d_pair if all(f2d_pair) else None, a.max_timesteps)
     return 0
 
 

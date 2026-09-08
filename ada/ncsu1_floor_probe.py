@@ -83,7 +83,8 @@ def _load(module_name: str, filename: str):
     return module
 
 
-def run(path: Path, target_level: int, out_dir: Path | None) -> dict:
+def run(path: Path, target_level: int, out_dir: Path | None,
+        max_timesteps: int | None = None) -> dict:
     diag = _load("diagnostics", "2_diagnostics.py")
 
     print(f"input        {path}")
@@ -91,6 +92,11 @@ def run(path: Path, target_level: int, out_dir: Path | None) -> dict:
     print(f"floor        MAX(Ri, {RI_FLOOR:g})  -- Sharman A36 p. 284 / W&S Eq. 7 p. 1428\n")
 
     ds_raw = diag.load_era5(path)
+    for _t in ("time", "valid_time"):
+        if _t in ds_raw.dims and max_timesteps and ds_raw.sizes[_t] > max_timesteps:
+            print(f"  capping {_t}: {ds_raw.sizes[_t]} -> {max_timesteps} timesteps")
+            ds_raw = ds_raw.isel({_t: slice(0, max_timesteps)})
+            break
     catdata = diag.prepare_for_rojak(ds_raw)
     ds = catdata._dataset
 
@@ -178,9 +184,12 @@ def main() -> int:
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("input", type=Path)
     p.add_argument("--target-level", type=int, default=200)
+    p.add_argument("--max-timesteps", type=int, default=None,
+                   help="use only the first N timesteps; needed to keep a "
+                        "global month inside a modest memory request")
     p.add_argument("--out", type=Path, default=None)
     a = p.parse_args()
-    run(a.input, a.target_level, a.out)
+    run(a.input, a.target_level, a.out, a.max_timesteps)
     return 0
 
 

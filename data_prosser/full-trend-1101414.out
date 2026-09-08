@@ -1,0 +1,208 @@
+=== full 42-year trend check on node221 at 2026-09-07T16:07:53+02:00 ===
+>>> thresholds: thresholds_2026-09-07.json
+    domain global, period derived/global (12 stores)
+
+>>> years: 42 (1979-2020, step 1)
+>>> seasons: DJF, MAM, JJA, SON, Annual
+
+!! Run ada/check_production_complete.py first if you have not --
+   this script does not itself verify every store's provenance.
+
+==============================================================================
+LOADING — one pass per year, all requested seasons sliced from it
+==============================================================================
+   1979  done
+   1980  done
+   1981  done
+   1982  done
+   1983  done
+   1984  done
+   1985  done
+   1986  done
+   1987  done
+   1988  done
+   1989  done
+   1990  done
+   1991  done
+   1992  done
+   1993  done
+   1994  done
+   1995  done
+   1996  done
+   1997  done
+   1998  done
+   1999  done
+   2000  done
+   2001  done
+   2002  done
+   2003  done
+   2004  done
+   2005  done
+   2006  done
+   2007  done
+   2008  done
+   2009  done
+   2010  done
+   2011  done
+   2012  done
+   2013  done
+   2014  done
+   2015  done
+   2016  done
+   2017  done
+   2018  done
+   2019  done
+   2020  done
+
+==============================================================================
+DJF — FITTED TREND vs PROSSER (2023) TABLE 1
+==============================================================================
+           our 1979  our 2020   ours %           95% CI  Prosser %   ratio    R^2      t
+   LOG      5.573%    6.557%     18%   [   6%,  30%]       21%    0.84   0.18   2.96
+   LMOG     1.902%    2.412%     27%   [  11%,  43%]       30%    0.89   0.22   3.37
+   MOG      0.909%    1.219%     34%   [  15%,  53%]       37%    0.92   0.25   3.62
+   MSOG     0.477%    0.671%     41%   [  19%,  63%]       43%    0.95   0.26   3.74
+   SOG      0.246%    0.363%     48%   [  22%,  74%]       49%    0.97   0.26   3.73
+
+            ours (h)            Prosser (h)
+   LOG         120.4 ->  143.2     128.9 -> 155.6
+   LMOG         41.1 ->   52.7      45.6 ->  59.3
+   MOG          19.6 ->   26.6      22.3 ->  30.6
+   MSOG         10.3 ->   14.7      12.1 ->  17.2
+   SOG           5.3 ->    7.9       6.4 ->   9.6
+
+------------------------------------------------------------------------------
+   1. ALL TRENDS POSITIVE                        PASS
+   2. TRENDS DISTINGUISHABLE FROM ZERO AT 5%      5/5   PASS   (n=42, df=40, |t| must exceed 2.02)
+   3. PROSSER INSIDE OUR 95% INTERVAL             5/5   PASS
+------------------------------------------------------------------------------
+
+==============================================================================
+MAM — FITTED TREND vs PROSSER (2023) TABLE 1
+==============================================================================
+           our 1979  our 2020   ours %           95% CI  Prosser %   ratio    R^2      t
+   LOG      3.611%    4.567%     26%   [  13%,  40%]       26%    1.02   0.28   3.93
+   LMOG     1.042%    1.507%     45%   [  25%,  64%]       43%    1.04   0.34   4.58
+   MOG      0.437%    0.699%     60%   [  35%,  85%]       57%    1.05   0.37   4.85
+   MSOG     0.203%    0.354%     74%   [  44%, 104%]       71%    1.04   0.38   4.93
+   SOG      0.093%    0.174%     88%   [  51%, 124%]       85%    1.03   0.37   4.86
+
+            ours (h)            Prosser (h)
+   LOG          79.7 ->  100.8      90.4 -> 113.4
+   LMOG         23.0 ->   33.3      27.2 ->  38.9
+   MOG           9.7 ->   15.4      11.8 ->  18.6
+   MSOG          4.5 ->    7.8       5.7 ->   9.7
+   SOG           2.0 ->    3.8       2.7 ->   5.0
+
+------------------------------------------------------------------------------
+   1. ALL TRENDS POSITIVE                        PASS
+   2. TRENDS DISTINGUISHABLE FROM ZERO AT 5%      5/5   PASS   (n=42, df=40, |t| must exceed 2.02)
+   3. PROSSER INSIDE OUR 95% INTERVAL             5/5   PASS
+------------------------------------------------------------------------------
+
+==============================================================================
+JJA — FITTED TREND vs PROSSER (2023) TABLE 1
+==============================================================================
+           our 1979  our 2020   ours %           95% CI  Prosser %   ratio    R^2      t
+   LOG      4.268%    4.715%     10%   [   2%,  19%]        9%    1.17   0.15   2.61
+   LMOG     1.345%    1.627%     21%   [  10%,  32%]       20%    1.05   0.26   3.73
+   MOG      0.591%    0.770%     30%   [  16%,  45%]       31%    0.98   0.31   4.20
+   MSOG     0.280%    0.390%     39%   [  21%,  57%]       41%    0.95   0.32   4.35
+   SOG      0.128%    0.189%     48%   [  25%,  70%]       52%    0.92   0.32   4.29
+
+            ours (h)            Prosser (h)
+   LOG          94.2 ->  104.1     114.1 -> 124.5
+   LMOG         29.7 ->   35.9      36.5 ->  43.8
+   MOG          13.1 ->   17.0      16.1 ->  21.1
+   MSOG          6.2 ->    8.6       7.7 ->  10.9
+   SOG           2.8 ->    4.2       3.6 ->   5.5
+
+------------------------------------------------------------------------------
+   1. ALL TRENDS POSITIVE                        PASS
+   2. TRENDS DISTINGUISHABLE FROM ZERO AT 5%      5/5   PASS   (n=42, df=40, |t| must exceed 2.02)
+   3. PROSSER INSIDE OUR 95% INTERVAL             5/5   PASS
+------------------------------------------------------------------------------
+
+==============================================================================
+SON — FITTED TREND vs PROSSER (2023) TABLE 1
+==============================================================================
+           our 1979  our 2020   ours %           95% CI  Prosser %   ratio    R^2      t
+   LOG      5.335%    6.002%     12%   [   4%,  21%]       15%    0.83   0.17   2.82
+   LMOG     1.691%    2.037%     20%   [   7%,  34%]       23%    0.89   0.19   3.04
+   MOG      0.756%    0.978%     29%   [  12%,  47%]       31%    0.95   0.22   3.33
+   MSOG     0.371%    0.517%     39%   [  17%,  62%]       39%    1.01   0.24   3.53
+   SOG      0.177%    0.268%     51%   [  23%,  79%]       47%    1.09   0.25   3.68
+
+            ours (h)            Prosser (h)
+   LOG         116.5 ->  131.1     133.1 -> 153.2
+   LMOG         36.9 ->   44.5      43.4 ->  53.4
+   MOG          16.5 ->   21.4      19.8 ->  25.8
+   MSOG          8.1 ->   11.3      10.0 ->  13.9
+   SOG           3.9 ->    5.9       5.0 ->   7.4
+
+------------------------------------------------------------------------------
+   1. ALL TRENDS POSITIVE                        PASS
+   2. TRENDS DISTINGUISHABLE FROM ZERO AT 5%      5/5   PASS   (n=42, df=40, |t| must exceed 2.02)
+   3. PROSSER INSIDE OUR 95% INTERVAL             5/5   PASS
+------------------------------------------------------------------------------
+
+==============================================================================
+Annual — FITTED TREND vs PROSSER (2023) TABLE 1
+==============================================================================
+           our 1979  our 2020   ours %           95% CI  Prosser %   ratio    R^2      t
+   LOG      4.690%    5.454%     16%   [   8%,  24%]       17%    0.96   0.29   4.08
+   LMOG     1.493%    1.893%     27%   [  16%,  38%]       28%    0.96   0.37   4.86
+   MOG      0.672%    0.915%     36%   [  23%,  50%]       37%    0.98   0.42   5.36
+   MSOG     0.332%    0.482%     45%   [  29%,  61%]       46%    0.98   0.45   5.67
+   SOG      0.160%    0.248%     55%   [  36%,  73%]       55%    0.99   0.46   5.84
+
+            ours (h)            Prosser (h)
+   LOG         410.9 ->  479.1     466.5 -> 546.8
+   LMOG        130.8 ->  166.3     152.7 -> 195.4
+   MOG          58.9 ->   80.4      70.0 ->  96.1
+   MSOG         29.1 ->   42.3      35.5 ->  51.8
+   SOG          14.1 ->   21.8      17.7 ->  27.4
+
+------------------------------------------------------------------------------
+   1. ALL TRENDS POSITIVE                        PASS
+   2. TRENDS DISTINGUISHABLE FROM ZERO AT 5%      5/5   PASS   (n=42, df=40, |t| must exceed 2.02)
+   3. PROSSER INSIDE OUR 95% INTERVAL             5/5   PASS
+------------------------------------------------------------------------------
+
+==============================================================================
+MASTER SUMMARY — all seasons x severities
+==============================================================================
+   season  severity  ours %  Prosser %   ratio      t  sig?  Prosser in CI?
+   DJF     LOG        18%       21%    0.84   2.96   yes             yes
+   DJF     LMOG       27%       30%    0.89   3.37   yes             yes
+   DJF     MOG        34%       37%    0.92   3.62   yes             yes
+   DJF     MSOG       41%       43%    0.95   3.74   yes             yes
+   DJF     SOG        48%       49%    0.97   3.73   yes             yes
+   MAM     LOG        26%       26%    1.02   3.93   yes             yes
+   MAM     LMOG       45%       43%    1.04   4.58   yes             yes
+   MAM     MOG        60%       57%    1.05   4.85   yes             yes
+   MAM     MSOG       74%       71%    1.04   4.93   yes             yes
+   MAM     SOG        88%       85%    1.03   4.86   yes             yes
+   JJA     LOG        10%        9%    1.17   2.61   yes             yes
+   JJA     LMOG       21%       20%    1.05   3.73   yes             yes
+   JJA     MOG        30%       31%    0.98   4.20   yes             yes
+   JJA     MSOG       39%       41%    0.95   4.35   yes             yes
+   JJA     SOG        48%       52%    0.92   4.29   yes             yes
+   SON     LOG        12%       15%    0.83   2.82   yes             yes
+   SON     LMOG       20%       23%    0.89   3.04   yes             yes
+   SON     MOG        29%       31%    0.95   3.33   yes             yes
+   SON     MSOG       39%       39%    1.01   3.53   yes             yes
+   SON     SOG        51%       47%    1.09   3.68   yes             yes
+   Annual  LOG        16%       17%    0.96   4.08   yes             yes
+   Annual  LMOG       27%       28%    0.96   4.86   yes             yes
+   Annual  MOG        36%       37%    0.98   5.36   yes             yes
+   Annual  MSOG       45%       46%    0.98   5.67   yes             yes
+   Annual  SOG        55%       55%    0.99   5.84   yes             yes
+
+   significant at 5%: 25/25    Prosser inside 95% CI: 25/25
+   This is the number STATUS.md §12.3 was waiting on n=42 to
+   settle. Compare against the n=9 DJF-only figures already on
+   record (2/5 significant, 5/5 inside-CI) before writing anything
+   into STATUS.md or CAT_overview.tex.
+
+=== exit 0, wall 379 min 50 s ===

@@ -1,0 +1,38 @@
+item,quantity,domain,ours,prosser,ratio,precision,verdict,note
+Table 1 [DJF/LOG],fitted relative change 1979-2020,NA box,+18%,+21%,0.84,exact (published table),MATCH — inside our 95% CI,Prosser 128.9 h -> 155.6 h
+Table 1 [DJF/LMOG],fitted relative change 1979-2020,NA box,+27%,+30%,0.89,exact (published table),MATCH — inside our 95% CI,Prosser 45.6 h -> 59.3 h
+Table 1 [DJF/MOG],fitted relative change 1979-2020,NA box,+34%,+37%,0.92,exact (published table),MATCH — inside our 95% CI,Prosser 22.3 h -> 30.6 h
+Table 1 [DJF/MSOG],fitted relative change 1979-2020,NA box,+41%,+43%,0.95,exact (published table),MATCH — inside our 95% CI,Prosser 12.1 h -> 17.2 h
+Table 1 [DJF/SOG],fitted relative change 1979-2020,NA box,+48%,+49%,0.97,exact (published table),MATCH — inside our 95% CI,Prosser 6.4 h -> 9.6 h
+Table 1 [MAM/LOG],fitted relative change 1979-2020,NA box,+26%,+26%,1.02,exact (published table),MATCH — inside our 95% CI,Prosser 90.4 h -> 113.4 h
+Table 1 [MAM/LMOG],fitted relative change 1979-2020,NA box,+45%,+43%,1.04,exact (published table),MATCH — inside our 95% CI,Prosser 27.2 h -> 38.9 h
+Table 1 [MAM/MOG],fitted relative change 1979-2020,NA box,+60%,+57%,1.05,exact (published table),MATCH — inside our 95% CI,Prosser 11.8 h -> 18.6 h
+Table 1 [MAM/MSOG],fitted relative change 1979-2020,NA box,+74%,+71%,1.04,exact (published table),MATCH — inside our 95% CI,Prosser 5.7 h -> 9.7 h
+Table 1 [MAM/SOG],fitted relative change 1979-2020,NA box,+88%,+85%,1.03,exact (published table),MATCH — inside our 95% CI,Prosser 2.7 h -> 5.0 h
+Table 1 [JJA/LOG],fitted relative change 1979-2020,NA box,+10%,+9%,1.17,exact (published table),MATCH — inside our 95% CI,Prosser 114.1 h -> 124.5 h
+Table 1 [JJA/LMOG],fitted relative change 1979-2020,NA box,+21%,+20%,1.05,exact (published table),MATCH — inside our 95% CI,Prosser 36.5 h -> 43.8 h
+Table 1 [JJA/MOG],fitted relative change 1979-2020,NA box,+30%,+31%,0.98,exact (published table),MATCH — inside our 95% CI,Prosser 16.1 h -> 21.1 h
+Table 1 [JJA/MSOG],fitted relative change 1979-2020,NA box,+39%,+41%,0.95,exact (published table),MATCH — inside our 95% CI,Prosser 7.7 h -> 10.9 h
+Table 1 [JJA/SOG],fitted relative change 1979-2020,NA box,+48%,+52%,0.92,exact (published table),MATCH — inside our 95% CI,Prosser 3.6 h -> 5.5 h
+Table 1 [SON/LOG],fitted relative change 1979-2020,NA box,+12%,+15%,0.83,exact (published table),MATCH — inside our 95% CI,Prosser 133.1 h -> 153.2 h
+Table 1 [SON/LMOG],fitted relative change 1979-2020,NA box,+20%,+23%,0.89,exact (published table),MATCH — inside our 95% CI,Prosser 43.4 h -> 53.4 h
+Table 1 [SON/MOG],fitted relative change 1979-2020,NA box,+29%,+31%,0.95,exact (published table),MATCH — inside our 95% CI,Prosser 19.8 h -> 25.8 h
+Table 1 [SON/MSOG],fitted relative change 1979-2020,NA box,+39%,+39%,1.01,exact (published table),MATCH — inside our 95% CI,Prosser 10.0 h -> 13.9 h
+Table 1 [SON/SOG],fitted relative change 1979-2020,NA box,+51%,+47%,1.09,exact (published table),MATCH — inside our 95% CI,Prosser 5.0 h -> 7.4 h
+Table 1 [Annual/LOG],fitted relative change 1979-2020,NA box,+16%,+17%,0.96,exact (published table),MATCH — inside our 95% CI,Prosser 466.5 h -> 546.8 h
+Table 1 [Annual/LMOG],fitted relative change 1979-2020,NA box,+27%,+28%,0.96,exact (published table),MATCH — inside our 95% CI,Prosser 152.7 h -> 195.4 h
+Table 1 [Annual/MOG],fitted relative change 1979-2020,NA box,+36%,+37%,0.98,exact (published table),MATCH — inside our 95% CI,Prosser 70.0 h -> 96.1 h
+Table 1 [Annual/MSOG],fitted relative change 1979-2020,NA box,+45%,+46%,0.98,exact (published table),MATCH — inside our 95% CI,Prosser 35.5 h -> 51.8 h
+Table 1 [Annual/SOG],fitted relative change 1979-2020,NA box,+55%,+55%,0.99,exact (published table),MATCH — inside our 95% CI,Prosser 17.7 h -> 27.4 h
+Figure S4-LOG,21 per-diagnostic annual fits,NA box,NOT RUN,,,read off a figure (sign and magnitude only),run jobs/21 at --season annual --severity light,
+Figure S3-LOG a,annual diagnostic-mean series + fit,NA box,+16%,+17%,0.96,the trend is Table 1 (exact); the 42 plotted points are read off the figure,MATCH — inside our 95% CI,rendered: no
+Figure 4,21 per-diagnostic annual fits,NA box,16/21 significant,17/21 significant,,his counts are stated in the text — exact; per-diagnostic values are read off Figure 4,significant 16/21 vs Prosser 17/21; max change +74% vs his +75.6%; significant downward 0 vs his 0,range +5% to +74%; rendered: yes
+Figure 3a,annual diagnostic-mean series + fit,NA box,+36%,+37%,0.98,the trend is Table 1 (exact); the 42 plotted points are read off the figure,MATCH — inside our 95% CI,rendered: yes
+Figure S4-SOG,21 per-diagnostic annual fits,NA box,16/21 significant,"figure only, no stated counts",,read off a figure (sign and magnitude only),computed; compare panel by panel against the SI,range +6% to +101%; rendered: yes
+Figure S3-SOG a,annual diagnostic-mean series + fit,NA box,+55%,+55%,0.99,the trend is Table 1 (exact); the 42 plotted points are read off the figure,MATCH — inside our 95% CI,rendered: yes
+Figure 1a-d,"Global maps of annual-mean MOG probability: 1979, 2020, and both inferred from the regression",global,NOT COMPUTED,published,,n/a,needs global 42-year fields — see PLAN_prosser_replication.md,storage is not the obstacle (~17 GB of annual aggregates); CDS queue and compute are
+"Figure 2a,b","Global maps of absolute and relative MOG change, with Wald-test stippling",global,NOT COMPUTED,published,,n/a,needs global 42-year fields — see PLAN_prosser_replication.md,storage is not the obstacle (~17 GB of annual aggregates); CDS queue and compute are
+Figure 3b,"Same, USA box (30-55N, 124-60W)",USA box,NOT COMPUTED,published,,n/a,"needs a USA-box download (~470 GB, ~1.5 days)","30-55N, 124-60W"
+Figure S1-LOG/SOG,Figure 1 at LOG and SOG,global,NOT COMPUTED,published,,n/a,needs global 42-year fields — see PLAN_prosser_replication.md,storage is not the obstacle (~17 GB of annual aggregates); CDS queue and compute are
+Figure S2-LOG/SOG,Figure 2 at LOG and SOG,global,NOT COMPUTED,published,,n/a,needs global 42-year fields — see PLAN_prosser_replication.md,storage is not the obstacle (~17 GB of annual aggregates); CDS queue and compute are
+Figure S5,Figure 2a broken down by all 21 diagnostics,global,NOT COMPUTED,published,,n/a,needs global 42-year fields — see PLAN_prosser_replication.md,storage is not the obstacle (~17 GB of annual aggregates); CDS queue and compute are

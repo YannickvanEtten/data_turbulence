@@ -5,20 +5,25 @@
 no longer findable. Those references are not retrievable; this file replaces
 them. When a decision gets made, it gets written here, not into a docstring.
 
-Last updated: 2026-09-07. **READ §15 FIRST** — it is the current state, and it
-records that this file has FORKED: the copy in the Claude project contains a
-§14 (session of 2026-09-03/04) that was never written back to the repo, and
-this repo copy contains a §15 (session of 2026-09-05/07) that is not in the
-project copy. Neither is wrong; they are disjoint, and §15's header says how to
-reconcile them.
+Last updated: 2026-09-08. **READ §15 AND §16 FIRST** — they are the current
+state. The fork this file used to carry (a §14 that existed only in the Claude
+project, a §15 that existed only in the repo) is **closed as of 2026-09-08**:
+both are below, and the project and the repo hold the identical document. See
+§16.1.
 
-Current state in one line: the year-2000 reference calibration now uses the
-FULL contiguous year (`calibration/thresholds_2026-09-07.json`), the 42-year
-all-season trend reproduces Prosser at 25/25 significant and 25/25 inside the
-95% interval, and TWO recorded findings — §12.5's trend excess and §12.6's
-`ubf` anomaly — turned out to be sub-sample artifacts and are corrected in §15.
+Current state in one line: **all the data is downloaded and processed** —
+504/504 North Atlantic months and a full contiguous global reference year — the
+year-2000 calibration now uses that full year
+(`calibration/thresholds_2026-09-07.json`), the 42-year all-season trend
+reproduces Prosser at 25/25 significant and 25/25 inside the 95 % interval, and
+TWO recorded findings — §12.5's trend excess and §12.6's `ubf` anomaly — turned
+out to be sub-sample artifacts and are corrected in §15.
 
-§13 is the run ledger and disk inventory as of 2026-08-29 — historical.
+**Reading order for the historical sections.** §1–13 are the 2026-08-29 text
+and their forward-looking status lines have been overtaken; §13 is the run
+ledger and disk inventory as of that date; §14.4 and §15.9 are superseded disk
+measurements. **Where an earlier section and a later one disagree, the later
+one wins**, and §16.2 is the current disk inventory.
 
 ---
 
@@ -453,10 +458,23 @@ against literature.
 
 - Intended econometric unit of observation? (route × month, gridpoint × month, …)
 - Supervisor expectations and deadline.
-- **Whether `yen230` may use the `unlimited` QOS** (§11.9). Ask
-  `itvo.ucit@vu.nl`. Highest-leverage question before phase 4.
-- Snapshot retention / backup policy on the Koopman share.
+- ~~**Whether `yen230` may use the `unlimited` QOS** (§11.9)~~ — **DROPPED
+  2026-09-08, §16.3.** No production-scale job remains; the question costs
+  nothing to ask if the levels question (§10.12) is ever reopened.
+- ~~Snapshot retention / backup policy on the Koopman share~~ — **NOT ASKED,
+  deliberately, §16.3.** Not published anywhere public (§14.6). The residual
+  exposure is recorded there: a loss would cost compute time, not information,
+  since raw ERA5 is re-downloadable and the derived side is reproducible from
+  it.
+- ~~Whether `/scistor/guest/yen230/cat-env/` duplicates
+  `data_turbulence/.pixi/`~~ — **bounded and dropped, §16.2.** 1.2 GB of a
+  200 GB budget nothing else uses.
 - The `STATUS_24` / `Q-*` notes, if they ever turn up. Not a blocker.
+
+**The first two bullets are now the binding ones.** With the infrastructure and
+storage questions closed, phase 5 is gated on a research-design decision — the
+unit of observation and the supervisors' expectations — not on data or compute
+(§16.5).
 
 ---
 
@@ -498,10 +516,12 @@ now `calibration/thresholds_YYYY-MM-DD.json`.
 ├── env/                 the pixi environment (pixi.toml)
 ├── raw/
 │   ├── north_atlantic/  era5_na_YYYY-MM.grib
-│   └── global/          era5_glob_2000-MM_d01-09-17-25.grib
+│   ├── global/          the FULL year 2000: 36 day-blocks + 12 merged months
+│   └── global_sub48/    the 48-day sub-sample, kept as the comparison set
 ├── derived/
 │   ├── north_atlantic/  diagnostics_na_YYYY-MM.zarr
-│   └── global/          diagnostics_glob_2000-MM.zarr
+│   ├── global/          diagnostics_glob_2000-MM.zarr  (full year)
+│   └── global_sub48/    the 48-day sub-sample's 12 stores
 ├── calibration/         thresholds_YYYY-MM-DD.json   <- stage 2 -> 3 handoff
 ├── results/             annual probabilities, trends
 └── logs/                SLURM output
@@ -1390,21 +1410,279 @@ for derived — **not** `03`, which writes both formats.
 
 ---
 
+## 14. Session of 2026-09-03/04 — convention regeneration, gap found and closed, disk audit
+
+This section records what changed since §13's 2026-08-29 snapshot: the global
+calibration and thresholds were regenerated under the deformation/f2d
+convention fixes (RUNBOOK_audit_checks.md §1) and re-validated; the North
+Atlantic production series turned out to be 455 of 504 months, with a
+49-month gap, which was diagnosed, backfilled and confirmed closed the
+following day (§14.7); and a full disk-usage and duplicate-data audit was
+run, with the two orphaned directories it found deleted. **As of 2026-09-04,
+`jobs/15_check_production_complete.sbatch` reports `ALL CLEAR` — 504/504 NA
+months, 12/12 global calibration months, thresholds file current.**
+
+### 14.1 What was done, in order (2026-09-03)
+
+1. **Checked whether `jobs/14` (NA production, corrected conventions) had
+   really finished.** `sacct` showed job `1096292`, all 504 array tasks
+   (`0`–`503`) `COMPLETED`, last one at 12:23:06. On its own this looked like
+   phase 4 was done. It was not — see point 6 and §14.2 (as it stood that day):
+   SLURM `COMPLETED` also covers a task that found its raw GRIB not yet
+   downloaded, printed `NOT-YET-DOWNLOADED` (RUNBOOK_audit_checks.md §5.1), and
+   exited 0 having written nothing.
+2. **Wrote two new validation scripts**, on the same principle as everything
+   in §11: don't trust that output exists, check what convention it was
+   written under.
+   - **`ada/check_production_complete.py`** + **`jobs/15_check_production_complete.sbatch`**
+     — sweeps every `derived/north_atlantic/*.zarr` (504 expected),
+     `derived/global/*.zarr` (12 expected) and the newest
+     `calibration/thresholds_*.json`, and checks presence **and** that every
+     store's `.zattrs` (`f2d_variant`, `deformation_convention`) matches the
+     corrected-convention expectation — the same technique
+     `diagnostics_global.py`'s own `existing_output_matches()` already uses,
+     deliberately reimplemented rather than imported so this checker has no
+     dependency on the production driver. Exits 0 only on full `ALL CLEAR`.
+   - **`ada/full_trend_check.py`** + **`jobs/16_full_trend_check.sbatch`** — the
+     eventual full 42-year, all-five-season (DJF/MAM/JJA/SON/annual) trend fit
+     against the complete Prosser Table 1, loading each calendar year once and
+     slicing into seasons. Deliberately additive: `ada/trend_check.py`'s
+     9-season DJF-only result (§12) is untouched and stays exactly
+     reproducible.
+3. **First `jobs/15` run (job `1096513`) caught a real problem before it did
+   damage.** `derived/global/` and `calibration/thresholds_2026-08-29.json`
+   both predated the 2026-08-30 deformation/f2d convention fixes — the North
+   Atlantic production side was already on the corrected conventions, the
+   global calibration side was not. Comparing them as-is would have applied
+   stale-convention thresholds to corrected-convention data — for `f2d`,
+   whose A→C variant change is not a monotone transform (FORMULA_AUDIT.md
+   §10.4: Spearman ρ(A,D) = −0.94), that is not a small error but a
+   meaningless comparison.
+4. **Fixed it**: reran `jobs/04_diagnostics_global.sbatch` (job `1096552`,
+   global diagnostics recompute, all 12 tasks, finished ~13:21), then
+   `jobs/06_calibration_check.sbatch` (job `1096878`, calibration + thresholds
+   regeneration). Confirmed via `sacct` timestamps that `1096878` started at
+   13:42:57 — after `1096552` finished — so the sequencing was correct.
+   `1096878` completed cleanly: exit `0:0`, elapsed **1:51:28**, in line with
+   the historical 1:57:28 baseline (§13.3). Output:
+   `calibration/thresholds_2026-09-03.json`.
+5. **Read the regenerated calibration's own log** (`logs/calib-1096878.out`)
+   in full. Everything that should be unchanged by a rank-preserving
+   transform (deformation's un-squaring) and a 1-of-21 ensemble member
+   (`f2d`) was, in fact, unchanged:
+   - **Identity check exact**, 0.00 % relative error on all five severities —
+     the regenerated thresholds reproduce the calibration data's own target
+     percentiles exactly (§11.2's check, reproduced).
+   - **Prosser DJF-1979 replication ratios: 0.84 / 0.80 / 0.76 / 0.71 / 0.68**
+     — identical to §11.2's pre-fix numbers.
+   - **Williams (2017) Table 2 magnitude comparison (section D):** ratios
+     still run from ~1× up to `f2d`'s **8307×**, with the same single sign
+     mismatch (`colson_panofsky`) already documented in §11.12/§12.6. This is
+     **expected and by design**, not a new finding — see the note added to
+     §5 point 5. The size of the gap tracks how many gradients a diagnostic
+     multiplies together (single gradient ~1–2×; products of two gradients
+     ~5–13×; `ncsu1`, cubic, 152×; `ubf`, a residual of four near-cancelling
+     terms, 22×; `f2d`, a material derivative of a squared quantity, 8307× —
+     the most extreme of the 21, exactly as FORMULA_AUDIT.md §7.1 already
+     predicted). **Section D checks sign and order of magnitude only, by its
+     own header** — it is not, and was never meant to be, a pass/fail gate.
+     The actual gates are the identity check and the Prosser-replication
+     check above, and both passed.
+6. **Second `jobs/15` run (job `1096951`, `logs/prodcheck-1096951.out`,
+   16:07:04):**
+
+   | Section | Result |
+   |---|---|
+   | North Atlantic (`derived/north_atlantic/`) | **455 OK, 49 MISSING** — one contiguous block, `diagnostics_na_2016-09.zarr` through ≈`diagnostics_na_2020-09.zarr` |
+   | Global calibration (`derived/global/`) | **12/12 OK** |
+   | Thresholds file | **OK** — `thresholds_2026-09-03.json`, postdates the fix |
+   | Overall | **NOT CLEAR — solely because of the North Atlantic gap** |
+
+7. **Diagnosed the gap.** 49 months missing in one contiguous block, not
+   scattered, pointed at a single download-side event rather than 49
+   independent diagnostics failures — consistent with the project's own
+   documented skip-behaviour (point 1 above). Three candidate causes were
+   listed (a dropped `%4` throttle, an interrupted array, a targeted
+   resubmission that missed this range) with the dropped-throttle incident
+   flagged as most likely by fit to the project's own history (§11.9). **This
+   was confirmed correct the next day — see §14.7.**
+8. **Ran the full disk-usage / duplicate-data audit** — §14.4. Found two
+   orphaned pre-restructuring directories (`era5/`, `era5_smoke/`) not in the
+   documented layout (§9a), confirmed by content and date to be dead, and
+   **deleted by the user on 2026-09-03**. Also resolved an apparent repo-size
+   discrepancy (§14.4) and flagged a possible duplicate pixi environment on
+   the home share (§8, still open).
+9. **Checked VU/ADA's public documentation for a published storage
+   quota/retention/backup policy** — §14.6. None exists; current usage is
+   nonetheless in line with this project's own §13.2 sizing projection.
+
+### 14.2 State of phase 4 as it stood on 2026-09-03 (historical — see §14.7)
+
+- North Atlantic: 455 of 504 months. 49 missing (one contiguous block, ≈2016-09
+  to ≈2020-09) — missing raw GRIB, not a diagnostics failure.
+- Global calibration: 12 of 12, correct convention.
+- Thresholds: correct convention, matched.
+- Verdict that day: `jobs/15` reported **NOT CLEAR**. **Superseded 2026-09-04 —
+  see §14.7 for the resolution.**
+
+### 14.3 Job ledger addendum — 2026-09-03/04
+
+| Job | Name | Result | Elapsed | What it did |
+|---|---|---|---|---|
+| 1096292_0–503 | cat-diag-prod (jobs/14) | COMPLETED ×504 (SLURM level) | — | NA production array; 455 real, 49 skip-exits over missing raw GRIB (§14.1 pt 1, 7) |
+| 1096513 | cat-prod-check (jobs/15, run 1) | COMPLETED, exit 1 | ~10 s | first completeness sweep — caught the stale global calibration/thresholds (§14.1 pt 3) |
+| 1096552_0–11 | cat-diag-glob (jobs/04) | COMPLETED ×12 | finished ~13:21 | global diagnostics recompute, corrected conventions |
+| **1096878** | cat-calib (jobs/06) | **COMPLETED** | **1:51:28** | calibration + thresholds regeneration — §14.1 pt 4–5; started 13:42:57, confirmed after 1096552 |
+| 1096951 | cat-prod-check (jobs/15, run 2) | COMPLETED, exit 1 | ~3 s | second completeness sweep — global/thresholds OK, NA 455/504, NOT CLEAR (§14.1 pt 6) |
+| 1093082_449–503 | era5-dl | **~40 of 55 FAILED** (idx 452–502) | 0:02–5:03 (failures), up to 5:02 (successes) | **retroactively identified as the actual cause of the 49-month gap** (§14.7) — indices 449–451, 492/493, 503 succeeded; 452–491 and 494–502 mostly failed, matching the missing-month range exactly |
+| **1096955_0–503** | era5-dl | **COMPLETED ×504** | 0:09–0:52 per task | **the bare rerun that closed the gap** (§14.7) — 455 already-downloaded months skip-exited in ~10 s, the 49 real gaps downloaded for real in 15–52 min |
+| **1098189** | cat-prod-check (jobs/15, run 3) | **COMPLETED, exit 0** | ~2 s | **`ALL CLEAR`** — 504/504 NA, 12/12 global, thresholds OK (§14.7) |
+
+### 14.4 Disk inventory — measured 2026-09-03, mid-backfill (455/504)
+
+**Historical. Superseded by §15.9 (2026-09-06) and then by §16.2 (2026-09-08),
+which is the current measurement.**
+
+Project share, `/scistor/SBE-EDS-ClimateKoopman/yen230/` (2.5 TB allocation):
+
+| Path | Size | Notes |
+|---|---|---|
+| **total** | **501 GB, ~500 GB after cleanup** | **~20 % of the 2.5 TB share** — in line with §13.2's ~470 GB projection. Measured while 49 months were still missing and before `era5/`+`era5_smoke/` (726 MB combined) were deleted. |
+| `raw/` | 174 GB | at 455/504 |
+| `raw/north_atlantic/` | 159 GB | 455 GRIB at measurement time; **176 GB at 504/504, §16.2** |
+| `raw/global/` | 16 GB | the 48-day sub-sample, later moved to `raw/global_sub48/` (§16.2) |
+| `derived/` | 291 GB | at 455/504 |
+| `derived/north_atlantic/` | 266 GB | 455 `.zarr` at measurement time; **294 GB at 504/504, §16.2** |
+| `derived/global/` | 26 GB | 12/12 sub-sampled; later moved to `derived/global_sub48/` (§16.2) |
+| `calibration/` | 7.0 KB | `thresholds_2026-09-03.json` |
+| `data_turbulence/` (the repo) | 1.2–1.3 GB | almost all of it is `.pixi/` (see below), not code |
+| `era5/` | **DELETED 2026-09-03** | was 714 MB, orphaned pre-restructuring trial data (`era5_2016-01.grib`, `era5_2016-02.grib`, `era5_trial_2016-01-01.grib`, all dated Jul 8 — the old undomained filename pattern from before the 2026-08-27 domain-naming fix, §9a). Confirmed deleted by user. |
+| `era5_smoke/` | **DELETED 2026-09-03** | was 12 MB, orphaned smoke-test output from job `1091551` (§10.11). Confirmed deleted by user. |
+| `logs/`, `results/` | 0 | — |
+| `.snapshot` | not found / not readable | no evidence of point-in-time copies silently doubling usage |
+
+Duplicate-data checks, all clean: no `.nc` files under `derived/` (the
+dual-format leftover pattern from the superseded `jobs/03`), no orphaned
+`.tmp` partial downloads under `raw/`, NA raw-grib count matched NA
+derived-zarr count exactly (both 455 at measurement time, and both 504 as of
+§14.7 and §16.2).
+
+**The repo-size question, resolved.** `du -sh data_turbulence/*` (bare glob)
+summed to only ~14 MB and didn't explain the 1.2–1.3 GB total — because bash's
+unquoted `*` does not match dotfiles. The dotfile breakdown
+(`du -sh data_turbulence/.[!.]*`) found it: **`.pixi/` is 1.2 GB** — the real,
+necessary pixi environment every job script activates via `pixi run python
+...` — not duplicate data, not dead weight, not deletable. `.git` is a modest
+3.1 MB, so the earlier LFS-misconfiguration hypothesis (§9) was wrong and is
+corrected here. Non-hidden repo contents are genuinely small: `logs/` 7.0 MB,
+`old_code/` 2.8 MB, `5_explore.ipynb` 2.6 MB, `era5_validation_subset.nc`
+672 KB, `tests/` 206 KB, `ada/` 180 KB, `pixi.lock` 122 KB, `STATUS.md` 69 KB,
+`jobs/` 67 KB.
+
+Home share, `/scistor/guest/yen230/` (200 GB allocation, separate from the
+above):
+
+| Path | Size | Notes |
+|---|---|---|
+| `cat-env/` | 1.2 GB | **same size as `data_turbulence/.pixi/`** — possibly a stale duplicate environment from before the RUNBOOK's `pixi run` commands started being run from inside the repo instead of from home (§9a documents the env as belonging here; in practice it gets created wherever `pixi run` is invoked). Not resolved — see §8 and §16.2. |
+| `code/` | 512 bytes | effectively empty |
+| `logs/` | 0 | — |
+
+### 14.5 Closing the 49-month gap — the plan as given on 2026-09-03
+
+(Kept for reference; §14.7 records what was actually run and confirms it
+worked exactly as described here.)
+
+```bash
+cd /scistor/SBE-EDS-ClimateKoopman/yen230/data_turbulence
+sbatch jobs/01_download.sbatch          # bare — NOT --array=..., see §11.9
+```
+
+Then, once that array finishes:
+
+```bash
+sbatch jobs/14_diagnostics_production.sbatch
+sbatch jobs/15_check_production_complete.sbatch
+```
+
+### 14.6 VU/ADA storage policy — checked directly, not published
+
+Checked the ADA manual (`rdm.vu.nl/manuals/ada/`), the SciStor page, the Data
+Storage page and the ITvO page directly. None publish a specific
+quota/allocation number, fair-use policy, retention schedule, snapshot/backup
+policy, or cleanup policy for SciStor project storage — all four describe the
+service only in general terms and point to `itvo.it@vu.nl` (ServiceNow,
+"Research" domain) or `rdm@vu.nl` for the actual specifics. **The decision not
+to ask, and what that leaves exposed, is recorded in §16.3.**
+
+### 14.7 2026-09-04 — the gap closed, `ALL CLEAR`
+
+Following the plan in §14.5:
+
+1. **`sbatch jobs/01_download.sbatch`** (bare, as instructed) — job `1096955`,
+   all 504 array tasks (`0`–`503`) `COMPLETED`, exit `0:0`. The 455
+   already-downloaded months detected their own output and skip-exited in
+   ~9–18 s each; the 49 genuinely missing months (indices ~452–502) downloaded
+   for real, 15–52 min each — exactly the resumable-design behaviour §11.9
+   predicted, now validated at the full 504-month scale rather than just the
+   12-month scale it was first measured at.
+2. **Root cause confirmed.** Checking `sacct` back to 2026-09-03 turned up an
+   earlier array, job **`1093082`** (indices 449–503), with a striking
+   pattern: 449–451, 492, 493 and 503 `COMPLETED`, but the ~40 tasks in
+   between (452–491, 494–502) `FAILED` — a scattering of survivors inside a
+   mostly-dead block, not one clean on/off boundary. This is the actual
+   origin of the 49-month gap discovered on 2026-09-03 (§14.1 pt 7), and it
+   fits the already-documented dropped-`%4`-throttle failure mode (§11.9)
+   better than the other two candidate causes: CDS was rejecting most, not
+   all, requests in that window, consistent with running at higher
+   concurrency than the validated `%4` limit. The exact submission that
+   produced `1093082`'s failures was not itself recovered (no `--array=`
+   command line was pasted back for it), so this is inference from the
+   failure pattern, not a confirmed transcript — but the fix required no
+   knowledge of the exact cause, and it worked.
+3. **`find ... -name '*.grib' | wc -l`** confirmed **504/504** North Atlantic
+   raw GRIB before proceeding — checking the actual filesystem rather than
+   trusting `sacct`'s "COMPLETED" a second time, consistent with this
+   project's standing practice (§11.9's own lesson about what `COMPLETED`
+   does and doesn't prove).
+4. **`sbatch jobs/14_diagnostics_production.sbatch`** — backfilled the
+   derived side for the 49 months that were missing it. (Job ID not
+   separately recorded; ran to completion before the next step, confirmed by
+   the `jobs/15` result below.)
+5. **`sbatch jobs/15_check_production_complete.sbatch`** — job **`1098189`**,
+   `logs/prodcheck-1098189.out`, 2026-09-04T12:27:05+02:00:
+
+   ```
+   NORTH ATLANTIC — derived/north_atlantic/ (1979-2020)
+      expected 504, OK 504, problems 0
+   GLOBAL CALIBRATION — derived/global/ (year 2000)
+      expected 12, OK 12, problems 0
+   THRESHOLDS FILE — calibration/thresholds_*.json
+      OK: thresholds_2026-09-03.json, created 2026-09-03
+   ALL CLEAR — production series and thresholds are complete and
+   consistent. Safe to run ada/full_trend_check.py and treat its
+   output as the real 42-year result, not a provisional one.
+   exit 0, wall 0 min 2 s
+   ```
+
+**This is the actual milestone the "validate first" priority was set for.**
+Every gate this project defined for itself — per-diagnostic correctness (§4),
+literature cross-checks (§7, §11.12), calibration identity (§11.2, reproduced
+§14.1), 9-season trend replication (§12), full-series completeness and
+convention consistency (this section) — now reads clean. What followed is §15.
+
+---
+
 ## 15. Session of 2026-09-05/07 — the FULL reference year, and two subsample artifacts overturned
 
-> **⚠ THIS FILE HAS FORKED. Read this first.**
-> The copy of `STATUS.md` in the git repo (this one) ran to §13 and was last
-> updated 2026-08-29. The copy held in the Claude project contains a **§14**
-> recording the 2026-09-03/04 session — convention regeneration, the 49-month
-> North Atlantic gap and its closure, and a full disk audit — which was never
-> written back to the repo. **§14 exists only in the project copy; §15 exists
-> only here.** Neither is wrong; they are disjoint. Reconciling them is a
-> copy-paste of §14 from the project copy into this file, immediately above
-> this section, and should be done before anyone treats either as complete.
+> **Fork closed 2026-09-08 — see §16.1.** This section used to carry a warning
+> that §14 existed only in the Claude-project copy of `STATUS.md` and §15 only
+> in the repo copy. Both are now in this file, and the same file is in the
+> project and the repo.
 >
-> Companion documents in the project, both current: `RESULT_full_trend_42yr.md`
-> (the 42-year trend result) and `PLAN_full_year_calibration.md` (the design
-> and sizing of the full-year calibration).
+> Companion documents, both current: `RESULT_full_trend_42yr.md` (the 42-year
+> trend result) and `PLAN_full_year_calibration.md` (the design and sizing of
+> the full-year calibration).
 
 **Headline: the year-2000 reference calibration is no longer a 48-day
 sub-sample.** The full contiguous year has been downloaded, merged, processed
@@ -1737,6 +2015,9 @@ cat_outputs/per_diagnostic_{annual,djf}_moderate.csv        (+ _series.csv)
 
 ### 15.9 Disk
 
+**Superseded by §16.2** (2026-09-08, 985 GB / 40 %, the first measurement taken
+with everything downloaded and processed). Kept as the mid-session figure.
+
 | | |
 |---|---|
 | share | **928 GB of 2.5 TB, 38 %** (measured 2026-09-06) |
@@ -1770,9 +2051,10 @@ though the ITvO question is still unasked.
    in rank), and obtain **Brown (1973), *Meteorological Magazine* 102,
    347–360**, which is not in `Articles/` and is the sole authority for
    `brown1`'s 0.3 coefficient.
-5. **The ITvO email** — `unlimited` QOS, retention/backup policy, and the
-   group's actual allocation and current usage. All three need the same
-   contact and none is answerable from public documentation (§14.6).
+5. ~~**The ITvO email** — `unlimited` QOS, retention/backup policy, and the
+   group's actual allocation and current usage.~~ **CLOSED 2026-09-08: not
+   sending. See §16.3** for what each of the three questions resolved to and
+   what the unasked one leaves exposed.
 6. **`horizontal_divergence`** (§15.6a) — **promoted.** Zero trend in 0/7
    fits, negative in two seasons, and not explicable by sparseness. The
    testable next step is §5 risk 3: check whether its 42-year series has a
@@ -1842,7 +2124,166 @@ reconcile the two `STATUS.md` copies; add `--skip-if-matching` to `jobs/04`;
 the §7 literature items (21 sign entries, Brown 1973); the ITvO email; and
 `horizontal_divergence`.
 
+**Updated 2026-09-08 (§16):** item 2 is now closed — the copies are
+reconciled — and item 5 is closed as a decision not to send. **Items 3, 4 and 6
+remain open and are restated in §16.4.**
+
 **The replication is complete.** 25/25 significant, 25/25 containing Prosser's
 published value, on the full 42 years, all seasons, calibrated on the full
 reference year, with the sub-sample sensitivity measured. Phase 5 — the
 econometrics — is no longer gated on anything in the pipeline.
+
+---
+
+## 16. Session of 2026-09-08 — the fork closed, storage audited at full production scale, two decisions taken
+
+### 16.1 The two `STATUS.md` copies are reconciled — this is the only one
+
+§15.10 item 2 is **CLOSED**. The repo copy held §1–13 + §15; the Claude-project
+copy held §1–14. This file is the merge: §1–13, then §14 (lifted from the
+project copy), then §15, then this section. The same file has been written back
+to the Claude project and into the Windows repo, so both surfaces now hold the
+identical document.
+
+One residue, recorded rather than silently patched: **§1–13 are the
+2026-08-29 text.** Their forward-looking phrasing ("not yet run", "next step",
+the disk figures in §10.5 and §13.1/§13.2) was accurate when written and has
+been overtaken by §14–§16. Where a §1–13 status line and a later section
+disagree, **the later section wins.** The primary records — the run ledgers, the
+measurements, the verdicts — are all in §14, §15 and §16, so nothing is lost by
+leaving the older narrative as it stands.
+
+**Workflow reminder (§15.7 item 6):** this file reaching the Windows repo is not
+the same as it reaching ADA. It has to be committed and pushed, then pulled on
+ADA.
+
+### 16.2 Disk — measured 2026-09-08, at the complete production state
+
+`du -sh` on `login02`. This is the first measurement taken with **everything
+downloaded and processed**, and it supersedes §14.4 (mid-backfill, 501 GB) and
+§15.9 (2026-09-06, 928 GB).
+
+| Path | Size | Contents |
+|---|---|---|
+| `raw/` | **429 GB** | |
+| `raw/north_atlantic/` | 176 GB | **504 GRIB**, 1979–2020, 3-hourly, 7 vars × 3 levels |
+| `raw/global/` | 238 GB | the **full contiguous year 2000**: 36 day-blocks (~119 GB, kept deliberately, §15.9) + 12 merged months |
+| `raw/global_sub48/` | 16 GB | the original 48-day sub-sample, kept as the comparison set |
+| `derived/` | **515 GB** | |
+| `derived/north_atlantic/` | 294 GB | **504 `.zarr`**, 21 diagnostics, 200 hPa, float32 |
+| `derived/global/` | 196 GB | 12 full-year stores |
+| `derived/global_sub48/` | 26 GB | 12 sub-sampled stores, kept |
+| `calibration/` | **41 GB** | `tails_2026-09-07/` (41 GB) + three `thresholds_*.json` at 7 KB each |
+| `data_turbulence/` (repo) | 1.2 GB | almost all `.pixi/` (§14.4) |
+| `logs/`, `results/` | 0 | — |
+| **total** | **985 GB of 2.5 TB — 40 % used, 1.5 TB free** | |
+
+Counts confirmed on the filesystem, not from `sacct`: **504** NA raw GRIB,
+**504** NA derived zarr, **12** global derived zarr — matching `jobs/15`'s
+`ALL CLEAR`.
+
+**Everything lands on projection.** This is the point of recording it: the
+sizing model built from single months in §13.2 now has a ~1 TB test.
+
+| | projected | measured | |
+|---|---|---|---|
+| NA raw, 504 months | 183 GB (§13.2), 176 GB implied by §14.4's rate | **176 GB** | 0.349 GB/month, exactly §14.4's rate |
+| NA derived, 504 months | 287 GB (§13.2 at 0.57 GB/month) | **294 GB** | 0.583 GB/month, +2 % |
+| Global derived, full year | 198 GB (PLAN §1) | **196 GB** | −1 % |
+| Tail archive at p88 | 38–40 GB (PLAN §8.3) | **41 GB** | on plan |
+| **Share total, day-blocks still present** | **1,007 GB / 40.3 % (PLAN §9)** | **985 GB / 40 %** | **−2 %** |
+
+No unexplained growth, no duplicates, no orphans — the `era5/` and
+`era5_smoke/` directories deleted on 2026-09-03 have not returned, and there
+are no `.nc` or `.tmp` leftovers.
+
+**Two directories that are new since §9a's layout schema.** When the full year
+took the `global` names, the 48-day sub-sample was moved aside rather than
+deleted:
+
+```
+raw/global_sub48/       16 GB    the 48-day sub-sampled year 2000
+derived/global_sub48/   26 GB    its 12 derived stores
+```
+
+42 GB in total, and it is what keeps §15.4's threshold comparison — the
+measured 48-day-vs-full-year sensitivity, which is the answer to the obvious
+referee question — reproducible rather than merely recorded. **Keep both.**
+§9a should be read with these two paths added.
+
+**The 119 GB of day-blocks in `raw/global/` are still present and still
+deliberate.** Deleting them would settle the share at ~866 GB / 35 %, matching
+PLAN §9's "settled" projection of 879 GB. With 1.5 TB free there is no reason
+to: they let a merged month be re-verified byte-for-byte without a CDS round
+trip.
+
+**Headroom.** 1.5 TB free is enough for an entire second NA production run
+(~470 GB) if the levels question is ever reopened (§10.12), with room to spare.
+Storage is not a constraint on anything this project might do next.
+
+**Home share** `/scistor/guest/yen230/` (200 GB, a separate budget): **2.6 GB
+used**. `cat-env/` 1.2 GB, `.cache/` 1.4 GB (the pixi/conda package cache,
+measured here for the first time), and everything else — `.cdsapirc`,
+`.gitconfig`, `.ssh`, `.bash_history` and two stray hello-world files from job
+`1065927` — under 40 KB combined. §8's open question about whether `cat-env/`
+duplicates `data_turbulence/.pixi/` is now bounded rather than answered: it is
+1.3 % of a budget nothing else is competing for. **Not worth further time**;
+leave it.
+
+### 16.3 The ITvO email — DECIDED: not sending. What that leaves open
+
+Recorded so it stops resurfacing as an open item (§8, §10.9, §11.9, §14.6,
+§15.10 item 5). Three questions were bundled into one email; they are now
+resolved separately.
+
+1. **`unlimited` QOS — DROPPED.** All data is downloaded and processed, and no
+   production-scale job remains. The `MaxJobsPU = 8` cap and the `%4` CDS
+   throttle only bind on a full re-run, and none is planned. If the levels
+   question (§10.12) is ever reopened, this comes back — the question is
+   recorded in §11.9 and costs nothing to ask then.
+2. **Group allocation and current usage — ANSWERED by measurement, not by
+   asking.** 985 GB of a 2.5 TB share, 40 %, 1.5 TB free (§16.2). §15.9's `df`
+   line already established that essentially all of the group share's usage is
+   this project's, so the group-contention worry §8 raised is not real.
+3. **Retention / backup policy — NOT ASKED, and this is the one with residual
+   exposure.** No `.snapshot` directory exists on the share, no policy is
+   published anywhere on `rdm.vu.nl` (§14.6), and there is now ~750 GB of
+   derived output plus a 41 GB tail archive on it representing days of
+   compute. The honest statement of the risk: **a loss would cost compute
+   time, not information.** Raw ERA5 is re-downloadable from CDS, the code and
+   all three `thresholds_*.json` are in git and OneDrive, and the full derived
+   side is reproducible from raw at roughly 7 h of array jobs plus ~36 h of
+   CDS queue. Nothing is unrecoverable; it would just be an unpleasant week.
+   **Revisit if and when the tail archive becomes the basis of a paper** — at
+   that point the archive stops being reproducible-in-principle and starts
+   being the thing a referee's timeline depends on.
+
+### 16.4 Still open — unchanged by this session
+
+1. **`jobs/04` still lacks `--skip-if-matching`** (§15.7 item 3). One-line fix,
+   and without it a resubmission recomputes instead of resuming.
+2. **§7's literature items**, still the highest value per unit effort and still
+   needing no compute: re-derive all 21 `REFERENCE_TABLE` sign entries (two
+   have already been found wrong; a flipped sign is invisible in every
+   magnitude comparison and fatal in rank, which is all the exceedance counting
+   uses), and obtain **Brown (1973), *Meteorological Magazine* 102, 347–360**,
+   the sole authority for `brown1`'s 0.3 coefficient.
+3. **`horizontal_divergence`** (§15.6a). Zero trend in 0 of 7 fits, negative in
+   two seasons, not explicable by sparseness. The testable next step is §5
+   risk 3: check whether its 42-year series has a discontinuity where ERA5's
+   observing system changes. The per-year series is already on disk in
+   `cat_outputs/per_diagnostic_*_series.csv` — **this needs a plot, not a job.**
+4. **§8's science questions** — the econometric unit of observation, supervisor
+   expectations and deadline. Now the binding ones: phase 5 is gated on a
+   research-design decision, not on data or infrastructure.
+
+### 16.5 Where the project stands
+
+**The replication is complete and the data is complete.** 504/504 North
+Atlantic months, a full contiguous global reference year, thresholds computed
+on all of it, 25/25 fitted trends significant and 25/25 containing Prosser's
+published value, with the sub-sample sensitivity measured at ≤1 percentage
+point. Storage is at 40 % with 1.5 TB free, and every size lands within 2 % of
+what this project projected for itself.
+
+Nothing in the pipeline gates phase 5. What gates it is §16.4 item 4.

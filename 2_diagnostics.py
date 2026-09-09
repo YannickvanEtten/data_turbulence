@@ -139,16 +139,46 @@ class FixSet:
         diagnostics, while this pipeline has it at a level ratio of 0.51
         against Prosser -- so the stencil does not explain #14, and this is the
         only other moving part it has.
+
+    ncsu1_computed_vorticity (F11)
+        Audit 5.6 candidate 2. #19 is the largest disagreement in the
+        replication -- level ratio 6.07, and the ONLY one whose error has the
+        opposite sign to everything else. The Ri-floor hypothesis (candidate 1)
+        was measured on 2026-09-09 and is dead: the floor binds on 0.0356 % of
+        global cells and reaches only 0.58 % of NCSU1's p97 tail. This is the
+        next candidate.
+
+        NCSU1 is the only one of the 21 containing |grad zeta| multiplied by
+        two other flow factors -- effectively a SECOND spatial derivative of
+        the wind. Today that zeta is ERA5's archived, spectrally-derived field,
+        which carries small-scale power a 0.25 deg centred difference cannot
+        represent, and that power is concentrated in the midlatitude storm
+        tracks rather than in the tropics that dominate the global threshold.
+        Prosser (2023) p. 2 downloaded only u, v, T and z, so HIS zeta is a
+        finite difference of the wind -- heavily damped by comparison. That
+        asymmetry predicts the right SIGN for a 6.07, which candidate 1 never
+        did.
+
+        Under the flag, zeta is built from the same vector_derivatives call
+        that already supplies du/dx and dv/dy, so |grad zeta| becomes a
+        derivative of a derivative of the same wind field, as Prosser's is.
+
+        READ THE LATITUDE-BAND TABLE, NOT JUST THE FLIP RATE. The hypothesis is
+        about region-versus-globe CONTRAST, so run this on a GLOBAL file: if it
+        is right, the midlatitude bands lose exceedance frequency relative to
+        the tropics. A large flip with a flat latitude profile would mean the
+        substitution matters but not for this reason.
     """
     meridional_metric: bool = False        # F1
     ubf_computed_vorticity: bool = False   # F2
     pv_sharman_a18: bool = False           # F3
     endlich_component_shear: bool = False  # F10
+    ncsu1_computed_vorticity: bool = False # F11
 
     def label(self) -> str:
         on = [k for k in ("meridional_metric", "ubf_computed_vorticity",
-                          "pv_sharman_a18", "endlich_component_shear")
-              if getattr(self, k)]
+                          "pv_sharman_a18", "endlich_component_shear",
+                          "ncsu1_computed_vorticity") if getattr(self, k)]
         return "+".join(on) if on else "baseline"
 
     def as_attrs(self) -> dict:
@@ -156,7 +186,8 @@ class FixSet:
                 "audit_fix_meridional_metric": int(self.meridional_metric),
                 "audit_fix_ubf_computed_vorticity": int(self.ubf_computed_vorticity),
                 "audit_fix_pv_sharman_a18": int(self.pv_sharman_a18),
-                "audit_fix_endlich_component_shear": int(self.endlich_component_shear)}
+                "audit_fix_endlich_component_shear": int(self.endlich_component_shear),
+                "audit_fix_ncsu1_computed_vorticity": int(self.ncsu1_computed_vorticity)}
 
 
 BASELINE_FIXES = FixSet()
@@ -1134,7 +1165,8 @@ def frontogenesis_isentropic(ds: xr.Dataset, target_level: int = 200,
 # ---------------------------------------------------------------------------
 # #21 — NCSU1  (Sharman A36)
 # ---------------------------------------------------------------------------
-def ncsu1(ds: xr.Dataset, target_level: int = 200, ri_floor: float = 1e-5) -> xr.DataArray:
+def ncsu1(ds: xr.Dataset, target_level: int = 200, ri_floor: float = 1e-5,
+          vorticity_source: str = "archived") -> xr.DataArray:
     r"""NCSU1 index, Sharman (2006) A36 / Kaplan et al. (2005).
 
         NCSU1 = [ 1 / max(Ri, 1e-5) ]
@@ -1151,15 +1183,29 @@ def ncsu1(ds: xr.Dataset, target_level: int = 200, ri_floor: float = 1e-5) -> xr
 
     Units: s⁻³.
     """
+    if vorticity_source not in ("archived", "computed"):
+        raise ValueError(f"ncsu1: vorticity_source must be 'archived' or "
+                         f"'computed', got {vorticity_source!r}")
+
     u    = _sel_level(ds, "eastward_wind", target_level)
     v    = _sel_level(ds, "northward_wind", target_level)
-    zeta = _sel_level(ds, "vorticity", target_level)
 
     # Projection-corrected vector-component derivatives (see docstring).
-    vd = vector_derivatives(u, v, "deg",
-                            components=[VelocityDerivative.DU_DX, VelocityDerivative.DV_DY])
+    _components = [VelocityDerivative.DU_DX, VelocityDerivative.DV_DY]
+    if vorticity_source == "computed":
+        _components += [VelocityDerivative.DV_DX, VelocityDerivative.DU_DY]
+    vd = vector_derivatives(u, v, "deg", components=_components)
     du_dx = vd[VelocityDerivative.DU_DX]
     dv_dy = vd[VelocityDerivative.DV_DY]
+
+    # F11 (audit 5.6 candidate 2). |grad zeta| is a second spatial derivative
+    # of the wind, and #19 is the only one of the 21 that contains it. Under
+    # "computed" it is built from the same operator as everything else here --
+    # as Prosser's necessarily is, having downloaded no vorticity.
+    if vorticity_source == "computed":
+        zeta = (vd[VelocityDerivative.DV_DX] - vd[VelocityDerivative.DU_DY])
+    else:
+        zeta = _sel_level(ds, "vorticity", target_level)
 
     advection = (u * du_dx + v * dv_dy).clip(min=0)
 
@@ -1176,6 +1222,7 @@ def ncsu1(ds: xr.Dataset, target_level: int = 200, ri_floor: float = 1e-5) -> xr
         "units": "s-3",
         "sharman_eq": "A36",
         "note": "corrected Ri; projection-corrected du_dx,dv_dy; floor=max(Ri,1e-5)",
+        "vorticity_source": vorticity_source,
     })
     return out
 
@@ -1438,7 +1485,9 @@ def _compute_all_21_inner(
                                            vorticity_source=("computed" if fixes.ubf_computed_vorticity
                                                              else "archived")),
         "f2d":                 lambda: frontogenesis_isentropic(ds, target_level=target_level, variant=f2d_variant),  # Q-UNITS-1 caught this: Q-F2D-5 added the isentropic A9 impl and wired it into 4_verify.py's hand-dict, but never updated THIS dispatch (used by 3_pipeline.py/cat_pipeline.py) -- was still silently calling the old Miller-form frontogenesis_2d()
-        "ncsu1":               lambda: ncsu1(ds, target_level=target_level),
+        "ncsu1":               lambda: ncsu1(ds, target_level=target_level,
+                                             vorticity_source=("computed" if fixes.ncsu1_computed_vorticity
+                                                               else "archived")),
         "rva_magnitude":       lambda: rva(ds, target_level=target_level),
         "brown2":              lambda: brown2(ds, brown1),
     }

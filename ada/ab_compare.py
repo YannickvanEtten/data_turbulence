@@ -377,7 +377,8 @@ def main() -> int:
     p.add_argument("input", type=Path)
     p.add_argument("--fix", action="append", default=[],
                    choices=["meridional_metric", "ubf_computed_vorticity",
-                            "pv_sharman_a18", "endlich_component_shear", "all"],
+                            "pv_sharman_a18", "endlich_component_shear",
+                            "ncsu1_computed_vorticity", "all"],
                    help="repeatable; 'all' enables every audit fix")
     p.add_argument("--target-level", type=int, default=200)
     p.add_argument("--f2d-variant", default=None,
@@ -401,7 +402,8 @@ def main() -> int:
     fixes = a.fix
     if "all" in fixes:
         fixes = ["meridional_metric", "ubf_computed_vorticity",
-                 "pv_sharman_a18", "endlich_component_shear"]
+                 "pv_sharman_a18", "endlich_component_shear",
+                 "ncsu1_computed_vorticity"]
     f2d_pair = (a.f2d_variant_baseline, a.f2d_variant_variant)
     if any(f2d_pair) and not all(f2d_pair):
         p.error("--f2d-variant-baseline and --f2d-variant-variant must be "

@@ -213,3 +213,104 @@ class TestF2dVariants:
         np.testing.assert_allclose(out_b["f2d"].values, -out_a["f2d"].values,
                                    rtol=0, atol=0)
         assert out_b["f2d"].attrs["f2d_variant"] == "B"
+
+
+# ---------------------------------------------------------------------------
+# F12 -- the four-variable provenance substitution
+# ---------------------------------------------------------------------------
+class TestFourVariableProvenance:
+    """AUDIT §5.5 generalised; STATUS.md §18.
+
+    Prosser (2023) p. 2 downloads u, v, T and z and nothing else, so every
+    vorticity, divergence and potential vorticity in his 21 is a finite
+    difference of that wind. This project downloads seven fields and takes
+    ERA5's archived `vo`, `d` and `pv` because CDS offers them. F12 removes
+    that difference in one place.
+
+    These tests do NOT assert that the substitution is more correct. It is
+    not: ERA5's archived zeta and delta are the IFS's own prognostic spectral
+    state (IFS CY49R1 Part III §2.2.7) and u, v are derived from THEM. What
+    they assert is that the flag does exactly what it claims -- one operator,
+    every consumer, nothing touched when it is off.
+    """
+
+    def test_flag_defaults_off_and_baseline_is_unchanged(self, diag):
+        assert diag.FixSet().four_variable_provenance is False
+        assert diag.BASELINE_FIXES.four_variable_provenance is False
+        assert diag.FixSet().label() == "baseline"
+
+    def test_label_and_attrs_carry_the_flag(self, diag):
+        f = diag.FixSet(four_variable_provenance=True)
+        assert f.label() == "four_variable_provenance"
+        assert f.as_attrs()["audit_fix_four_variable_provenance"] == 1
+        assert diag.FixSet().as_attrs()["audit_fix_four_variable_provenance"] == 0
+
+    def test_substitution_marks_all_three_fields(self, diag, prepared):
+        sub = diag.substitute_computed_fields(prepared)
+        ds = sub._dataset
+        for name in ("vorticity", "divergence_of_wind", "potential_vorticity"):
+            assert ds[name].attrs["field_source"] == "computed_from_u_v_t_z", name
+        assert ds.attrs["four_variable_provenance"] == 1
+
+    def test_substituted_fields_keep_shape_and_are_finite(self, diag, prepared):
+        ds0 = prepared._dataset
+        ds1 = diag.substitute_computed_fields(prepared)._dataset
+        for name in ("vorticity", "divergence_of_wind", "potential_vorticity"):
+            assert ds1[name].dims == ds0[name].dims, name
+            assert ds1[name].shape == ds0[name].shape, name
+            assert np.isfinite(np.asarray(ds1[name].values)).any(), name
+
+    def test_zeta_and_delta_come_from_one_call(self, diag, prepared):
+        """The point of substituting on the dataset rather than per
+        diagnostic: zeta and delta must be mutually consistent, i.e. built
+        from the same four velocity derivatives. Checked by rebuilding them
+        independently from the same operator and requiring bit equality."""
+        from rojak.core.derivatives import vector_derivatives, VelocityDerivative
+        ds = prepared._dataset
+        lev = float(np.asarray(ds["pressure_level"].values)[0])
+        vd = vector_derivatives(
+            ds["eastward_wind"].sel(pressure_level=lev),
+            ds["northward_wind"].sel(pressure_level=lev), "deg",
+            components=[VelocityDerivative.DU_DX, VelocityDerivative.DU_DY,
+                        VelocityDerivative.DV_DX, VelocityDerivative.DV_DY])
+        expect_zeta = (vd[VelocityDerivative.DV_DX] - vd[VelocityDerivative.DU_DY])
+        expect_div = (vd[VelocityDerivative.DU_DX] + vd[VelocityDerivative.DV_DY])
+        got = diag.substitute_computed_fields(prepared)._dataset
+        np.testing.assert_array_equal(
+            np.asarray(got["vorticity"].sel(pressure_level=lev).values),
+            np.asarray(expect_zeta.transpose(*got["vorticity"].sel(pressure_level=lev).dims).values))
+        np.testing.assert_array_equal(
+            np.asarray(got["divergence_of_wind"].sel(pressure_level=lev).values),
+            np.asarray(expect_div.transpose(*got["divergence_of_wind"].sel(pressure_level=lev).dims).values))
+
+    def test_off_leaves_the_archived_fields_untouched(self, diag, prepared):
+        ds = prepared._dataset
+        before = {n: np.array(ds[n].values, copy=True)
+                  for n in ("vorticity", "divergence_of_wind")}
+        diag.compute_all_21(prepared, fixes=diag.FixSet())
+        for n, arr in before.items():
+            np.testing.assert_array_equal(np.asarray(ds[n].values), arr)
+
+    def test_flag_changes_the_archived_field_consumers(self, diag, prepared):
+        """#5 horizontal_divergence is PURE archived `d` in the baseline
+        (STATUS.md §15.6), so it is the sharpest single test that the
+        substitution reaches rojak's own diagnostics and not only the
+        hand-written seven."""
+        base, _ = diag.compute_all_21(prepared, fixes=diag.FixSet())
+        var, _ = diag.compute_all_21(
+            prepared, fixes=diag.FixSet(four_variable_provenance=True))
+        assert set(base) == set(var)
+        a = np.asarray(base["horizontal_divergence"].values)
+        b = np.asarray(var["horizontal_divergence"].values)
+        m = np.isfinite(a) & np.isfinite(b)
+        assert m.any()
+        assert not np.allclose(a[m], b[m]), (
+            "horizontal_divergence is unchanged under F12, which would mean "
+            "the substitution never reached rojak's diagnostics")
+
+    def test_attrs_record_the_run(self, diag, prepared):
+        var, _ = diag.compute_all_21(
+            prepared, fixes=diag.FixSet(four_variable_provenance=True))
+        for da in var.values():
+            assert da.attrs["audit_fix_four_variable_provenance"] == 1
+            assert "four_variable_provenance" in da.attrs["audit_fixes"]

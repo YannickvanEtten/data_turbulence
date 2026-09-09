@@ -378,8 +378,13 @@ def main() -> int:
     p.add_argument("--fix", action="append", default=[],
                    choices=["meridional_metric", "ubf_computed_vorticity",
                             "pv_sharman_a18", "endlich_component_shear",
-                            "ncsu1_computed_vorticity", "all"],
-                   help="repeatable; 'all' enables every audit fix")
+                            "ncsu1_computed_vorticity",
+                            "four_variable_provenance", "all"],
+                   help="repeatable; 'all' enables every audit fix. NOTE "
+                        "four_variable_provenance SUPERSETS "
+                        "ubf_computed_vorticity, pv_sharman_a18 and "
+                        "ncsu1_computed_vorticity -- run it alone, not with "
+                        "them, or the comparison is against a mixed baseline")
     p.add_argument("--target-level", type=int, default=200)
     p.add_argument("--f2d-variant", default=None,
                    help="same variant on BOTH sides; default is "
@@ -401,9 +406,20 @@ def main() -> int:
 
     fixes = a.fix
     if "all" in fixes:
+        # four_variable_provenance is deliberately NOT in 'all': it is the
+        # superset of the three provenance fixes, so including it would make
+        # 'all' compare a mixed variant against a mixed intent. Ask for it by
+        # name, on its own.
         fixes = ["meridional_metric", "ubf_computed_vorticity",
                  "pv_sharman_a18", "endlich_component_shear",
                  "ncsu1_computed_vorticity"]
+    _subsumed = {"ubf_computed_vorticity", "pv_sharman_a18",
+                 "ncsu1_computed_vorticity"} & set(fixes)
+    if "four_variable_provenance" in fixes and _subsumed:
+        p.error("four_variable_provenance already rebuilds vorticity, "
+                "divergence and PV for EVERY diagnostic, so combining it with "
+                f"{sorted(_subsumed)} measures nothing extra and muddles the "
+                "label. Run it alone.")
     f2d_pair = (a.f2d_variant_baseline, a.f2d_variant_variant)
     if any(f2d_pair) and not all(f2d_pair):
         p.error("--f2d-variant-baseline and --f2d-variant-variant must be "

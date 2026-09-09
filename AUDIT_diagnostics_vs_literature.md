@@ -1279,6 +1279,54 @@ exceedance set sits on it. §5.6 candidate 1 is **dead**: NCSU1's 6.07 is not th
 Richardson floor. Candidates 2 (`|∇ζ|` from archived vorticity) and 3 (the
 `MAX(·,0)` clip) survive, and candidate 2 is the cheap one to test next.
 
+**F11 — NCSU1's vorticity provenance — measured 2026-09-09, job 1103092, and
+FALSIFIED WITH THE WRONG SIGN.** §5.6 candidate 2 held that `|∇ζ|` from ERA5's
+archived spectral vorticity carries small-scale power concentrated in the
+midlatitude storm tracks, inflating the North Atlantic box against a
+tropics-dominated global threshold. Rebuilding ζ from the same
+`vector_derivatives` call that supplies the rest of the diagnostic gives
+ρ = 0.99821, a 7.1 % median difference and a 6.7–8.3 % flip — material, so the
+substitution matters. But the latitude profile is the opposite of the
+prediction:
+
+```
+        -40..-30  -20..-10   -10..+0   +0..+10  +30..+40  +40..+50  +80..+90
+ncsu1     +0.094    -0.106    -0.136    -0.122    +0.022    +0.060    +0.306
+```
+
+**The tropics lose and the extratropics gain.** The premise was wrong: ERA5's
+small-scale vorticity power is concentrated in the *tropics*, not the storm
+tracks, so replacing the spectral field with a 0.25° finite difference — which
+is a low-pass filter — damps tropical NCSU1 hardest, and everything else gains
+by redistribution against the moving global threshold.
+
+That is decisive in a way a null result would not have been. `ncsu1` is 6.07×
+**too high** in the North Atlantic; Prosser computed ζ from `u, v` because he
+downloaded no vorticity; and adopting his provenance moves the North Atlantic
+box **up** (+0.022 to +0.060 pp at 30–60 °N). Candidate 2 cannot explain the
+disagreement because it has the wrong sign.
+
+**#19 is therefore unexplained after three candidates**, two of them eliminated
+by measurement (the Ri floor, §5.8 above; the ζ provenance, here) and the third
+— the `MAX(·,0)` clip — specified verbatim by A36 and W&S Eq. 7, so it is not
+something that can be "fixed". One caveat belongs with the 6.07 itself: both
+levels are small (0.425 % ours, 0.07 % his) and his is read off the position of
+a red cross to about ±0.02 (`data_prosser/SCORECARD.md`), so the ratio carries
+roughly ±30 % of its own. That does not dissolve a factor of six, but it means
+the target is softer than the two-decimal figure suggests.
+
+**Why F11 should NOT go into the batched re-derive, on a principle rather than
+on the fit.** F2's case rests on Koch & Caracena (2002) §2 defining UBF as the
+residual in "the computed sum of the terms" — a residual of near-cancelling
+terms only balances if its terms share one operator, so consistency is
+*required* there. NCSU1 has no such requirement: `|∇ζ|` is a field magnitude in
+a product, nothing cancels, and neither Sharman A36 nor W&S Eq. 7 says whether
+ζ is archived or computed. Absent a specification, ERA5's archived vorticity is
+the better estimate of the true field. F11 stays available as a flag and as a
+documented sensitivity; it does not become the default. Note that this reasoning
+would be identical had the measurement come out the other way — which is the
+test of whether it is a principle or a rationalisation.
+
 **What the three large ones have in common.** F3, F6 and F10 are not bug fixes.
 Each is a choice between two defensible readings — two definitions of PV, two
 readings of A9, two discretisations of ∂ψ/∂z — and each changes the identity of

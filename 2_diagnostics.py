@@ -168,26 +168,68 @@ class FixSet:
         is right, the midlatitude bands lose exceedance frequency relative to
         the tropics. A large flip with a flat latitude profile would mean the
         substitution matters but not for this reason.
+
+    four_variable_provenance (F12)
+        Audit 5.5 generalised. THIS IS THE SUPERSET OF F2, F3 AND F11, and
+        the reason it exists is that those three were chased separately for
+        three days when they are one question asked three times.
+
+        Prosser (2023) p. 2 downloads FOUR fields -- "zonal and meridional
+        wind speed, dry bulb temperature, and geopotential height" -- and then
+        states "The 21 turbulence diagnostics were then calculated from the
+        extracted reanalysis fields." So every vorticity, divergence and
+        potential vorticity in his 21 is a finite difference of that wind on
+        his own grid. This project downloads SEVEN, taking ERA5's archived
+        `vo`, `d` and `pv` because CDS offers them. That convenience is the
+        entire archived-versus-computed axis, and it is ours, not his.
+
+        Under this flag `vorticity`, `divergence_of_wind` and
+        `potential_vorticity` are all rebuilt from u, v, T and z before any
+        diagnostic runs, so EVERY consumer sees one operator -- rojak's
+        horizontal_divergence and ti2 (archived `d`), magnitude_pv (archived
+        `pv`), brown1 / vorticity_squared / rva / nva (archived `vo`), and the
+        hand-written ubf and ncsu1 as well. F2, F3 and F11 remain as
+        single-diagnostic probes; this is the one that answers the question.
+
+        WHAT THIS IS NOT. It is not a correction. ERA5's archived zeta and
+        delta are the IFS's own PROGNOSTIC spectral variables -- IFS
+        Documentation CY49R1, Part III, section 2.2.7: "The model state at
+        time t is defined by the spectral coefficients of zeta, D, T, q and
+        ln ps" -- and u and v are derived FROM them by inverse spectral
+        transform, not the other way round. Re-deriving zeta from archived
+        u, v on a 0.25 deg grid is therefore a lossy round trip: spectral
+        zeta -> u, v -> truncation -> centred difference -> a damped zeta.
+        The archived field is closer to the model; the computed field is
+        closer to Prosser. Both are defensible and the paper must say which
+        it used and why. This flag exists so that choice is measured rather
+        than inherited.
+
+        Same for PV, in the opposite direction from what one would guess:
+        ERA5's archived `pv` is diagnosed by ECMWF on the model's own L137
+        vertical grid, so its dtheta/dp is far better resolved than anything
+        this project can build on a 50 hPa stencil -- and than anything
+        Prosser can build on an 18 hPa one. Substituting A18 makes #10 WORSE
+        physics and CLOSER to the replication target.
     """
     meridional_metric: bool = False        # F1
     ubf_computed_vorticity: bool = False   # F2
     pv_sharman_a18: bool = False           # F3
     endlich_component_shear: bool = False  # F10
     ncsu1_computed_vorticity: bool = False # F11
+    four_variable_provenance: bool = False # F12
+
+    _FIELDS = ("meridional_metric", "ubf_computed_vorticity",
+               "pv_sharman_a18", "endlich_component_shear",
+               "ncsu1_computed_vorticity", "four_variable_provenance")
 
     def label(self) -> str:
-        on = [k for k in ("meridional_metric", "ubf_computed_vorticity",
-                          "pv_sharman_a18", "endlich_component_shear",
-                          "ncsu1_computed_vorticity") if getattr(self, k)]
+        on = [k for k in self._FIELDS if getattr(self, k)]
         return "+".join(on) if on else "baseline"
 
     def as_attrs(self) -> dict:
-        return {"audit_fixes": self.label(),
-                "audit_fix_meridional_metric": int(self.meridional_metric),
-                "audit_fix_ubf_computed_vorticity": int(self.ubf_computed_vorticity),
-                "audit_fix_pv_sharman_a18": int(self.pv_sharman_a18),
-                "audit_fix_endlich_component_shear": int(self.endlich_component_shear),
-                "audit_fix_ncsu1_computed_vorticity": int(self.ncsu1_computed_vorticity)}
+        attrs = {"audit_fixes": self.label()}
+        attrs.update({f"audit_fix_{k}": int(getattr(self, k)) for k in self._FIELDS})
+        return attrs
 
 
 BASELINE_FIXES = FixSet()
@@ -240,6 +282,89 @@ def meridional_metric_patch(enabled: bool = True):
         yield True
     finally:
         _der.nominal_grid_spacing = original
+
+
+def substitute_computed_fields(catdata: CATData) -> CATData:
+    """F12. Return a CATData whose `vorticity`, `divergence_of_wind` and
+    `potential_vorticity` are rebuilt from u, v, T and z -- Prosser's four
+    fields -- instead of read from ERA5's archive.
+
+    ONE SUBSTITUTION, EVERY CONSUMER. Doing it on the dataset rather than
+    per diagnostic is the whole point: rojak's `horizontal_divergence` and
+    `ti2` read `divergence_of_wind`, `magnitude_pv` reads
+    `potential_vorticity`, and `brown1`, `vorticity_squared`, `rva_magnitude`
+    and `nva` read `vorticity`, none of which this module can reach through a
+    keyword argument. After this call all of them, plus the hand-written `ubf`
+    and `ncsu1`, are computed from one operator.
+
+    THE OPERATOR. `vector_derivatives` -- the curvature-corrected
+    vector-component derivative rojak inherits from MetPy, and the one
+    STATUS.md 4c's standing rule requires for any derivative OF a wind
+    component. zeta = dv/dx - du/dy and delta = du/dx + dv/dy come from a
+    single call per level, so they are mutually consistent by construction.
+    Called from inside `compute_all_21`, so it sits inside the F1 patch
+    context when that is enabled and shares its geometry.
+
+    PV IS SHARMAN A18, because that is the only PV obtainable from four
+    fields: PV = -g (zeta + f) dtheta/dp (Sharman 2006 A18, p. 283; Lee et al.
+    2023 Eq. 6, p. 3). It is built on the substituted zeta, so it is a
+    four-variable quantity throughout. Note the two constant factors carried
+    deliberately and documented in `magnitude_pv_a18`: theta is
+    differentiated with respect to a pressure coordinate in hPa (100x SI), and
+    published tables are in PVU (1e-6 SI). Both cancel in a percentile
+    calibration and neither is applied here.
+
+    PER LEVEL, THEN CONCATENATED, deliberately. `vector_derivatives` is
+    exercised everywhere else in this module on (lat, lon, time) slices; a
+    four-dimensional call would be relying on broadcasting behaviour of the
+    PROJ scale factors that nothing in this project has tested. The loop is
+    three iterations.
+
+    NOT A FIX. See FixSet.four_variable_provenance: ERA5's archived zeta and
+    delta are the IFS's prognostic spectral state and u, v are derived from
+    THEM. This substitution moves toward Prosser and away from the model.
+    """
+    ds = catdata._dataset
+    for _required in ("eastward_wind", "northward_wind", "temperature"):
+        if _required not in ds.data_vars:
+            raise KeyError(f"substitute_computed_fields: {_required!r} missing")
+
+    u, v = ds["eastward_wind"], ds["northward_wind"]
+    target_dims = ds["vorticity"].dims if "vorticity" in ds.data_vars else u.dims
+
+    zeta_levels, div_levels = [], []
+    for lev in np.asarray(ds["pressure_level"].values):
+        vd = vector_derivatives(
+            u.sel(pressure_level=lev), v.sel(pressure_level=lev), "deg",
+            components=[VelocityDerivative.DU_DX, VelocityDerivative.DU_DY,
+                        VelocityDerivative.DV_DX, VelocityDerivative.DV_DY])
+        zeta_levels.append(vd[VelocityDerivative.DV_DX] - vd[VelocityDerivative.DU_DY])
+        div_levels.append(vd[VelocityDerivative.DU_DX] + vd[VelocityDerivative.DV_DY])
+
+    zeta = xr.concat(zeta_levels, dim="pressure_level").transpose(*target_dims)
+    delta = xr.concat(div_levels, dim="pressure_level").transpose(*target_dims)
+
+    theta = _potential_temperature(ds["temperature"], ds["temperature"]["pressure_level"])
+    pv = _rojak_potential_vorticity(zeta, theta).transpose(*target_dims)
+
+    provenance = {"field_source": "computed_from_u_v_t_z",
+                  "audit_fix": "F12 four_variable_provenance",
+                  "note": "NOT ERA5 archived; see FixSet.four_variable_provenance"}
+    zeta = zeta.rename("vorticity")
+    zeta.attrs.update({"long_name": "Relative vorticity (dv/dx - du/dy)",
+                       "units": "s-1", **provenance})
+    delta = delta.rename("divergence_of_wind")
+    delta.attrs.update({"long_name": "Horizontal divergence (du/dx + dv/dy)",
+                        "units": "s-1", **provenance})
+    pv = pv.rename("potential_vorticity")
+    pv.attrs.update({"long_name": "Potential vorticity (Sharman A18)",
+                     "units": "K m2 kg-1 s-1", "sharman_eq": "A18", **provenance})
+
+    ds2 = ds.assign(vorticity=zeta, divergence_of_wind=delta,
+                    potential_vorticity=pv)
+    ds2.attrs = dict(ds.attrs)
+    ds2.attrs["four_variable_provenance"] = 1
+    return CATData(ds2, pressure_level_prefix=100.0)
 
 
 # ===========================================================================
@@ -1445,6 +1570,12 @@ def _compute_all_21_inner(
     Diagnostics that still carry a pressure_level dimension are reduced to
     `target_level` at the end.
     """
+    # F12. Rebuild zeta, delta and PV from u, v, T, z BEFORE anything reads
+    # them, so rojak's diagnostics and the hand-written seven share one
+    # operator. Must come first: `compute_rojak_diagnostics` below is handed
+    # `catdata` directly, and `ds` is what every hand-written builder reads.
+    if fixes.four_variable_provenance:
+        catdata = substitute_computed_fields(catdata)
     ds = catdata._dataset
 
     out, failures = compute_rojak_diagnostics(catdata, unsquare_deformation=True)

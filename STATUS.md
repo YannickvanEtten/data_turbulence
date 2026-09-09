@@ -5,8 +5,9 @@
 no longer findable. Those references are not retrievable; this file replaces
 them. When a decision gets made, it gets written here, not into a docstring.
 
-Last updated: 2026-09-08. **READ §15 AND §16 FIRST** — they are the current
-state. The fork this file used to carry (a §14 that existed only in the Claude
+Last updated: 2026-09-09. **READ §18 FIRST, THEN §15–§17** — §18 is the
+current state and the handover for a new chat; §15–§17 are the pipeline and
+replication state it builds on. The fork this file used to carry (a §14 that existed only in the Claude
 project, a §15 that existed only in the repo) is **closed as of 2026-09-08**:
 both are below, and the project and the repo hold the identical document. See
 §16.1.
@@ -2431,3 +2432,375 @@ data_prosser/              the CSVs from ADA, the figures, SCORECARD.md and
    remain as costed in `PLAN_prosser_replication.md`. **S5 is the only
    published per-diagnostic map**, so if the investigate list turns out to be
    spatially structured, that is the figure that would show it.
+
+---
+
+## 18. Session of 2026-09-09 — the literature audit landed, the three residual ambiguities named, two of them closed
+
+**Read this section before opening a new chat about the diagnostics.** It is the
+handover. §18.1–18.3 are what was measured; §18.4–18.7 are the conclusions and
+are the part that changes what the project does next; §18.8–18.10 are the code,
+the open items and one method lesson.
+
+**Headline in one paragraph.** `AUDIT_diagnostics_vs_literature.md` (125 KB, repo
+root and Claude project) audited all 21 diagnostics against their primary
+sources and found that **the formulas were never the problem** — all 21 are now
+transcribed, cited to equation and page, and defensible. What is left is three
+axes on which no CAT paper states its choice: **discretisation**, **field
+provenance**, and **vertical resolution**. The discretisation axis is now
+resolved to a named, citable convention (§18.5); the provenance axis is resolved
+to a *choice* with a measurement attached rather than a bug (§18.6); the
+resolution axis is closed and was never open (§18.7). The Stage-1 A/B battery
+that measured all this is jobs 1102936 and 1103092, in §18.2–18.3.
+
+### 18.1 What the audit produced, and the rule that made it worth doing
+
+`AUDIT_diagnostics_vs_literature.md` — §1 exec summary, §2 dependency graph,
+§3 shared building blocks, §4 the 21 individual audits, §5 reconciliation with
+the empirical evidence, §6 proposed fixes F1–F11, §7 unresolved.
+
+**The rule of evidence, which is why this audit is worth more than the three
+that preceded it:** nothing in the repository counted as evidence about the
+literature. `FORMULA_AUDIT.md`, the docstrings, `STATUS.md` itself and every
+previous audit were treated as *claims to be re-tested*, not sources. Every
+verdict cites an equation number and a page. And a magnitude comparison was not
+allowed to settle a formula question — thresholds are percentiles of our own
+data, so any constant factor cancels exactly (§5 point 5), and a table of
+ratios against a published median cannot distinguish a wrong formula from a
+different resolution. The 21 audits in §4 were written **blind**, before
+`data_prosser/per_diagnostic_vs_prosser.csv` or §17.5 were opened.
+
+That discipline is what produced §18.5 and §18.6, both of which contradict
+things this project had previously written down.
+
+### 18.2 Stage-1 A/B battery — job 1102936, `jobs/22_ab_compare.sbatch`
+
+`ada/ab_compare.py` computes all 21 twice on one input and reports the
+**symmetric difference of the exceedance set**, W(A xor B)/W(A or B), per
+severity. That metric, not ρ and not a relative difference, is the one that can
+say whether a fix changes the science: ρ = 0.9999 can still flip several per
+cent of the p97 tail, and a constant scale error flips exactly nothing.
+**Pre-registered rule, fixed before the numbers: flip < 0.5 % at every severity
+= inert, merge on the citation alone; flip >= 0.5 % anywhere = material.**
+
+| fix | what it substitutes | diagnostics moved | flip rate | ρ | verdict |
+|---|---|---|---|---|---|
+| **F1** meridional metric | dy = map distance a·dφ, not the true arc M·dφ | **13 of 21** | 0.18–0.76 % | ≥ 0.99974 | MATERIAL, marginally (`brown1`, `deformation`, `ngm2` clear 0.5 %) |
+| **F2** ubf computed ζ | `ubf`'s ζ from `vector_derivatives`, not archived `vo` | 1 | 0.86–1.10 % | 0.99950 | MATERIAL but small — **hypothesis largely falsified** |
+| **F3** PV from Sharman A18 | `magnitude_pv` = −g(ζ+f)∂θ/∂p, not archived Ertel `pv` | 1 | **64–80 %** | 0.9655 | MATERIAL, large |
+| **F10** Endlich closed form | \|u dv/dz − v du/dz\|/(u²+v²), not rojak's angle secant | 1 | **41–66 %** | 0.9498 | MATERIAL, large |
+| **F6** f2d variant C → A | signed material derivative, not its magnitude | 1 | **68–70 %** | **0.0275** | MATERIAL, largest — barely the same ranking |
+| **F5** NCSU1 Ri floor | *measurement, not a substitution* | — | floor binds 0.0356 % of global cells, reaches **0.58 %** of the p97 tail | — | **candidate DEAD** |
+
+**F1's error is monotone in \|latitude\|, not in latitude** — a U symmetric about
+the equator, +0.42 % at 30N falling to −0.27 % at 75N and rising again. An
+earlier draft of §3.1 of the audit said "monotone in latitude"; that was wrong
+and is corrected there. The blast radius was written as "15 of 21" and measured
+at **13**; the other 8 have no horizontal ∂/∂y and came back bit-identical.
+
+**F2's hypothesis was largely falsified by its own pre-registered test.** The
+audit predicted that mixing ERA5's spectral ζ with 0.25° finite-difference
+terms inside a near-cancelling residual would be large. It is 1 %. The
+falsification promoted the *other* candidate — the spherical Jacobian
+convention — which is what §18.5 then settled.
+
+### 18.3 F11 — job 1103092, `jobs/23_ncsu1_zeta.sbatch`
+
+`ncsu1` (#19) is the largest disagreement in the whole replication: a 1979
+exceedance level ratio of **6.07**, and the only one of the 21 whose error has
+the opposite sign to everything else. §5.6 of the audit listed three candidates.
+
+- **Candidate 1, the `MAX(Ri, 1e-5)` floor — DEAD.** Measured in job 1102936
+  step 7 (row F5 above). It cannot carry a factor of six.
+- **Candidate 2, \|∇ζ\| from archived vorticity — FALSIFIED, and with the wrong
+  sign.** ρ = 0.99821, median relative difference 7.1 %, flip 6.7–8.3 %, so the
+  substitution is MATERIAL. But the latitude tilt runs the opposite way to the
+  prediction: **tropics −0.106 / −0.136 / −0.122, extratropics +0.02 to
+  +0.306.** The premise — that ERA5's spectral ζ carries excess small-scale
+  power in the midlatitude *storm tracks* — was wrong. The excess is
+  **tropical**, which is convection, not baroclinic eddies.
+- **Candidate 3, the `MAX(·,0)` clip on the advection term, is what is left.**
+
+**#19 is unexplained after three candidates.** That is worth recording as a
+result rather than a gap: it is the one place where the audit's method did not
+converge.
+
+### 18.4 The formulas were never the problem
+
+All 21 are derivable from the four fields Prosser downloads, and all 21 are now
+transcribed with a citation. Where the disagreement actually lives is three
+axes, and **no CAT paper — Sharman 2006, Williams & Joshi 2013, Williams 2017,
+Storer 2017, Williams & Storer 2022, Prosser 2023 — states its choice on any of
+them.** They specify the diagnostics analytically and the data source, and stop.
+
+1. **Discretisation** — the finite-difference scheme and the spherical metric.
+2. **Provenance** — whether ζ, δ and PV are read from the archive or computed.
+3. **Vertical resolution** — 175/200/225 against Prosser's 188/197/206.
+
+**That absence is itself a publishable observation** and belongs in the thesis
+in one paragraph: the CAT literature specifies its diagnostics but not the three
+choices that this project measures moving the exceedance set by up to 80 %.
+Nobody has written that down.
+
+### 18.5 AXIS 1 RESOLVED — the convention is MetPy's, and MetPy's nominal path is internally inconsistent
+
+**This corrects an assumption the project had been carrying.** F1 was framed as
+"rojak gets the meridional metric wrong". It does not. rojak reproduces MetPy
+exactly, and the inconsistency is MetPy's.
+
+MetPy's own source, `src/metpy/calc/tools.py`:
+
+- `nominal_lat_lon_grid_deltas` builds
+  **`dx = geod.a * np.diff(longitude).m_as('radian')`** — the *nominal
+  equatorial map* distance, no latitude dependence — and
+  **`dy` from `geod.inv(...)` along the meridian** — the *true geodesic arc*.
+  The two axes are therefore in **different coordinates**.
+- `parse_grid_arguments`, for a plain 1-D latitude/longitude DataArray with no
+  CRS, falls back to **`proj = Proj(CRS('+proj=latlon'))`** and then
+  `factors = proj.get_factors(scale_lon, scale_lat)`. For plate carrée that is
+  `parallel_scale = a/(N cos φ)` and `meridional_scale = a/M(φ)`.
+- `geospatial_gradient` then does **`derivatives[component] *= scales[component]`**
+  — the raw derivative is *multiplied* by the scale factor, with no curvature
+  term. `vector_derivative` does the same and adds the cross terms
+  `parallel_scale * du/dx − v * dx_correction`, etc.
+
+For x that is exact: `a·dλ` is the plate-carrée map distance and `a/(N cos φ)`
+converts it (verified to machine zero in `tests/test_metric_terms.py`). For y,
+`M·dφ` **is already** `d/dy`, and multiplying by `a/M` applies the correction a
+second time. `a/M` runs from 1.0068 at the equator to 0.9966 near the pole —
+a ~1 % spread, symmetric in \|φ\|, which is precisely the U-shaped defect §18.2
+measured.
+
+**Measured against exact ellipsoidal truth** (`tests/test_metric_terms.py`, two
+analytic fields whose zonal arc is `N(φ)cos φ·Δλ` and whose meridional arc comes
+from `pyproj.Geod.inv`): the MetPy/rojak convention is off by **4.2 × 10⁻³**;
+with F1 the error is **2 × 10⁻⁷**, four orders below, and is finite-difference
+truncation rather than a metric error.
+
+**Therefore, stated plainly for the write-up:**
+
+- On the convention that matters most — using `vector_derivatives()` with its
+  curvature terms for any derivative *of* a wind component, never the scalar
+  gradient — **this project is in line with MetPy, deliberately** (§4c, §4g,
+  and the standing rule). That is not in question and F1 does not touch it.
+- On the meridional grid spacing, **F1 is a deliberate departure from MetPy**,
+  taken because MetPy's `nominal_lat_lon_grid_deltas` is inconsistent with the
+  meridional map-scale factor it then applies. The departure is 4 orders more
+  accurate against an exact ellipsoidal reference.
+- **Worth reporting upstream to both MetPy and rojak.** It is a small, real,
+  reproducible defect and the test that demonstrates it is already written.
+- The sentence for the paper: *horizontal gradients follow the MetPy spherical
+  convention (curvature-corrected vector-component derivatives), with the
+  meridional grid spacing taken as the plate-carrée map distance a·dφ so that
+  the meridional map-scale factor is applied exactly once; verified against
+  exact ellipsoidal gradients to 2 × 10⁻⁷.*
+
+There is no implementation-guidance paper for CAT diagnostics and there is no
+point looking for one again. MetPy's documented API is the closest thing to a
+de-facto standard, and its docs do not state which coordinate `dx`/`dy` are in
+— which is how this defect survived.
+
+### 18.6 AXIS 2 RESOLVED as a CHOICE, not a bug — and the seven variables are six too many
+
+**The catch that reframes F2, F3 and F11.** Prosser (2023) p. 2 lists four
+fields — "zonal and meridional wind speed, dry bulb temperature, and
+geopotential height" — and then: "The 21 turbulence diagnostics were then
+calculated from the extracted reanalysis fields." All 21 *are* derivable from
+those four: ζ = ∂v/∂x − ∂u/∂y, δ = ∂u/∂x + ∂v/∂y, PV = −g(ζ+f)∂θ/∂p (Sharman
+A18). This project downloads **seven**, taking ERA5's archived `vo`, `d` and
+`pv` because CDS offers them.
+
+**Those three extra fields are the entire archived-versus-computed axis, and it
+is ours, not his.** F2, F3 and F11 are one question asked three times, and it
+was chased as three for three days.
+
+**But the archived fields are not the error, and this is the part that reverses
+the intuition.** ERA5's ζ and δ are the IFS's own **prognostic spectral
+variables** — IFS Documentation CY49R1, Part III, §2.2.7: *"The model state at
+time t is defined by the spectral coefficients of ζ, D, T, q and ln ps"* — and
+`u` and `v` on the archive are derived **from them** by inverse spectral
+transform, not the other way round. Recomputing ζ from archived u, v on a 0.25°
+grid is a lossy round trip: spectral ζ → u, v → truncation → centred difference
+→ a damped ζ. **The archived field is closer to the model; the computed field is
+closer to Prosser.**
+
+This also explains F11's sign, after the fact: the excess small-scale power in
+ERA5's spectral ζ relative to a 0.25° difference is **tropical** (convection),
+which is why the tropics lost exceedance frequency and the extratropics gained.
+
+Potential vorticity runs the same way and further. ERA5's archived `pv` is
+diagnosed by ECMWF on the model's own L137 vertical grid, so its ∂θ/∂p is far
+better resolved than anything obtainable from a 50 hPa stencil — or from
+Prosser's 18 hPa one. **Substituting Sharman A18 is worse physics and closer to
+the replication target.** Both are legitimate; the paper must say which it used
+and why. F3's 64–80 % flip is now explained rather than merely measured.
+
+**F12 `four_variable_provenance` is the resolution.** It rebuilds `vorticity`,
+`divergence_of_wind` and `potential_vorticity` from u, v, T, z **on the
+dataset**, before any diagnostic runs, so it reaches every consumer — including
+the ones no per-diagnostic flag could touch: rojak's `horizontal_divergence` and
+`ti2` (archived `d`), and `brown1`, `vorticity_squared`, `rva_magnitude` and
+`nva` (archived `vo`). It is a **side-by-side**, run against the archived
+baseline; nothing on disk is replaced. See §18.8 and `jobs/24_four_variable.sbatch`.
+
+**Prediction on record, before the numbers:** the same tropics-negative /
+extratropics-positive tilt F11 measured for `ncsu1` alone should appear across
+the whole archived-field group. A flat or reversed tilt falsifies the reading
+and it should be dropped rather than rescued.
+
+**Note for §15.6a / §17.4.** `horizontal_divergence` is pure archived `d`, has
+no trend in 0 of 7 fits, and Prosser gets the same flat line. F12 is the first
+thing that touches it. Whatever it does there is informative either way.
+
+### 18.7 AXIS 3 — CLOSED, and it was never open. The backup, for the referee
+
+**Nothing to do.** Recorded here because the question keeps being re-asked.
+
+- **It is a constraint, not a choice.** 188/197/206 hPa are ECMWF L137 model
+  levels 73/74/75, MARS-only. 175/200/225 is the finest stencil the CDS
+  pressure-level product offers at 200 hPa (§11.6). Model levels are hybrid
+  sigma-pressure, i.e. terrain-following, so even with MARS access the
+  comparison would not be exact.
+- **Others work at exactly our stencil.** Williams & Storer (2022) use ERA5
+  pressure levels. Wong et al. (2025) — rojak's own author — uses 175/200/225
+  evaluated at 200 hPa. Prosser is the outlier, not us.
+- **It moves LEVELS and not TRENDS, and that is measured three independent
+  ways.** §15.11: recalibrating the reference year moved the level by up to
+  4.6 % and the trend by ≤ 1 percentage point in all 25 cells. §15.5: the
+  stencil bias is stable in time — it biases the level by 12–24 %, deepening
+  with severity, and cancels out of the relative change to within 0–4 %.
+  §17.3, pre-registered and passed: the deficit concentrates in the ten
+  diagnostics that use the vertical stencil (median level ratio **0.73**) and
+  nearly vanishes in the eleven that do not (**0.93**), with trend ratios at
+  ~1.0 in *both* groups.
+- **Williams & Storer (2022) Table 1, p. 1431 is the published citation** that
+  the thermodynamic diagnostics are the resolution-sensitive family. This is a
+  known sensitivity being reported, not an anomaly being explained away.
+- **The replication holds regardless.** 25/25 Prosser Table-1 cells inside the
+  95 % interval, 25/25 significant, 16/21 significant per-diagnostic trends
+  against his 17 (the gap is `magnitude_pv` at t = 1.97 against a critical
+  2.021), largest relative change +73.9 % against his +75.6 %, and 0 significant
+  downward trends in both.
+- **Could it be closed? Yes, at a cost, and the honest framing is a declined
+  option rather than a limitation.** ERA5 model levels 73/74/75 via MARS
+  ("ERA5 complete") is the same data volume already on the share. The binding
+  constraint is MARS tape retrieval throughput — realistically weeks of queue
+  for 42 years × 3-hourly — and it would not change the trends. There is
+  1.5 TB free (§16.2), so storage is not what declines it.
+- **The reportable sentence:** *diagnostics are evaluated at 200 hPa on a
+  175/200/225 hPa stencil, the finest available in the ERA5 pressure-level
+  product; Prosser et al. (2023) use model levels 73–75 (≈188/197/206 hPa) from
+  the MARS archive. The wider stencil biases the exceedance level by 12–24 %,
+  deepening with severity, and changes the fitted 1979–2020 relative trend by
+  at most one percentage point in any season or severity.*
+
+### 18.8 Code, tests and jobs added this session
+
+```
+2_diagnostics.py
+    FixSet gains four_variable_provenance (F12) and a _FIELDS tuple, so
+    label() and as_attrs() no longer need editing per fix.
+    substitute_computed_fields(catdata) -> CATData     NEW
+        rebuilds vorticity, divergence_of_wind and potential_vorticity from
+        u, v, T, z via one vector_derivatives call per level; PV is Sharman
+        A18 on the substituted zeta. Called first inside
+        _compute_all_21_inner, so it sits inside the F1 patch context and
+        every consumer sees one operator.
+    F2D_DEFAULT_VARIANT changed "C" -> "A"   (earlier this session)
+        W&S (2022) Eq. (3) p. 1427 writes the signed material derivative,
+        not its magnitude. Counter-evidence retained in the test docstrings.
+
+ada/ab_compare.py
+    --fix four_variable_provenance added; deliberately NOT in --fix all,
+    since it supersets F2/F3/F11, and combining them is now a hard error.
+
+tests/test_audit_fixes.py
+    TestFourVariableProvenance, 8 tests: flag defaults off, label and attrs
+    round-trip, all three fields marked, shapes preserved, zeta and delta
+    provably from ONE vector_derivatives call, baseline untouched,
+    horizontal_divergence provably changed (the sharpest test that the
+    substitution reaches rojak's own diagnostics), attrs recorded.
+
+tests/test_metric_terms.py        (earlier this session, 13 tests)
+    F1's pass/fail criterion against two analytic fields with exactly-known
+    ellipsoidal gradients. 4.2e-3 baseline vs 2e-7 patched.
+
+tests/test_analytic.py, tests/test_audit_fixes.py   (updated)
+    test_f2d_default_is_the_signed_material_derivative (was ..._the_magnitude)
+    test_default_is_A                                 (was test_default_is_C)
+    test_variant_C_still_reproduces_the_archived_run  (was ..._A_..._old_behaviour)
+    Each docstring records what it used to assert and cites W&S Eq. 3.
+
+ada/ncsu1_floor_probe.py          F5. Measures, does not change, the Ri floor.
+jobs/22_ab_compare.sbatch         the Stage-1 battery, 7 checks, 48G/4h
+jobs/23_ncsu1_zeta.sbatch         F11 on the global file, 48G/2h
+jobs/24_four_variable.sbatch      F12 side-by-side, global + NA, 48G/4h   NEW
+```
+
+**Suite state: 82 passed, on Windows and on ADA.** It was 80 passed / 2 failed
+after the F2D default change; the two failures were the tests asserting the old
+default, and they were updated rather than the change reverted, because W&S
+Eq. (3) is unambiguous.
+
+**Two mistakes caught before submission, both from re-reading §11.9 and §15.7
+rather than from the code:** `ab_compare.py` was first written calling
+`weighted_percentile` once per severity — the exact 5× sort bug that killed job
+1092585 on walltime (§11.5 #2) — and fixed to one call with all five
+percentiles, verified bit-identical; and the first `jobs/22` asked for 96 GB /
+8 h, against §11.9's measurement that a 120 GB request scheduled 22 hours out
+where 24 GB started in 13 seconds. Both jobs run at 48G, which fits all 17
+nodes in `defq`.
+
+### 18.9 Run ledger addendum — 2026-09-09
+
+| Job | Name | Result | Elapsed | What it did |
+|---|---|---|---|---|
+| **1102936** | cat-ab (jobs/22) | COMPLETED | ~3 h | **the Stage-1 A/B battery — §18.2.** 7 steps: suite, F1 global, F2, F3, F10, F6, F5 probe |
+| **1103092** | cat-ncsu1 (jobs/23) | COMPLETED, exit 0 | **77 min** | **F11, NCSU1 vorticity provenance — §18.3.** Candidate 2 falsified with the wrong sign |
+
+### 18.10 What is next, in order
+
+1. **Run `jobs/24_four_variable.sbatch`** — the F12 side-by-side. This is the
+   one measurement that closes axis 2, and it replaces the three separate
+   probes that were run for it.
+2. **Write the canonical formula appendix** — all 21, each with its citation
+   (equation and page), its discretisation and its field provenance stated.
+   This is the artefact the audit was for and it does not exist yet. It is also
+   what makes §18.4's observation about the literature reportable.
+3. **ONE batched re-derive, not six.** Everything MATERIAL goes in together:
+   F1, F2/F3 (or F12, if §18.8's run says the superset is the right unit),
+   F4, F6, F8, with F10 and F11 as documented sensitivities. 504 NA months
+   ≈ 7 h at the QOS cap, then recalibration, then `ada/per_diagnostic_trend.py`.
+   **Do not re-derive per fix.** The A/B harness exists precisely so that the
+   decision is made once.
+4. **Write the eight per-diagnostic level discrepancies up as a limitation**,
+   using §18.7's reportable sentence. 13 of 21 sit within 0.85–1.12 of
+   Prosser's 1979 level; the other 8 are the stencil-sensitive family and the
+   §17.3 test already separates them.
+5. **Report F1 upstream** to MetPy and rojak (§18.5). The test is written.
+
+**Still missing from `Articles/`, and both still worth obtaining:**
+
+- **Sharman & Pearson (2017) Part I**, *J. Appl. Meteor. Climatol.* **56**,
+  317–337 — the EDR remapping, and the source of `brown2`'s missing length².
+- **Brown (1973)**, *Meteorological Magazine* **102**, issue **1217**
+  (December — an earlier note in this file said November; Prosser's reference
+  list says 1217), 347–360 — the sole authority for `brown1`'s 0.3 coefficient.
+  `digital.nmla.metoffice.gov.uk/IO_3cdcafb9-33ad-4dc6-bcd0-dd4fc5ba5e6d`
+
+### 18.11 One method lesson, recorded because it cost three days
+
+The audit's own rules were good and its blind Phase 2 worked. What went wrong
+was afterwards: **the least precisely known quantity in the comparison was
+allowed to set the agenda.** The per-diagnostic 1979 *level* ratios in
+`data_prosser/per_diagnostic_vs_prosser.csv` are read off the position of red
+crosses on a log axis in a published figure, good to about ±0.02 in position and
+therefore ±20 % in value — while `rel`, `abs` and `p` in the same figure are
+printed and exact. Three days of probes were driven by the read-off numbers.
+
+Two of the three residual axes turned out to be resolvable in an afternoon from
+**source code and model documentation** — MetPy's `tools.py` and the IFS
+dynamics documentation — neither of which is a CAT paper and neither of which
+had been consulted. §12.8's rule generalises: *a comparison of point estimates
+is not a test.* Its corollary, learned here: **when a quantity cannot settle a
+question, do not let it choose which question to ask.**

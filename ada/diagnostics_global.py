@@ -102,7 +102,19 @@ def peak_rss_gb() -> float:
     return resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1e6
 
 
-def existing_output_matches(out_path: Path, f2d_variant: str) -> tuple[bool, str]:
+AUDIT_FIX_NAMES = ("meridional_metric", "ubf_computed_vorticity",
+                   "pv_sharman_a18", "endlich_component_shear",
+                   "ncsu1_computed_vorticity", "four_variable_provenance")
+
+# four_variable_provenance rebuilds vorticity, divergence and PV for EVERY
+# diagnostic, so it already contains these three. Asking for both produces a
+# label that misdescribes the run (STATUS.md 18.12).
+_SUBSUMED_BY_F12 = frozenset({"ubf_computed_vorticity", "pv_sharman_a18",
+                              "ncsu1_computed_vorticity"})
+
+
+def existing_output_matches(out_path: Path, f2d_variant: str,
+                            audit_fixes: str = "baseline") -> tuple[bool, str]:
     """Is there already a COMPLETE output here built with THIS configuration?
 
     The production array is submitted repeatedly -- while the download is still
@@ -144,7 +156,24 @@ def existing_output_matches(out_path: Path, f2d_variant: str) -> tuple[bool, str
         return False, "provenance attributes absent — pre-2026-08-29 output"
     if have_variant != f2d_variant:
         return False, f"f2d_variant {have_variant!r} != requested {f2d_variant!r}"
-    return True, f"f2d_variant={have_variant}, deformation={have_def}"
+
+    # THE AUDIT FIX SET IS PART OF THE CONFIGURATION, and this check was added
+    # on 2026-09-09 because without it the audit re-derive would have been the
+    # 2026-09-03 stale-convention trap a second time (STATUS.md 14.1 pt 3):
+    # every store on disk was written under BASELINE_FIXES, and a resubmission
+    # with --fix would have SKIPPED them all as "already current" while
+    # reporting success. F1 alone changes 13 of 21 and F12 changes 10 of 21
+    # (STATUS.md 18.2, 18.12), so this is not a cosmetic label.
+    #
+    # FAIL CLOSED on absence. A store with no `audit_fixes` attribute predates
+    # this flag, so it was necessarily built at baseline; that is only a match
+    # if baseline is what was asked for.
+    have_fixes = attrs.get("audit_fixes", "baseline")
+    if have_fixes != audit_fixes:
+        return False, (f"audit_fixes {have_fixes!r} != requested "
+                       f"{audit_fixes!r} — RECOMPUTE")
+    return True, (f"f2d_variant={have_variant}, deformation={have_def}, "
+                  f"audit_fixes={have_fixes}")
 
 
 def _time_dim(da: xr.DataArray) -> str | None:
@@ -155,7 +184,7 @@ def _time_dim(da: xr.DataArray) -> str | None:
 
 
 def compute_chunked(diag, ds_raw: xr.Dataset, chunk_days: int, verbose=True,
-                    f2d_variant: str | None = None):
+                    f2d_variant: str | None = None, fixes=None):
     """Compute all 21 diagnostics, optionally in overlapping time chunks.
 
     chunk_days = 0 means one pass over the whole file.
@@ -200,7 +229,8 @@ def compute_chunked(diag, ds_raw: xr.Dataset, chunk_days: int, verbose=True,
         catdata = diag.prepare_for_rojak(sub)
         diagnostics, failures = diag.compute_all_21(
             catdata, target_level=200,
-            f2d_variant=f2d_variant or diag.F2D_DEFAULT_VARIANT)
+            f2d_variant=f2d_variant or diag.F2D_DEFAULT_VARIANT,
+            fixes=fixes if fixes is not None else diag.BASELINE_FIXES)
         all_failures.extend(failures)
 
         for key, da in diagnostics.items():
@@ -248,6 +278,19 @@ def main() -> int:
                         "change this once ada/check_f2d_variants.py has "
                         "reported -- and note the choice is recorded in the "
                         "output zarr's attributes either way.")
+    p.add_argument("--fix", action="append", default=[],
+                   choices=[*AUDIT_FIX_NAMES, "all"],
+                   help="repeatable. Audit fixes from "
+                        "AUDIT_diagnostics_vs_literature.md to apply to THIS "
+                        "run; default is none, i.e. 2_diagnostics.BASELINE_"
+                        "FIXES, which is what every store written before "
+                        "2026-09-09 holds. The set is recorded in the output "
+                        "zarr's `audit_fixes` attribute and is compared by "
+                        "--skip-if-matching, so a store built under a "
+                        "different set is RECOMPUTED rather than skipped. "
+                        "'all' enables every fix EXCEPT four_variable_"
+                        "provenance, which supersets three of them and must "
+                        "be asked for by name.")
     p.add_argument("--skip-if-matching", action="store_true",
                    help="exit 0 immediately if a COMPLETE output already exists "
                         "that was built with this same configuration. An output "
@@ -264,9 +307,22 @@ def main() -> int:
 
     diag = _load("diagnostics", "2_diagnostics.py")
 
+    requested = set(args.fix)
+    if "all" in requested:
+        requested.discard("all")
+        requested |= set(AUDIT_FIX_NAMES) - {"four_variable_provenance"}
+    if "four_variable_provenance" in requested and (requested & _SUBSUMED_BY_F12):
+        print(f"!! four_variable_provenance already rebuilds vorticity, "
+              f"divergence and PV for every diagnostic, so combining it with "
+              f"{sorted(requested & _SUBSUMED_BY_F12)} changes nothing and "
+              f"mislabels the store. Ask for it alone.")
+        return 1
+    fixes = diag.FixSet(**{k: True for k in sorted(requested)})
+    audit_fixes = fixes.label()
+
     if args.skip_if_matching:
         variant = args.f2d_variant or diag.F2D_DEFAULT_VARIANT
-        matches, why = existing_output_matches(out_path, variant)
+        matches, why = existing_output_matches(out_path, variant, audit_fixes)
         print(f">>> existing output: {why}")
         if matches:
             print(f"    SKIP — {out_path.name} is already current")
@@ -288,8 +344,10 @@ def main() -> int:
     print(f"\n>>> computing 21 diagnostics at 200 hPa "
           f"(chunk_days={args.chunk_days or 'whole file'})")
     print(f"    f2d variant {f2d_variant}: {diag.F2D_VARIANTS[f2d_variant]}")
+    print(f"    audit fixes {audit_fixes}")
     diagnostics, failures = compute_chunked(diag, ds_raw, args.chunk_days,
-                                            f2d_variant=f2d_variant)
+                                            f2d_variant=f2d_variant,
+                                            fixes=fixes)
     print(f"    [rss after compute: {peak_rss_gb():.1f} GB]")
 
     if failures:
@@ -313,6 +371,10 @@ def main() -> int:
         "f2d_variant": f2d_variant,
         "f2d_variant_formula": diag.F2D_VARIANTS[f2d_variant],
         "deformation_convention": "DEF (un-squared, Sharman A17)",
+        # The audit fix set, recorded for the same reason as the two above: it
+        # is invisible in the numbers and unrecoverable afterwards, and
+        # existing_output_matches() compares it (STATUS.md 18.12).
+        **fixes.as_attrs(),
         "source_file": in_path.name,
         "target_level_hPa": 200,
     })

@@ -97,31 +97,59 @@ class TestTierC:
         step, which is first-order and would dominate the comparison.
 
         VARIANT A EXPLICITLY, not the default. synthetic.py's manufactured
-        solution is the SIGNED closed form, and since 2026-08-30 the default is
-        variant C = |A| (FORMULA_AUDIT.md 10.4). Calling the default here would
-        compare a magnitude against a signed expectation and report ~200 %
-        error on every cell where the true value is negative -- which is
-        exactly what it did, in the first run after the default changed.
+        solution is the SIGNED closed form, so this test must ask for the
+        signed variant by name whatever the default happens to be. That
+        mattered between 2026-08-30 and 2026-09-08, when the default was C =
+        |A| and calling the default here reported ~200 % error on every cell
+        where the true value was negative.
 
-        Pinning variant A keeps this test doing the job it was built for:
-        verifying the material-derivative arithmetic against a closed form.
-        The production quantity is covered by the next test.
+        Since 2026-09-08 the default is A again (Williams & Storer 2022
+        Eq. (3), p. 1427), so this and the next test now compute the same
+        thing. Keep both anyway: this one names the variant, the next one takes
+        whatever the default is, and the pair is what catches the default
+        drifting away from the citation without anyone noticing.
         """
         got = diag.frontogenesis_isentropic(prepared._dataset, variant="A")
         got = got.transpose("latitude", "longitude", "time").isel(time=slice(1, -1)).values
         check(got, expect.f2d_isentropic[:, :, 1:-1], label="f2d (variant A)")
 
-    def test_f2d_default_is_the_magnitude(self, diag, prepared, expect):
-        """#20 as it now reaches disk, against the same closed form under an
-        absolute value.
+    def test_f2d_default_is_the_signed_material_derivative(self, diag, prepared, expect):
+        """#20 as it reaches disk, against the SIGNED closed form.
 
-        Splitting the two matters for diagnosis, not just for bookkeeping: if
-        this passes and the one above fails, the material derivative is wrong;
-        if the one above passes and this fails, the variant wiring is wrong.
-        A single combined assertion could not tell those apart."""
+        CHANGED 2026-09-08, and this test previously asserted the opposite.
+        It was `test_f2d_default_is_the_magnitude` and compared against
+        np.abs(...), pinning the 2026-08-30 decision that the default is
+        variant C. That decision rested on Williams (2017) Fig. 1's axis limits
+        and a p97/median ratio -- inferences from a figure, because no equation
+        for this diagnostic could be found in the lineage.
+
+        One has since been found. Williams & Storer (2022), Q. J. R. Meteorol.
+        Soc. 148, 1424-1438, Eq. (3), p. 1427:
+
+            F_theta = D/Dt |du/dtheta|^2
+
+        "where t is time, D/Dt denotes the Lagrangian time derivative, and the
+        partial derivative is taken at fixed horizontal position using
+        potential temperature as a vertical coordinate." Since u = (u, v),
+        |du/dtheta|^2 is Q, so the published quantity is D/Dt[Q]: SIGNED, with
+        no leading minus, no absolute value and no clip. That is variant A up
+        to the constant 1/2, which cannot change a rank.
+
+        The pin therefore moved to A. It moved on a written equation from the
+        replicated lineage, not to make a red test go green -- if the default
+        is ever changed back, this test must go back with it and the reason
+        must be better than this one.
+
+        STILL UNEXPLAINED, and deliberately left in the record: Williams (2017)
+        Fig. 1 does plot this diagnostic on 0..300 anchored at zero, and
+        Williams (2017) Table 2 over W&J (2013) Table 1 gives a p97/median of
+        13.6, which a zero-centred material derivative cannot produce. That is
+        an inconsistency between two Williams papers, not an ambiguity in this
+        project's reading of one. See AUDIT_diagnostics_vs_literature.md 4.4,
+        6 F6 and 7 Q2."""
         got = diag.frontogenesis_isentropic(prepared._dataset)
         got = got.transpose("latitude", "longitude", "time").isel(time=slice(1, -1)).values
-        check(got, np.abs(expect.f2d_isentropic[:, :, 1:-1]), label="f2d (default)")
+        check(got, expect.f2d_isentropic[:, :, 1:-1], label="f2d (default)")
 
     def test_f2d_material_derivative_parts(self, diag, prepared, expect):
         """Decompose A9 so a failure localises to d/dt, d/dx or d/dy rather

@@ -92,33 +92,56 @@ class TestF2dVariants:
     guess, all four readings are selectable and ada/check_f2d_variants.py
     measures which reproduces the published distribution shape.
 
-    These tests fix the ALGEBRA between the variants. Which one is correct is
-    an empirical question and is deliberately not asserted here.
+    These tests fix the ALGEBRA between the variants. WHICH ONE IS CORRECT WAS
+    an empirical question when this class was written, and is not any more:
+    Williams & Storer (2022) Eq. (3), p. 1427 writes the diagnostic as the
+    signed D/Dt|du/dtheta|^2, i.e. variant A. The default assertion below
+    tracks that citation; the algebra assertions are independent of it.
     """
 
-    def test_default_is_C(self, diag, prepared):
-        """The default is C as of 2026-08-30 (FORMULA_AUDIT.md §10.4).
+    def test_default_is_A(self, diag, prepared):
+        """The default is A as of 2026-09-08, superseding the 2026-08-30 C.
 
-        Williams (2017) Fig. 1 plots this diagnostic on 0..300, anchored at
-        zero, in the same figure where Negative Richardson runs -300..0 — so
-        the published quantity is a magnitude, not a signed tendency. The
-        measured p97/median agrees: A 754, C 22.7, published 13.6.
+        This assertion was `== "C"`, justified by Williams (2017) Fig. 1's
+        0..300 axis and a measured p97/median of 22.7 against a published 13.6.
+        Both are inferences from a figure, and they were the best available
+        while no equation for this diagnostic could be found anywhere in the
+        lineage.
 
-        Pinned as a test because the default is the thing every production run
-        silently inherits, and because reverting it would quietly change what
-        504 months of output mean."""
-        assert diag.F2D_DEFAULT_VARIANT == "C"
+        Williams & Storer (2022), Q. J. R. Meteorol. Soc. 148, 1424-1438,
+        Eq. (3), p. 1427 states it directly:
+
+            F_theta = D/Dt |du/dtheta|^2
+
+        signed, un-normalised, no absolute value, no clip -- variant A up to a
+        constant 1/2. Same author, one year before Prosser (2023), who lists
+        Williams as a co-author. A written equation from the replicated lineage
+        outranks an inference from an axis, so the pin moved.
+
+        The counter-evidence is NOT resolved by this and must not be dropped:
+        Fig. 1's axis really is anchored at zero, and a p97/median of 13.6 is
+        not something a zero-centred material derivative produces. That is a
+        conflict between two Williams papers. It is recorded in
+        AUDIT_diagnostics_vs_literature.md 6 F6 and belongs in any write-up.
+
+        Pinned as a test because the default is what every production run
+        silently inherits, and because changing it changes what 504 months of
+        output mean. `--f2d-variant C` regenerates the pre-2026-09-08 archive
+        exactly."""
+        assert diag.F2D_DEFAULT_VARIANT == "A"
         ds = prepared._dataset
         default = diag.frontogenesis_isentropic(ds)
-        explicit = diag.frontogenesis_isentropic(ds, variant="C")
+        explicit = diag.frontogenesis_isentropic(ds, variant="A")
         np.testing.assert_allclose(default.values, explicit.values,
                                    rtol=0, atol=0)
 
-    def test_variant_A_still_reproduces_the_old_behaviour(self, diag, prepared):
-        """Switching the default must not remove the ability to regenerate
-        anything computed before 2026-08-30. `--f2d-variant A` is the escape
-        hatch that makes the change reversible, so it is worth a test of its
-        own: C is the absolute value of A, exactly."""
+    def test_variant_C_still_reproduces_the_archived_run(self, diag, prepared):
+        """Switching the default must not remove the ability to regenerate the
+        archive. The direction of travel reversed on 2026-09-08: C was the
+        default and A the escape hatch, and now A is the default and C is the
+        escape hatch for every zarr written between 2026-08-30 and 2026-09-08.
+        Either way the relationship is the same and exact -- C is |A| -- so one
+        test covers both directions."""
         ds = prepared._dataset
         a = diag.frontogenesis_isentropic(ds, variant="A").values
         c = diag.frontogenesis_isentropic(ds, variant="C").values

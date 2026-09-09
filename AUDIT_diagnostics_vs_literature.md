@@ -308,6 +308,16 @@ decreasing in latitude, spanning **0.69 % across 30–75 °N**.
 
 This is a **latitude-structured error**, of exactly the class §6 asks about,
 and it is invisible in a global median. It is also small: 0.7 % peak-to-peak.
+
+**CORRECTION 2026-09-09, from the measurement.** Earlier drafts of this section
+and of §5.4 described the error as *monotone in latitude*. It is not: `M(φ)`
+depends on `sin²φ`, so `a/M` is **largest at the equator (1.0067) and smallest
+at the poles (0.9966)** — monotone in **|φ|**, symmetric about the equator. The
+30–75 °N numbers above are one arm of a V. The predicted signature is therefore
+not a ramp but a **U symmetric about the equator**: removing the inflation
+shrinks tropical gradients most, so tropical cells fall below threshold and
+polar cells rise. §5.8 records that this is exactly what the global A/B
+measured, on both hemispheres.
 `divergence()` is unaffected in the sense that the *sum* `DU_DX + DV_DY` was
 verified exact (machine zero) for an analytic non-divergent solid-body flow,
 because the `DV_DY` half is the only one carrying the factor and for that flow
@@ -1209,6 +1219,73 @@ running.
 | `ubf` | MATCHES with two recorded ambiguities, one of which is mixed-provenance ζ in a residual | 0.193, worst in group A | **Closed on mechanism, open on which of the two ambiguities. Fix specified (F2), with a discriminating outcome.** |
 | `f2d` | AMBIGUOUS-IN-SOURCE on the absolute value | 0.425, and his trend is exactly flat where ours is +26 % | **Closed as an open scientific decision, not a bug. Sensitivity run specified (F6).** |
 | `deformation`, `brown1`, `brown2`, `ti1`, `wind_speed`, `ngm1`, `nva`, `rva_magnitude`, `vorticity_squared`, `temperature_gradient`, `horizontal_divergence` | MATCHES / UNVERIFIABLE-but-consistent | 0.87 – 1.12, all clean | **Closed. Nothing to fix.** |
+
+---
+
+## 5.8 Measured — the Stage-1 A/B battery, 2026-09-09
+
+Job 1102936, `jobs/22_ab_compare.sbatch`. Each fix computed against the
+unfixed baseline on the same input; the metric is the cos φ-weighted symmetric
+difference of the exceedance set, against the pre-registered 0.5 % rule.
+F1 and F5 on 32 timesteps of `era5_glob_2000-01.grib`; the rest on
+`era5_na_2000-01.grib`.
+
+| fix | diagnostics moved | flip range | ρ | verdict |
+|---|---|---|---|---|
+| **F1** meridional metric | **13 of 21** | 0.18–0.76 % | ≥ 0.99974 | MATERIAL, marginally — `brown1`, `deformation`, `ngm2` only |
+| **F2** UBF computed ζ | 1 (`ubf`) | 0.86–1.10 % | 0.99950 | MATERIAL but **small** |
+| **F3** \|PV\| from A18 | 1 (`magnitude_pv`) | 64–80 % | 0.9655 | MATERIAL, large |
+| **F10** Endlich closed form | 1 (`endlich`) | 41–66 % | 0.9498 | MATERIAL, large |
+| **F6** frontogenesis C→A | 1 (`f2d`) | 68–70 % | **0.0275** | MATERIAL, largest |
+
+**F1's prediction held exactly.** The eight diagnostics returned bit-identical
+are precisely the eight named in §1 item 1 — `−Ri`, `vertical_wind_shear`,
+`colson_panofsky`, `endlich`, `wind_speed`, `magnitude_pv`, `vorticity_squared`,
+`horizontal_divergence` — the eight with no horizontal ∂/∂y. Nothing else moved
+and nothing predicted to move stayed still.
+
+**And the tilt is a U, not a ramp — which is a stronger confirmation.** Change
+in light-CAT exceedance frequency, percentage points, selected rows:
+
+```
+                  -60..-50  -40..-30  -20..-10   +0..+10  +20..+30  +40..+50  +70..+80  +80..+90
+brown1              +0.038    -0.007    -0.015    -0.009    -0.009    +0.009    +0.023    +0.083
+deformation         +0.025    +0.002    -0.018    -0.015    -0.008    +0.011    +0.022    +0.079
+temperature_grad    +0.020    -0.010    -0.000    -0.001    -0.013    -0.001    +0.039    +0.060
+ubf                 +0.005    -0.004    -0.009    -0.010    -0.008    +0.011    +0.017    +0.057
+```
+
+Negative through the tropics, positive poleward of roughly ±40°, **on both
+hemispheres**. That is the signature of a `sin²φ` factor and of nothing else: a
+`cos φ` error would be monotone in φ, and a scale error would be flat. §3.1's
+derivation is confirmed by a shape that was not fitted to it. The magnitude is
+≤ 0.08 pp on a 3 % base — real, correct to fix, and far too small to explain any
+of §5.1's disagreements, exactly as §5.2 predicted.
+
+**F2's hypothesis is largely falsified, and that is useful.** §6 F2 pre-
+registered the reading: *"if it does not move, the cause is the other recorded
+ambiguity — the metpy distribution of the spherical curvature term inside
+J(u,v)."* At ρ = 0.99950 and a 1 % median difference, ERA5's archived vorticity
+and a 0.25° centred difference agree far more closely than §5.5 assumed. Mixed
+provenance is real but it cannot carry a level ratio from 0.19 to 0.9.
+**The spherical Jacobian convention (§4.17) is now the leading candidate for
+`ubf`**, and F2 should be merged on Koch & Caracena's consistency argument
+rather than on an expectation that it will move panel (q).
+
+**F5 is a clean negative and closes a candidate.** The `MAX(Ri, 10⁻⁵)` floor
+binds on **0.0356 %** of global cells — every one of them convectively unstable,
+and all of them between 20 °S and 10 °N — and only **0.58 %** of NCSU1's own p97
+exceedance set sits on it. §5.6 candidate 1 is **dead**: NCSU1's 6.07 is not the
+Richardson floor. Candidates 2 (`|∇ζ|` from archived vorticity) and 3 (the
+`MAX(·,0)` clip) survive, and candidate 2 is the cheap one to test next.
+
+**What the three large ones have in common.** F3, F6 and F10 are not bug fixes.
+Each is a choice between two defensible readings — two definitions of PV, two
+readings of A9, two discretisations of ∂ψ/∂z — and each changes the identity of
+roughly half to four-fifths of its diagnostic's turbulent cells. F6 at
+ρ = 0.0275 is barely the same ranking of the same grid. They are the substance
+of any re-derive, and each must be reported as a documented decision with its
+citation, not as a correction.
 
 ---
 

@@ -107,9 +107,27 @@ if [ "$MODE" = "validate" ]; then
         --no-archive \
         --validate-against calibration/thresholds_2026-09-03.json
 else
+    # DERIVED added 2026-09-09. The audit re-derive writes its reference year
+    # to derived/global_audit/ (jobs/26), and the thresholds applied to
+    # jobs/25's audit stores MUST come from that directory rather than from
+    # the baseline year -- otherwise this is the 2026-09-03 stale-convention
+    # trap (STATUS 14.1 pt 3) with the two sides swapped. Default is unchanged,
+    # so every previous invocation of this script still means what it meant.
+    #
+    #   sbatch --export=ALL,DERIVED=derived/global_audit jobs/20_tail_thresholds.sbatch
+    DERIVED=${DERIVED:-derived/global}
+    n=$(compgen -G "$BASE/$DERIVED/diagnostics_glob_*.zarr" | wc -l)
+    echo "calibrating on the $n stores in $DERIVED"
+    if [ "$n" -ne 12 ]; then
+        echo "FATAL: expected 12 contiguous months in $DERIVED, found $n." >&2
+        echo "       A partial reference year gives a threshold set that looks" >&2
+        echo "       fine and is calibrated on the wrong sample." >&2
+        ls -d "$BASE"/derived/*/ 2>/dev/null | sed 's/^/   /' >&2
+        exit 1
+    fi
     pixi run python ada/tail_thresholds.py \
         --base "$BASE" \
-        --derived-subdir derived/global \
+        --derived-subdir "$DERIVED" \
         --cut-percentile 88
 fi
 

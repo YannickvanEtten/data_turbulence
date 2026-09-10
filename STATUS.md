@@ -2602,6 +2602,11 @@ de-facto standard, and its docs do not state which coordinate `dx`/`dy` are in
 
 ### 18.6 AXIS 2 RESOLVED as a CHOICE, not a bug — and the seven variables are six too many
 
+> **Measured 2026-09-09, job 1103283 — see §18.12.** The prediction at the end
+> of this section held: tropics negative, extratropics positive, across the
+> whole archived-field group. The axis turned out to be **ten** diagnostics,
+> not the three F2/F3/F11 probed.
+
 **The catch that reframes F2, F3 and F11.** Prosser (2023) p. 2 lists four
 fields — "zonal and meridional wind speed, dry bulb temperature, and
 geopotential height" — and then: "The 21 turbulence diagnostics were then
@@ -2757,19 +2762,21 @@ nodes in `defq`.
 |---|---|---|---|---|
 | **1102936** | cat-ab (jobs/22) | COMPLETED | ~3 h | **the Stage-1 A/B battery — §18.2.** 7 steps: suite, F1 global, F2, F3, F10, F6, F5 probe |
 | **1103092** | cat-ncsu1 (jobs/23) | COMPLETED, exit 0 | **77 min** | **F11, NCSU1 vorticity provenance — §18.3.** Candidate 2 falsified with the wrong sign |
+| **1103283** | cat-4var (jobs/24) | COMPLETED, exit 0 | 56 + 16 min | **F12, the four-variable side-by-side — §18.12.** Ten diagnostics material, prediction confirmed |
 
 ### 18.10 What is next, in order
 
-1. **Run `jobs/24_four_variable.sbatch`** — the F12 side-by-side. This is the
-   one measurement that closes axis 2, and it replaces the three separate
-   probes that were run for it.
+1. ~~**Run `jobs/24_four_variable.sbatch`**~~ — **DONE, job 1103283, §18.12.**
+   Axis 2 is closed: ten diagnostics material, zero inert, the tropics-negative
+   prediction confirmed across the whole archived-field group.
 2. **Write the canonical formula appendix** — all 21, each with its citation
    (equation and page), its discretisation and its field provenance stated.
    This is the artefact the audit was for and it does not exist yet. It is also
    what makes §18.4's observation about the literature reportable.
 3. **ONE batched re-derive, not six.** Everything MATERIAL goes in together:
-   F1, F2/F3 (or F12, if §18.8's run says the superset is the right unit),
-   F4, F6, F8, with F10 and F11 as documented sensitivities. 504 NA months
+   **F1, F12, F4, F6, F8**, with F10 as a documented sensitivity. §18.12
+   settles the open question in this line: **F12 IS the right unit**, and F2,
+   F3 and F11 are retired as separate fixes because they are subsets of it. 504 NA months
    ≈ 7 h at the QOS cap, then recalibration, then `ada/per_diagnostic_trend.py`.
    **Do not re-derive per fix.** The A/B harness exists precisely so that the
    decision is made once.
@@ -2804,3 +2811,144 @@ dynamics documentation — neither of which is a CAT paper and neither of which
 had been consulted. §12.8's rule generalises: *a comparison of point estimates
 is not a test.* Its corollary, learned here: **when a quantity cannot settle a
 question, do not let it choose which question to ask.**
+
+### 18.12 F12 MEASURED — job 1103283. The provenance axis is TEN diagnostics, not three, and the prediction held
+
+`jobs/24_four_variable.sbatch`, `logs/fourvar-1103283.out`. Three steps, all
+exit 0: suite **90 passed** in 19 s, global 56 min, North Atlantic 16 min.
+
+#### The superset reproduces its parts — consistency check PASSED
+
+| diagnostic | source | ρ | flip p97 | flip p99.9 |
+|---|---|---|---|---|
+| `ubf` (NA) | F2 alone | 0.99950 | 1.10 % | 0.99 % |
+| | **F12** | **0.99950** | **1.10 %** | **0.99 %** |
+| `ncsu1` (global) | F11 alone | 0.99821 | 6.72 % | 8.30 % |
+| | **F12** | **0.99821** | **6.72 %** | **8.30 %** |
+| `magnitude_pv` (NA) | F3 alone | 0.96553 | 64.50 % | 80.25 % |
+| | **F12** | 0.96644 | 64.01 % | 80.06 % |
+
+`ubf` and `ncsu1` are reproduced to every printed digit. **`magnitude_pv`
+differs slightly, and deliberately:** F3 computed Sharman A18 on ERA5's
+*archived* ζ, while F12 computes it on the *substituted* ζ, because under F12
+there is no archived ζ left to use. F12's is the coherent one — a four-variable
+PV all the way down — and F3's is the one to retire. The size of the gap
+(64.50 → 64.01 %) is the right order for a second-order effect inside a
+diagnostic already flipping two thirds of its tail.
+
+#### The split is binary: 10 MATERIAL, **0 inert**, 11 untouched
+
+```
+MATERIAL  (10): brown1, brown2, horizontal_divergence, magnitude_pv, ncsu1,
+                nva, rva_magnitude, ti2, ubf, vorticity_squared
+inert     ( 0): -
+untouched (11): colson_panofsky, deformation, endlich, f2d,
+                negative_richardson, ngm1, ngm2, temperature_gradient, ti1,
+                vertical_wind_shear, wind_speed
+```
+
+Identical lists on both domains. **There is no middle category** — every
+diagnostic that reads an archived field crosses the 0.5 % bar, and every one
+that does not is bit-identical. The 11 untouched are exactly the pure functions
+of u, v, T and z, which is independent confirmation that the dataset-level
+substitution reached everything it should and nothing it should not.
+
+**Seven of the ten were not in the audit's fix list.** F2, F3 and F11 covered
+`ubf`, `magnitude_pv` and `ncsu1`. The substitution also moves `rva_magnitude`,
+`nva`, `horizontal_divergence`, `vorticity_squared`, `ti2`, `brown1` and
+`brown2` — and four of those move *more* than `ubf` does. Chasing provenance one
+diagnostic at a time had found the three smallest instances of it.
+
+North Atlantic (the domain the replication is scored on), flip rate p97 → p99.9:
+
+| diagnostic | ρ | p97 | p99.9 | previously measured? |
+|---|---|---|---|---|
+| `magnitude_pv` | 0.9664 | 64.0 % | 80.1 % | yes (F3) |
+| `rva_magnitude` | 0.9778 | **11.5 %** | **17.4 %** | **no** |
+| `nva` | 0.9783 | **10.3 %** | **15.7 %** | **no** |
+| `horizontal_divergence` | 0.9948 | **7.5 %** | **12.5 %** | **no** |
+| `ncsu1` | 0.9997 | 4.9 % | 7.5 % | yes (F11) |
+| `vorticity_squared` | 0.9992 | **5.2 %** | **8.3 %** | **no** |
+| `ti2` | 0.9992 | **2.5 %** | **5.0 %** | **no** |
+| `brown1` | 0.9999 | **1.6 %** | **2.8 %** | **no** |
+| `ubf` | 0.9995 | 1.1 % | 1.0 % | yes (F2) |
+| `brown2` | 1.0000 | **0.6 %** | **1.1 %** | **no**, and marginal |
+
+Global numbers run 1.2–1.5× larger for the vorticity family (`rva_magnitude`
+15.2 → 24.7 %, `nva` 14.0 → 20.9 %, `horizontal_divergence` 11.6 → 19.5 %,
+`vorticity_squared` 7.9 → 15.2 %) — consistent with §18.6's mechanism, since the
+global field includes the tropics where the effect lives.
+
+#### THE LATITUDE TILT — the §18.6 prediction is CONFIRMED
+
+Prediction on record before the numbers (§18.6, and `jobs/24`'s own header):
+**tropics negative, extratropics positive**, across the whole archived-field
+group, because the excess small-scale power in ERA5's spectral ζ relative to a
+0.25° centred difference is tropical convection rather than midlatitude storm
+tracks. Change in p97 exceedance frequency, percentage points, global:
+
+| diagnostic | −60..−40 | −20..+10 (tropics) | +30..+50 |
+|---|---|---|---|
+| `rva_magnitude` | +0.299 / +0.330 | **−0.262 / −0.286 / −0.236** | +0.093 / +0.211 |
+| `nva` | +0.235 / +0.252 | **−0.248 / −0.254 / −0.206** | +0.076 / +0.185 |
+| `vorticity_squared` | +0.237 / +0.223 | **−0.219 / −0.281 / −0.229** | +0.122 / +0.080 |
+| `horizontal_divergence` | +0.097 / +0.176 | **−0.243 / −0.272 / −0.124** | +0.095 / +0.112 |
+| `ncsu1` | +0.069 / +0.072 | **−0.106 / −0.136 / −0.122** | +0.022 / +0.060 |
+| `brown1` | +0.030 / +0.027 | **−0.028 / −0.028 / −0.023** | +0.016 / +0.008 |
+| `ti2` | +0.027 / +0.042 | −0.018 / −0.039 / −0.021 | −0.011 / −0.006 |
+
+**Six of seven show the predicted sign cleanly**, `ti2` shows it in the tropics
+and mixed in the northern extratropics, and the pattern is the same shape at
+every magnitude. What was a single-diagnostic observation in F11 is now a
+property of the whole archived-field group, and §18.6's mechanism is
+established rather than hypothesised. **The tropics-versus-extratropics contrast
+is the finding; the flip rate alone would have missed it.**
+
+**Read the ±80–90 bands as noise.** `rva_magnitude` +1.347 and `nva` +0.887 at
++80..+90 sit on a handful of cos φ-weighted cells. The same applies to the NA
+table's `+60..+70` column, which is the single latitude row at exactly 60 N.
+
+#### Two diagnostics that do NOT belong to this group
+
+1. **`ubf` is flat, and its flip rate DECREASES with severity** — 1.02 → 0.54 %
+   global, 1.10 → 0.99 % NA, against every other diagnostic rising. Its tilt is
+   ±0.01 pp, an order of magnitude below the rest, with no tropical signature.
+   **This is F2's falsification (§18.2) confirmed with a much bigger lever.**
+   UBF's residual genuinely does not care which ζ it is handed; the audit's
+   mixed-operator diagnosis was wrong, and §18.5's Jacobian/metric convention is
+   what governs it. Note it crosses the 0.5 % bar only at p97 and only just.
+
+2. **`magnitude_pv` is a different question wearing the same flag.** Its tilt is
+   **polar, not tropical** — −9.815 / −4.198 / −2.441 pp in the southern polar
+   bands, **exactly zero across the entire −30..+30 tropics**, +1.111 / +0.843
+   in the northern midlatitudes — and its median relative difference is
+   1.0 × 10², the documented hPa-versus-Pa constant. This is not the ζ
+   provenance effect. It is archived **full Ertel PV** versus **truncated A18**
+   (§18.6), a change of quantity dominated by the vertical stencil and by the
+   polar stratosphere, and it reads zero in the tropics because PV ≈ 0 there
+   and both forms agree. **Report `magnitude_pv` separately from the other
+   nine.** Its 64–80 % flip is not evidence about provenance.
+
+#### What this decides
+
+- **Axis 2 is closed as a measured choice.** One substitution, one cost, ten
+  diagnostics, one number per diagnostic. It goes into the batched re-derive as
+  **one item**, replacing F2, F3 and F11 (§18.10 step 3).
+- **F2, F3 and F11 are retired as separate fixes.** They are subsets, and F3's
+  archived-ζ A18 is strictly less coherent than F12's.
+- **`horizontal_divergence` gets a real lead.** §15.6a and §17.4 left it as the
+  one diagnostic with zero trend in 0 of 7 fits, cleared on the grounds that
+  Prosser gets the same flat line from the same archived field. It is now known
+  to be **7.5–12.5 % provenance-sensitive in the North Atlantic** and to carry
+  the tropical signature. Whether its trend survives the substitution is the
+  single most interesting thing the re-derive will answer, and it is a
+  pre-registrable question: *if `horizontal_divergence` acquires a significant
+  trend under four-variable provenance, §5 risk 3 (ERA5 observing-system
+  changes acting through the archived divergence field) is supported; if it
+  stays flat, that hypothesis loses its best remaining candidate.*
+- **A FutureWarning was emitted twice and is fixed.** `xr.concat` inside
+  `substitute_computed_fields` relied on xarray's `coords="different"` default.
+  The levels are now `expand_dims`-ed before concatenation and `coords` /
+  `compat` are passed explicitly, verified equal to the old default. **The
+  numbers in this section are unaffected** — the warning was about a future
+  xarray release, not about this run.

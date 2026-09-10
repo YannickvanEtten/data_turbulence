@@ -338,11 +338,24 @@ def substitute_computed_fields(catdata: CATData) -> CATData:
             u.sel(pressure_level=lev), v.sel(pressure_level=lev), "deg",
             components=[VelocityDerivative.DU_DX, VelocityDerivative.DU_DY,
                         VelocityDerivative.DV_DX, VelocityDerivative.DV_DY])
-        zeta_levels.append(vd[VelocityDerivative.DV_DX] - vd[VelocityDerivative.DU_DY])
-        div_levels.append(vd[VelocityDerivative.DU_DX] + vd[VelocityDerivative.DV_DY])
+        # expand_dims BEFORE concat, and pass coords/compat explicitly. Without
+        # this, xarray warns that the default for `coords` will change from
+        # "different" to "minimal" -- and under the new default a SCALAR
+        # pressure_level coord is not guaranteed to be promoted to the concat
+        # dimension. Making the dimension exist first removes the ambiguity, so
+        # this reads the same on both sides of that xarray change. Job
+        # 1103283 emitted the FutureWarning twice; the numbers it produced are
+        # unaffected, and tests/test_audit_fixes.py pins the equality.
+        zeta_levels.append(
+            (vd[VelocityDerivative.DV_DX] - vd[VelocityDerivative.DU_DY])
+            .expand_dims("pressure_level"))
+        div_levels.append(
+            (vd[VelocityDerivative.DU_DX] + vd[VelocityDerivative.DV_DY])
+            .expand_dims("pressure_level"))
 
-    zeta = xr.concat(zeta_levels, dim="pressure_level").transpose(*target_dims)
-    delta = xr.concat(div_levels, dim="pressure_level").transpose(*target_dims)
+    _cc = dict(dim="pressure_level", coords="minimal", compat="override")
+    zeta = xr.concat(zeta_levels, **_cc).transpose(*target_dims)
+    delta = xr.concat(div_levels, **_cc).transpose(*target_dims)
 
     theta = _potential_temperature(ds["temperature"], ds["temperature"]["pressure_level"])
     pv = _rojak_potential_vorticity(zeta, theta).transpose(*target_dims)

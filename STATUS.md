@@ -2763,6 +2763,8 @@ nodes in `defq`.
 | **1102936** | cat-ab (jobs/22) | COMPLETED | ~3 h | **the Stage-1 A/B battery — §18.2.** 7 steps: suite, F1 global, F2, F3, F10, F6, F5 probe |
 | **1103092** | cat-ncsu1 (jobs/23) | COMPLETED, exit 0 | **77 min** | **F11, NCSU1 vorticity provenance — §18.3.** Candidate 2 falsified with the wrong sign |
 | **1103283** | cat-4var (jobs/24) | COMPLETED, exit 0 | 56 + 16 min | **F12, the four-variable side-by-side — §18.12.** Ten diagnostics material, prediction confirmed |
+| **1103698** | cat-diag-audit (jobs/25) | COMPLETED, exit 0 | ~7 h | **the NA re-derive — §18.13.** 504/504 under F1+F12 into `derived/north_atlantic_audit/` |
+| **1104539** | cat-glob-audit (jobs/26) | *running* | ~14 h expected | the year-2000 reference year under the same fix set, into `derived/global_audit/` |
 
 ### 18.10 What is next, in order
 
@@ -2952,3 +2954,109 @@ table's `+60..+70` column, which is the single latitude row at exactly 60 N.
   `compat` are passed explicitly, verified equal to the old default. **The
   numbers in this section are unaffected** — the warning was about a future
   xarray release, not about this run.
+
+### 18.13 The re-derive, executed — jobs 1103698 and 1104539
+
+**Step 1 done.** `jobs/25`, job **1103698**, 504/504 North Atlantic months under
+`meridional_metric+four_variable_provenance`, no non-zero exits, ~7 h at `%8`.
+Verified three ways rather than on SLURM's word (§11.9's own lesson): the store
+count equals the COMPLETED count exactly, the on-disk size lands on the
+per-month rate, and the `.zattrs` differ from the baseline in the expected
+direction —
+
+```
+north_atlantic         <absent>                                   | f2d C
+north_atlantic_audit   meridional_metric+four_variable_provenance | f2d A
+```
+
+That third check is the one that mattered. Without the fix-set comparison added
+to `existing_output_matches()` the same morning, all 504 would have been
+skipped as "already current" and this line would have read `<absent>` on both
+sides.
+
+**Step 2 launched.** `jobs/26`, job **1104539**, the year-2000 reference year
+under the identical fix set, into `derived/global_audit/`. Array `0-11%4`,
+three waves, ~14 h.
+
+#### How far the three changes actually reach — 5 / 16 / 13
+
+Computed from the A/B CSVs already on disk, and this is the decomposition to
+quote rather than any single number:
+
+| | magnitude | reach | material (flip ≥ 0.5 %) |
+|---|---|---|---|
+| **F1** meridional metric | tiny — 0.4–0.7 % on ∂/∂y | **13 of 21** | **3** — `brown1`, `deformation`, `ngm2` |
+| **F12** four-variable provenance | moderate — 1.6–11 % on the fields | **10 of 21** | **10** |
+| **F6** f2d variant C → A | huge — ρ = 0.0275 | **1** | **1** |
+
+- **5 of 21 are bit-identical** between the two series — the pure vertical or
+  point quantities, which have neither a horizontal ∂/∂y nor an archived field.
+- **16 of 21 differ numerically** (union of the three).
+- **13 of 21 move materially** (union of the three material sets).
+
+**The gap between 16 and 13 belongs in the write-up.** "16 of 21 changed"
+invites a reader to think the dataset was overhauled; ten of F1's thirteen moved
+by less than the exceedance-set noise floor. The honest sentence is: *three
+implementation choices change 16 of the 21 derived fields numerically and 13 of
+them materially, where "materially" is a pre-registered ≥0.5 % change in the
+exceedance set at any severity.*
+
+Note also that **reach and magnitude are unrelated**. F1 is a sub-percent
+correction sitting underneath the gradient operator, so almost anything that
+differentiates horizontally inherits it — widest reach, smallest effect. F6 is
+the reverse: one diagnostic, and barely the same ranking afterwards.
+
+#### Storage — measured 2026-09-10, mid-re-derive
+
+| Path | Size |
+|---|---|
+| `raw/` | 429 GB (**unchanged — nothing is re-downloaded**) |
+| `derived/north_atlantic/` | 294 GB (baseline, kept) |
+| `derived/north_atlantic_audit/` | **300 GB** (new) |
+| `derived/global/` | 196 GB (baseline, kept) |
+| `derived/global_sub48/` | 26 GB |
+| `calibration/` | 41 GB |
+| **share** | **1.3 TB of 2.5 TB, 52 %, 1.2 TB free** |
+
+Still to land: `derived/global_audit/` (~196 GB) and a new
+`calibration/tails_<date>/` (~41 GB) → **~1.54 TB, 62 %, ~960 GB free.**
+
+**The audit series is 300 GB against the baseline's 294** — 0.595 vs
+0.583 GB/month, +2 %. Not an error: F6 switched `f2d` from an absolute value to
+a signed one, and signed data carries more entropy, so it compresses slightly
+worse.
+
+**~24 % of the audit series is a byte-copy** (the 5 identical diagnostics),
+i.e. ~71 GB. Deliberate: `compute_all_21` writes all 21 into one store, and
+every downstream tool expects a complete set of 21. Splitting the series across
+two directories would mean teaching `full_trend_check.py`,
+`per_diagnostic_trend.py`, `tail_thresholds.py` and `jobs/15` to merge — and a
+dataset half in one convention and half in another is precisely the failure
+`jobs/15` caught on 2026-09-03. 71 GB against 960 GB free is the right price
+for not reopening that class of bug.
+
+Also confirmed by this measurement: `du` over the project subtree sums to
+1.285 TB against `df`'s 1.3 TB, so **essentially all of the group share is this
+project's**. §8's group-contention worry is retired for good.
+
+If space ever does get tight, the first thing to drop is the **119 GB of 10-day
+day-blocks in `raw/global/`** — they exist only so a merged month can be
+re-verified byte-for-byte without a CDS round trip. Nothing else on the share
+can go without losing a record.
+
+#### A workflow failure worth recording
+
+Two files written into the Windows repo on the evening of 2026-09-09 —
+`STATUS.md` §18.12 and `2_diagnostics.py`'s `xr.concat` fix — were **silently
+reverted** and had to be rewritten on 2026-09-10. Files committed in adjacent
+calls (`ada/diagnostics_global.py`, `jobs/20`, `jobs/25`, `jobs/26`) survived,
+so this was not a systematic failure of the write path. The repo lives in
+OneDrive (§9), which is normally the backup story and is here a second writer.
+
+**Neither loss was load-bearing** — the concat change is a FutureWarning
+suppression verified numerically identical, and §18.12 is documentation — but
+the same accident on `diagnostics_global.py` would have silently produced a
+baseline-convention series. §15.7 item 6 already says "check `git status` on
+Windows before every `sbatch` of something newly changed"; extend it: **verify
+the file on ADA, not the commit on Windows.** `jobs/26` failed to `sbatch` for
+exactly this reason before it ran.

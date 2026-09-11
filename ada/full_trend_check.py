@@ -187,9 +187,28 @@ def weighted_rate(exceed: xr.DataArray, weights: xr.DataArray) -> float:
     return float((exceed.fillna(0.0) * w).sum() / w.where(populated).sum())
 
 
-def load_year(base: Path, year: int) -> xr.Dataset:
-    """Open all twelve North Atlantic months of `year`, lazily, concatenated."""
-    paths = [base / "derived/north_atlantic" / f"diagnostics_na_{year}-{m:02d}.zarr"
+NA_SUBDIR_DEFAULT = "derived/north_atlantic"
+
+
+def load_year(base: Path, year: int,
+              derived_subdir: str = NA_SUBDIR_DEFAULT) -> xr.Dataset:
+    """Open all twelve North Atlantic months of `year`, lazily, concatenated.
+
+    `derived_subdir` selects WHICH series. Added 2026-09-11 for the audit
+    re-derive (STATUS.md 18.13): `derived/north_atlantic_audit` holds the same
+    504 months computed under F1 + F12 + F6, beside the baseline rather than
+    over it. The default is the baseline, so every earlier invocation of this
+    script still means exactly what it meant.
+
+    THE PAIRING IS NOT OPTIONAL. A series must be scored against thresholds
+    built from a reference year computed under the SAME conventions -- audit
+    stores with `--thresholds .../thresholds_2026-09-11.json`, baseline stores
+    with the 09-07 set. Mixing them is the 2026-09-03 stale-convention trap
+    (STATUS.md 14.1 pt 3), and for `f2d`, whose variant change is not a
+    monotone transform, the result is not merely wrong but meaningless.
+    `main()` refuses the mismatch rather than trusting the caller.
+    """
+    paths = [base / derived_subdir / f"diagnostics_na_{year}-{m:02d}.zarr"
              for m in range(1, 13)]
     missing = [p.name for p in paths if not p.exists()]
     if missing:
@@ -223,6 +242,11 @@ def main() -> int:
     ap = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--base", default=str(BASE))
+    ap.add_argument("--derived-subdir", default=NA_SUBDIR_DEFAULT,
+                    help="which North Atlantic series to score. Default is the "
+                         "baseline; pass derived/north_atlantic_audit for the "
+                         "audit re-derive, and pair it with the matching "
+                         "--thresholds (see load_year's docstring).")
     ap.add_argument("--thresholds", default=None,
                     help="thresholds JSON (default: newest in <base>/calibration)")
     ap.add_argument("--season", default="all",
@@ -260,6 +284,32 @@ def main() -> int:
 
     thresholds, signs, provenance = calibration.load_thresholds(tpath)
     print(f">>> thresholds: {tpath.name}")
+    print(f">>> series    : {args.derived_subdir}")
+
+    # REFUSE A MISMATCHED PAIRING. The thresholds file records the derived
+    # directory it was calibrated on; the series being scored must have been
+    # built under the same conventions. "audit" in one and not the other is
+    # the mismatch that matters, and it is silent in every number downstream.
+    _cal_dir = str(provenance.get("derived_subdir", provenance.get("period", "")))
+    _series_is_audit = "audit" in args.derived_subdir
+    _calib_is_audit = "audit" in _cal_dir
+    if "derived/" not in _cal_dir:
+        # Older threshold files record `period` as a date range rather than a
+        # directory, so the check cannot be made. Say so and continue -- a
+        # guard that cannot see must not block, but it must not stay quiet
+        # either.
+        print(f"   (cannot verify convention pairing: provenance period="
+              f"{_cal_dir!r} names no derived directory. CHECK BY HAND.)")
+    elif _series_is_audit != _calib_is_audit:
+        print(f"!! CONVENTION MISMATCH -- refusing to run.")
+        print(f"   series     {args.derived_subdir}  (audit={_series_is_audit})")
+        print(f"   thresholds {tpath.name} calibrated on {_cal_dir!r}  "
+              f"(audit={_calib_is_audit})")
+        print(f"   Score the audit series against thresholds built from")
+        print(f"   derived/global_audit, and the baseline series against the")
+        print(f"   baseline year. See STATUS.md 14.1 pt 3 for what mixing them")
+        print(f"   cost the last time. Override only if you know why.")
+        return 2
     print(f"    domain {provenance['calibration_domain']}, "
           f"period {provenance['period']}\n")
     print(f">>> years: {len(years)} ({years[0]}-{years[-1]}, step {args.year_step})")
@@ -285,7 +335,7 @@ def main() -> int:
     print("LOADING — one pass per year, all requested seasons sliced from it")
     print("=" * 78)
     for year in years:
-        ds_year = load_year(base, year)
+        ds_year = load_year(base, year, args.derived_subdir)
         ds_box = subset_box(ds_year, **PROSSER_BOX)
         w = lat_weights_for(ds_box)
 

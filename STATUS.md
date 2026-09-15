@@ -2764,7 +2764,9 @@ nodes in `defq`.
 | **1103092** | cat-ncsu1 (jobs/23) | COMPLETED, exit 0 | **77 min** | **F11, NCSU1 vorticity provenance — §18.3.** Candidate 2 falsified with the wrong sign |
 | **1103283** | cat-4var (jobs/24) | COMPLETED, exit 0 | 56 + 16 min | **F12, the four-variable side-by-side — §18.12.** Ten diagnostics material, prediction confirmed |
 | **1103698** | cat-diag-audit (jobs/25) | COMPLETED, exit 0 | ~7 h | **the NA re-derive — §18.13.** 504/504 under F1+F12 into `derived/north_atlantic_audit/` |
-| **1104539** | cat-glob-audit (jobs/26) | *running* | ~14 h expected | the year-2000 reference year under the same fix set, into `derived/global_audit/` |
+| **1104539** | cat-glob-audit (jobs/26) | COMPLETED, exit 0 | 3:16–5:47/task | the year-2000 reference year under the same fix set, 12/12 into `derived/global_audit/` |
+| **1105430** | cat-tail-calib (jobs/20) | COMPLETED, exit 0 | **1:56** | tail thresholds on `derived/global_audit` — `thresholds_2026-09-11.json`, §18.14 |
+| **1105525** | cat-full-trend (jobs/16) | COMPLETED, exit 0 | **4:03** | **THE RESULT — §18.15.** 42-year trend on the audit series, 25/25 significant, 25/25 inside CI |
 
 ### 18.10 What is next, in order
 
@@ -3060,3 +3062,461 @@ baseline-convention series. §15.7 item 6 already says "check `git status` on
 Windows before every `sbatch` of something newly changed"; extend it: **verify
 the file on ADA, not the commit on Windows.** `jobs/26` failed to `sbatch` for
 exactly this reason before it ran.
+
+### 18.14 The calibration moved, and the five bit-identical diagnostics were confirmed from a second direction — jobs 1103698, 1104539, 1105430
+
+The re-derive is complete through step 3.
+
+| step | job | result |
+|---|---|---|
+| 1 `jobs/25` NA series, F1+F12 | **1103698** | 504/504, exit 0, ~7 h, 300 GB into `derived/north_atlantic_audit/` |
+| 2 `jobs/26` reference year, same fixes | **1104539** | 12/12, exit 0, 3:16–5:47 per task, 201 GB into `derived/global_audit/` |
+| 3 `jobs/20` tail thresholds | **1105430** | exit 0, **1:56**, peak RSS **55.7 GB**, `thresholds_2026-09-11.json` + a 41 GB tail archive |
+
+Step 3's own quality gates all passed: 21 of 21 retained 11.92–12.01 % at the
+p88 cut, every `p1` in 0.8799–0.8808 against the 0.965 guard,
+`n = 3,039,966,720` per diagnostic, no clamp. **`f2d` is the only one slightly
+off the pack** (11.92 %, `p1 = 0.88077`) — expected, because F6 made it signed
+so its distribution is no longer one-tailed, and nothing like the 11.19 % /
+0.88810 that exposed the sub-sample defect in §15.3.
+
+Peak RSS of 55.7 GB reproduces §15.7's measurement exactly, which is a useful
+incidental result: the two runs used different conventions and the same memory,
+so the 80 G request stands.
+
+#### The five bit-identical diagnostics, confirmed independently
+
+`ada/compare_thresholds.py` on the two full-year sets — same year, same method,
+same p88 cut, **only the conventions differ** — returns **exactly 0.00 %** at
+all five severities for:
+
+```
+colson_panofsky   endlich   negative_richardson   vertical_wind_shear   wind_speed
+```
+
+That is the same five the A/B union analysis predicted (§18.13), reached by a
+completely different route: there the test was bit-equality of the diagnostic
+fields on one month, here it is equality of a cos φ-weighted percentile over
+3.04 × 10⁹ points of a different year. **Five of 21 are provably untouched by
+F1, F6 and F12 together**, and they are exactly the diagnostics with neither a
+horizontal ∂/∂y nor an archived field: the pure vertical and point quantities.
+
+It is also a reproducibility check nobody asked for. Two independent
+calibration runs on differently-computed data returned identical thresholds to
+six significant figures for those five.
+
+#### The threshold shifts sort by mechanism, and they all point the same way
+
+| group | threshold move | which |
+|---|---|---|
+| untouched | **0.00 %** | `colson_panofsky`, `endlich`, `negative_richardson`, `vertical_wind_shear`, `wind_speed` |
+| F1 only | **−0.03 to −0.33 %** | `temperature_gradient`, `ti1`, `ngm1`, `deformation`, `brown2`, `ngm2`, `ubf` |
+| F1 + F12, weakly | −0.33 to −1.3 % | `brown1`, `ti2` |
+| F12, vorticity family | **−3.2 to −8.1 %** | `vorticity_squared`, `horizontal_divergence`, `nva`, `rva_magnitude`, `ncsu1` |
+| F6 | −60 to −86 % | `f2d` — a sign change, see below |
+| F12, quantity change | ×102.8 | `magnitude_pv` — a unit change, see below |
+
+**Every single one is negative.** That is the finding, and it was predicted.
+§18.6's mechanism says a finite-difference ζ on a 0.25° grid is *damped*
+relative to ERA5's spectrally-derived ζ, because the archive carries
+small-scale power a centred difference cannot represent. A damped field has a
+thinner tail, and a thinner tail has a lower percentile threshold. The
+thresholds fall by 3–8 % across the whole vorticity family and by ~0.2 % for
+the F1-only group, in exactly the order the mechanism predicts.
+
+**This is the third independent confirmation of §18.6**, after the flip rates
+and the latitude tilt, and it is the cleanest: no exceedance sets, no
+percentile ladders, just the number the percentile returns.
+
+#### Two rows that are not shifts
+
+- **`magnitude_pv`, ×102.8.** Sharman A18 differentiates θ against a pressure
+  coordinate carried in hPa, a documented ×100 against SI
+  (`magnitude_pv_a18`'s docstring). Divide it out and **archived full Ertel PV
+  and A18 differ by only ~2.8 % at the threshold** — against a 64–80 % flip
+  rate (§18.12). The two definitions produce similarly *distributed* values
+  and rank cells very differently. Worth stating plainly in the write-up,
+  because the 64–80 % figure alone reads as though the diagnostic was
+  replaced wholesale. Constant factors cancel in a percentile calibration, so
+  the ×100 costs nothing; it only makes that row unreadable as a percentage.
+- **`f2d`, −60 to −86 %.** F6 made it signed, so its thresholds now cross zero
+  and a relative difference is meaningless — the `colson_panofsky` trap of
+  §11.8. Read `f2d` from its flip rate (68–70 %, ρ = 0.0275), never from this
+  table.
+
+**And ignore `compare_thresholds.py`'s canned note on `f2d`** ("25 % of its
+48-day sample was on a broken time stencil"). That annotation was written for
+the 48-day-versus-full-year comparison of §15.3 and is hard-coded; both sets
+here are full-year, and what moved `f2d` is the variant change. The note should
+be made conditional on the comparison actually being sub-sample-versus-full.
+
+#### How to read the `d freq %` column — and how NOT to
+
+The tool converts a threshold shift into an implied exceedance-frequency change
+using the local slope of each diagnostic's own severity ladder. **That
+arithmetic assumes the diagnostic field is unchanged and only the threshold
+moved.** Here both moved together: the audit thresholds are applied to audit
+data. Applying a set of percentile thresholds back to the data they were
+computed from returns the target percentiles by construction — that is §11.2's
+identity check, and it was exact.
+
+So the median 1.06 % / p90 40.4 % implied-frequency figures **overstate what
+will actually happen**, sometimes wildly. They answer "what if the new
+thresholds were applied to the old data", which is not the run being made. The
+real number is the North Atlantic 1979 exceedance level, and only `jobs/16` on
+the audit series can produce it.
+
+The threshold move itself is the honest summary: **median 0.26 %, p90 8.04 %**
+across the 105 diagnostic × severity cells, excluding the two unreadable rows.
+For comparison, §15.4's 48-day-to-full-year change was a median 0.39 % — so
+**the three convention changes move the calibration by about the same amount
+as fixing the reference-year sample did**, and that change turned out to shift
+the fitted trend by at most one percentage point in any of 25 cells (§15.11).
+That is a reason for a measured expectation, not a prediction: the two are
+different kinds of change, and the vorticity family's 3–8 % is an order above
+anything §15.4 saw.
+
+#### Step 4 — wired 2026-09-11
+
+`ada/full_trend_check.py` hard-coded `derived/north_atlantic`. It now takes
+`--derived-subdir` (default unchanged, so every earlier invocation still means
+what it meant) and **refuses to run on a mismatched pairing**: an audit series
+scored against baseline-year thresholds, or the reverse, exits 2 with the two
+provenance strings printed. When the thresholds file records a `period` that
+names no derived directory — the older files do — it says so and continues
+rather than blocking, because a guard that cannot see must not block but must
+not stay quiet either.
+
+```bash
+sbatch jobs/16_full_trend_check.sbatch \
+    --derived-subdir derived/north_atlantic_audit \
+    --thresholds $BASE/calibration/thresholds_2026-09-11.json
+```
+
+~6 h. The baseline run for comparison is `RESULT_full_trend_42yr.md`, already
+on the 09-07 thresholds (§15.11), so no re-run of the baseline is needed.
+
+### 18.15 THE RESULT — job 1105525. The trends are invariant to all three conventions, and the level deficit shrank by a fifth
+
+`jobs/16` on `derived/north_atlantic_audit` with
+`thresholds_2026-09-11.json`, job **1105525**, **4 h 03 m, exit 0**, pairing
+guard passed. This is the run the whole audit was for.
+
+#### 1. The trends do not care
+
+**25 of 25 significant. 25 of 25 containing Prosser's published value.** The
+same verdicts as the baseline (`RESULT_full_trend_42yr.md` §1), unchanged.
+
+| annual | baseline trend ratio | audit trend ratio | shift |
+|---|---|---|---|
+| LOG | 0.96 | **0.97** | +0.01 |
+| LMOG | 0.96 | **0.98** | +0.02 |
+| MOG | 0.98 | **1.01** | +0.03 |
+| MSOG | 0.98 | **1.02** | +0.04 |
+| SOG | 0.99 | **1.04** | +0.05 |
+
+Maximum shift **five hundredths**, every one toward or just through 1.0. DJF
+moves +0.01 to +0.03; MOG by season goes DJF 34→35, MAM 60→62, JJA 31→31,
+SON 30→30 against Prosser's 37/57/31/31.
+
+**The sentence this buys, and it is the most valuable one the project has
+produced:**
+
+> The fitted 1979–2020 trends are invariant to the spherical metric
+> convention, the vorticity/divergence/PV provenance, and the frontogenesis
+> variant — three implementation choices that no paper in the CAT literature
+> specifies, that together change 16 of the 21 derived fields, and that move
+> the calibration thresholds by up to 8 %. No significance verdict changes and
+> no trend ratio moves by more than five hundredths.
+
+That is a direct answer to the referee question the audit was opened to
+anticipate, and it is measured rather than argued. **It also retires the worry
+that started this**: the headline claim does not depend on choices made for
+convenience.
+
+#### 2. The level deficit shrank at every severity, and most where it was worst
+
+Annual 1979 exceedance, ours ÷ Prosser:
+
+| | baseline | audit | shift | deficit before | deficit after | gap closed |
+|---|---|---|---|---|---|---|
+| LOG | 0.881 | **0.904** | +0.023 | 11.9 % | 9.6 % | 19 % |
+| LMOG | 0.857 | **0.888** | +0.031 | 14.3 % | 11.2 % | 22 % |
+| MOG | 0.841 | **0.880** | +0.039 | 15.9 % | 12.0 % | 25 % |
+| MSOG | 0.820 | **0.865** | +0.045 | 18.0 % | 13.5 % | 25 % |
+| SOG | 0.797 | **0.842** | +0.045 | 20.3 % | 15.8 % | 22 % |
+
+**About a fifth to a quarter of the level deficit closes**, and it closes most
+at the severities where it was largest. The deficit is now **9.6–15.8 %**
+against **11.9–20.3 %**.
+
+This is the outcome that was NOT guaranteed. §18.12 recorded, before the run,
+that A18 moves `magnitude_pv` out of the resolution-robust group and might
+verify worse; §18.6 recorded that four-variable provenance is *not* a
+correction. The conventions could have moved the levels either way, and the
+prediction on record was deliberately two-sided. **They moved toward Prosser,
+monotonically, at all five severities.** That is what a replication looks like
+when the target's method is matched more closely.
+
+#### 3. The residual deficit is still the stencil, and the seasons say so
+
+Level ratio by season and severity, audit series, 1979:
+
+| season | LOG | LMOG | MOG | MSOG | SOG | LOG−SOG |
+|---|---|---|---|---|---|---|
+| DJF | **0.957** | 0.930 | 0.910 | 0.884 | 0.859 | **+0.097** |
+| MAM | 0.916 | 0.897 | 0.881 | 0.860 | 0.815 | **+0.101** |
+| **JJA** | 0.843 | 0.836 | 0.845 | 0.857 | 0.861 | **−0.018** |
+| SON | 0.897 | 0.882 | 0.874 | 0.860 | 0.820 | +0.077 |
+| Annual | 0.904 | 0.888 | 0.880 | 0.865 | 0.842 | +0.062 |
+
+**The severity-deepening deficit is a WINTER AND SPRING phenomenon and is
+absent in summer.** DJF falls 0.096 from LOG to SOG, MAM 0.101, SON 0.077 —
+and JJA is **flat, slightly rising** (−0.018).
+
+That is a new and specific corroboration of §11.3's stencil explanation. A
+50 hPa stencil under-resolves *sharp shear maxima*, and sharp shear maxima at
+200 hPa are a jet-stream phenomenon. The winter and spring jet is strong and
+vertically narrow; the summer jet is weaker and more diffuse, so there is less
+structure for a wide stencil to miss — and in JJA the deficit accordingly has
+no severity gradient at all. The explanation now has a seasonal fingerprint,
+not just a magnitude.
+
+**JJA is also the lowest at LOG (0.843).** So summer has a roughly uniform
+~15 % deficit with no tail structure, where winter has a shallow deficit that
+deepens into the tail. Those are two different mechanisms and the write-up
+should not average them.
+
+#### 4. What this settles
+
+- **The trend result is robust.** It survives every convention this project
+  could vary, measured across 25 cells.
+- **The audit series is the one to report.** It matches Prosser's four-field
+  method, its levels are closer at every severity, its trends are at least as
+  good, and every choice in it is cited. The baseline series stays on disk as
+  the documented sensitivity — that comparison IS the answer to "does your
+  convention choice matter", and now it has a number.
+- **The residual 10–16 % level deficit is the vertical stencil**, which is a
+  constraint and not a choice (§18.7), now with four independent lines of
+  evidence: the severity gradient (§11.3), the stencil-group split
+  (§17.3, 0.73 vs 0.93), the level/trend separation (§15.11), and the seasonal
+  fingerprint above.
+
+#### 5. Still open — the one pre-registered question
+
+`horizontal_divergence`. §15.6a and §17.4 left it as the diagnostic with zero
+trend in 0 of 7 fits, cleared because Prosser gets the same flat line from the
+same archived field. §18.12 measured it at 7.5–12.5 % provenance-sensitive in
+the North Atlantic, with the tropical signature. The pre-registered question
+stands: *if it acquires a significant trend under four-variable provenance,
+§5 risk 3 — ERA5 observing-system changes acting through the archived
+divergence field — is supported; if it stays flat, that hypothesis loses its
+best remaining candidate.*
+
+`ada/per_diagnostic_trend.py` and `jobs/21` were given the same
+`--derived-subdir` plumbing and the same mismatch guard on 2026-09-15, and
+`jobs/21` now tags its output `_audit` so a fit on one series can never
+overwrite the other's CSV.
+
+```bash
+BASE=/scistor/SBE-EDS-ClimateKoopman/yen230
+sbatch --export=ALL,DERIVED=derived/north_atlantic_audit,\
+THRESHOLDS=$BASE/calibration/thresholds_2026-09-11.json,\
+SEASON=annual,SEVERITY=moderate jobs/21_per_diagnostic_trend.sbatch
+```
+
+~72 min for Annual, ~20 min for DJF.
+
+### 18.16 The literature items — CLOSED 2026-09-15, from papers that were already on disk
+
+**All three of §7's surviving literature items are resolved.** None needed
+compute, none needed a new download, and two of them needed a paper that had
+been in `Articles/` the whole time. That is recorded here as a finding about
+how this project works, not only as a result.
+
+#### 1. The 21 `sign` entries — VERIFIED, and they were all correct
+
+Open since 2026-08-28, listed as "the highest value per unit effort" in §15.10,
+§16.4 and §18.10. **Williams (2017) Table 2, p. 580 settles all 21 at once**,
+because it tabulates every diagnostic's onset threshold at all five severities:
+
+```
+Negative Richardson number      -15.4   -9.8   -7.9   -6.7   -5.9
+Vertical shear of horiz. wind     5.3    6.6    7.4    7.9    8.4
+Colson-Panofsky index           -29.3  -27.0  -25.2  -23.7  -22.2
+Frontogenesis function            770   1280   1660   1980   2340
+Brown index                        99    106    110    113    118
+Brown energy dissipation rate     870   1370   1730   2030   2330
+Ellrod TI1                        195    292    360    419    472
+Ellrod TI2                        184    282    356    419    477
+Flow deformation                 50.9   60.9   66.9   71.8   76.3
+Magnitude of potential vorticity  8.33   8.73   8.98   9.19   9.41
+Relative vorticity squared        2.46   3.74   4.70   5.50   6.24
+|Horizontal temperature gradient|14.7   17.6   19.4   20.8   22.0
+Wind speed                       40.9   48.4   52.4   55.3   58.5
+Wind speed x directional shear    3.21   3.94   4.39   4.72   5.08
+Deformation x wind speed          1.65   2.29   2.76   3.17   3.54
+Deformation x vertical dT         53      84    106    127    151
+|Residual of nonlinear balance| 1230   1840   2270   2610   2960
+|Horizontal divergence|          11.9   15.7   18.2   20.4   22.5
+NCSU1                            1200   3600   6300   9300  13000
+Negative absolute vort. advection 1.33   1.86   2.23   2.56   2.93
+|Relative vorticity advection|    1.44   1.99   2.34   2.66   3.00
+```
+
+**Every one of the 21 ladders is monotonically increasing Light → Severe**,
+including the two whose thresholds are negative. A monotone increasing ladder
+is a one-tailed upper criterion by definition, so exceedance is
+`value >= threshold` and the sign is `"+"` for all 21. **There is no two-tailed
+diagnostic among them and no lower-tail one.**
+
+So `REFERENCE_TABLE`'s current all-`"+"` is correct — and it is now *verified*
+against the printed table rather than assumed. The reasoning used on two
+entries under Q-AGG-3 has been applied to all 21. The note is written into
+`2_diagnostics.py` above `REFERENCE_TABLE` so it cannot drift back into being
+an assumption.
+
+Williams (2017) Table 2 also independently confirms two earlier corrections:
+**flow deformation is tabulated un-squared** (50.9–76.3 × 10⁻⁶ s⁻¹, i.e. s⁻¹
+not s⁻²) which is F4, and **the frontogenesis function is in 10⁻⁹ m² s⁻³ K⁻²**,
+the squared form, which is Q-UNITS-1.
+
+#### 2. `brown1`'s 0.3 coefficient — CLOSED
+
+**Sharman et al. (2006), Eq. (A13):**
+
+> Φ = (0.3 ζ_a² + D_SH² + D_ST²)^(1/2)
+>
+> "where the shearing deformation D_SH = ∂v/∂x + ∂u/∂y, the stretching
+> deformation D_ST = ∂u/∂x − ∂v/∂y, absolute vorticity ζ_a = ζ + f, with
+> ζ = ∂v/∂x − ∂u/∂y and f is the Coriolis frequency."
+
+The 0.3 is confirmed, and so is the detail that mattered more and was never
+flagged: **it multiplies ABSOLUTE vorticity ζ_a = ζ + f, not relative
+vorticity.** The implementation and rojak both use ζ_a, so this is a
+confirmation rather than a correction — but it is a confirmation of the thing
+that could have been silently wrong, since 0.3ζ² and 0.3(ζ+f)² differ by more
+than a constant at 200 hPa.
+
+**Brown (1973) is no longer a blocker.** A13 is what the replication chain
+actually uses: Williams (2017), Prosser (2023) and rojak all transcribe
+Sharman, not Brown. Obtaining the 1973 paper would establish where 0.3 came
+from, which is provenance, not correctness. Citation corrected while here —
+Jaeger et al. (2007)'s reference list gives **Meteorol. Mag. 102, 347–361**,
+not 347–360 as this file recorded.
+
+#### 3. `brown2`'s missing length² — CLOSED as a non-issue
+
+**Sharman et al. (2006), Eq. (A14):** ε = (1/24) Φ S_V².
+
+Φ is s⁻¹ and S_V² is s⁻², so A14 yields **s⁻³**. Williams (2017) Table 2
+tabulates the Brown energy dissipation rate in **10⁻⁶ J kg⁻¹ s⁻¹ = 10⁻⁶ m² s⁻³**.
+**The dimensional gap is in Sharman's own equation, not in this pipeline** —
+A14 as printed implies an unstated length² that the tabulated units carry.
+
+It is a **constant**, so it cancels exactly out of a percentile calibration
+(§5 point 5) and cannot affect a single exceedance decision. `brown2`'s
+docstring already states this and deliberately invents no length scale, which
+is the right call and is now backed by the primary equation rather than by
+inference. **§7's "brown2 sits five orders from its published value" is hereby
+explained**: it is the missing L², it is expected, and it is harmless.
+`brown2` should be reported as rank-only, with its magnitude not compared to
+any published J kg⁻¹ s⁻¹ figure.
+
+#### 4. The `Articles/` folder already had what was needed — and one file is mislabelled
+
+`Sharman & Pearson (2017).pdf` in `Articles/` is **Part II** — Pearson and
+Sharman, *"Nowcasting Convective and Nonconvective Turbulence"*, JAMC 56,
+339–…. **Part I** (Sharman and Pearson, JAMC 56, 317–337), the one carrying the
+EDR remapping, is what §18.10 wanted and is still absent. It is now a
+nice-to-have: the brown2 dimensional question it was wanted for has been
+answered from Sharman (2006) directly.
+
+The folder otherwise holds Sharman (2006), Williams (2017), Williams & Joshi
+(2013), Williams & Storer (2022), Storer (2017), Ellrod & Knapp (1992), Koch &
+Caracena (2002), Kaplan (2005), Jaeger (2007), Lee (2023), Wong (2025),
+Hersbach (2020) and Prosser (2023) with its SI. **That is essentially the
+complete primary literature for this project.**
+
+#### 5. Why this stayed open for eighteen days — the honest accounting
+
+Two separate failures, and the second is the one worth keeping.
+
+**A stale gap list.** `Sharman & Pearson (2017).pdf` was added to `Articles/`
+on 2026-09-08. It was reported as missing in §18.10 (2026-09-09), §18.14 and
+again on 2026-09-15, because the list of "still-missing sources" was carried
+forward from session to session and never re-checked against the folder. The
+lesson is mechanical: **re-read the directory, do not re-read your own note
+about the directory.**
+
+**Compute crowds out reading.** The sign re-derivation was named the
+highest-value open item on 2026-08-29, 2026-09-08, 2026-09-09 and 2026-09-15,
+and deferred every time behind a job. It required one table from a paper that
+had been on disk since the project started, and it took about ten minutes.
+Nothing was blocking it. What happened is that every session had a cluster job
+in flight, and a running job feels like progress in a way that reading a table
+does not — so the desk work kept losing to the queue.
+
+**§18.11 recorded exactly this failure mode and it happened again anyway.**
+That section says *"two of the three residual axes turned out to be resolvable
+in an afternoon from source code and model documentation ... neither of which
+had been consulted."* The same sentence now applies to the literature items,
+with "papers already in the repository" in place of "source code". A lesson
+written down is not a lesson learned. **The operational form of it:
+before submitting any job, spend ten minutes on the top item of the open
+list that needs no compute.**
+
+#### 6. What is left on correctness
+
+- **F10 / `endlich`** — the one genuinely unresolved formula choice, and it is
+  not a literature gap but a literature *silence*: both readings of "centred
+  second-order finite differences" are defensible, the two differ by 41–66 % of
+  the exceedance set, and `endlich`'s level ratio is 0.51. See §18.17.
+- **A full provenance sweep of the 504 audit stores.** `jobs/15` hardcodes the
+  baseline directories; it has never been run on `north_atlantic_audit`.
+- **Sharman & Pearson (2017) Part I** — nice-to-have.
+
+
+### 18.17 `FORMULAS_AND_DECISIONS.md` — the appendix source material
+
+Written 2026-09-15, repo root and Claude project. **This is the document the
+methods appendix gets written from**, and it is source material rather than
+prose: every formula traced to a printed equation and page, every choice
+recorded with what it is in line with and what the alternative was measured to
+cost, every units caveat separated into "constant, therefore inert" versus
+"needs stating".
+
+Contents: a decision register **D1–D11**; the 21 formulas with source equation,
+implemented form and field provenance; Williams (2017) Table 2 reproduced as
+the sign evidence; the measured reach-versus-magnitude and level/trend tables;
+the dimensional caveats; the three independent magnitude anchors; what is still
+open; and the primary-source list with the specific equation and page for each
+claim.
+
+**Three things it surfaced that were not previously written down anywhere.**
+
+1. **The diagnostic numbering is ambiguous and this project uses both
+   schemes.** `REFERENCE_TABLE["num"]` and the section headers in
+   `2_diagnostics.py` follow **Williams & Joshi (2013)** — `ncsu1` is #21,
+   `endlich` #7, `ubf` #13, `f2d` #20. Williams (2017) Table 2 orders them
+   differently — `ncsu1` #19, `endlich` #14, `ubf` #17, `f2d` #4 — and two code
+   headers plus several September job scripts and audit notes use *that*
+   scheme. Nothing is wrong in the code; the hazard is transcription. **Use
+   names in the appendix, or state the scheme once and use W&J.**
+2. **`colson_panofsky` carries a length scale that is a CHOICE, not a
+   constant.** Sharman A4 is CP = λ²S_V²(1 − Ri/Ri_crit) with λ *"taken as the
+   local value of vertical grid increment Δz"*. On a pressure-level grid that
+   is not unique: the ICAO-standard-atmosphere reading (adopted) makes λ a
+   function of pressure alone and therefore inert for a percentile
+   calibration; the geopotential-thickness reading makes it a varying field
+   that would change ranks. This is the **same family of ambiguity as D10**
+   (`endlich`) and had only ever been recorded as an F8 implementation note.
+   It is now D9 and belongs in the appendix beside the others.
+3. **`brown1`'s 0.3 multiplies ABSOLUTE vorticity.** A13 says
+   ζ_a = ζ + f explicitly. The implementation and rojak both do this, so it is
+   a confirmation — but of exactly the thing that could have been silently
+   wrong, since 0.3ζ² and 0.3(ζ+f)² differ by more than a constant at 200 hPa
+   and the difference is latitude-structured.
+
+The document also records the **appendix-ready sentences** for D2, D6 and §4b,
+so they do not have to be reconstructed later.

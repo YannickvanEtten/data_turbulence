@@ -104,6 +104,15 @@ STATUS_12_6 = {
 def main() -> int:
     ap = argparse.ArgumentParser(description="Fitted per-diagnostic trend, n=42.")
     ap.add_argument("--base", default=str(BASE))
+    # The default is a literal rather than ftc.NA_SUBDIR_DEFAULT because
+    # full_trend_check is loaded below, after parse_args.
+    ap.add_argument("--derived-subdir", default="derived/north_atlantic",
+                    help="which North Atlantic series to fit. Default is the "
+                         "baseline; pass derived/north_atlantic_audit for the "
+                         "audit re-derive (STATUS.md 18.13). PAIR IT with the "
+                         "matching --thresholds -- scoring one convention's "
+                         "series against the other's thresholds is meaningless "
+                         "for f2d, whose variant change is not monotone.")
     ap.add_argument("--thresholds", default=None,
                     help="default: newest calibration/thresholds_*.json")
     ap.add_argument("--season", default="annual",
@@ -127,6 +136,20 @@ def main() -> int:
 
     dmod = _load("diagnostics", REPO / "2_diagnostics.py")
     names = [k for k in dmod.REFERENCE_TABLE if k in thresholds]
+    # Same mismatch guard as full_trend_check.main(): an audit series scored
+    # against baseline-year thresholds (or the reverse) is silent in every
+    # number downstream. STATUS.md 14.1 pt 3 is what this prevents.
+    print(f">>> series    : {args.derived_subdir}")
+    _cal_dir = str(prov.get("derived_subdir", prov.get("period", "")))
+    if "derived/" not in _cal_dir:
+        print(f"   (cannot verify convention pairing: provenance period="
+              f"{_cal_dir!r} names no derived directory. CHECK BY HAND.)")
+    elif ("audit" in args.derived_subdir) != ("audit" in _cal_dir):
+        print(f"!! CONVENTION MISMATCH -- refusing to run.")
+        print(f"   series     {args.derived_subdir}")
+        print(f"   thresholds {tpath.name} calibrated on {_cal_dir!r}")
+        return 2
+
     years = list(range(args.start_year, args.end_year + 1))
     sev = args.severity
 
@@ -142,7 +165,8 @@ def main() -> int:
     t0 = time.time()
 
     for year in years:
-        ds_box = ftc.subset_box(ftc.load_year(base, year), **ftc.PROSSER_BOX)
+        ds_box = ftc.subset_box(
+            ftc.load_year(base, year, args.derived_subdir), **ftc.PROSSER_BOX)
         w = ftc.lat_weights_for(ds_box)
         mask = ds_box["time"].dt.month.isin(ftc.SEASON_MONTHS[args.season])
         ds_s = ds_box.isel(time=mask.values)

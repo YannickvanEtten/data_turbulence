@@ -383,6 +383,28 @@ def substitute_computed_fields(catdata: CATData) -> CATData:
 # ===========================================================================
 # Diagnostic registries and W&J Table 1 reference
 # ===========================================================================
+# THE 21 `sign` ENTRIES ARE VERIFIED, not assumed -- re-derived 2026-09-15
+# from Williams (2017) Table 2, p. 580, which tabulates the onset threshold of
+# all 21 diagnostics at all five severities. EVERY ONE OF THE 21 LADDERS IS
+# MONOTONICALLY INCREASING from Light to Severe, including the two whose
+# thresholds are negative:
+#
+#     negative_richardson  -15.4 -> -9.8 -> -7.9 -> -6.7 -> -5.9
+#     colson_panofsky      -29.3 -> -27.0 -> -25.2 -> -23.7 -> -22.2
+#
+# A monotone increasing ladder is a ONE-TAILED UPPER criterion by definition:
+# more turbulent means larger, so exceedance is `value >= threshold` and the
+# sign is "+". There is no two-tailed diagnostic among the 21 and no
+# lower-tail one. The two entries previously carried as "either"
+# (colson_panofsky, negative_richardson) were corrected to "+" under Q-AGG-3
+# on exactly this reasoning; this note records that the SAME test has now been
+# applied to all 21 rather than to those two, against the printed table.
+#
+# Why this mattered enough to check: a flipped sign is invisible in every
+# magnitude comparison this project runs -- |ratio| against a published median
+# is unchanged -- and fatal in rank, which is all the exceedance counting uses
+# (STATUS.md 5, risk 2). It was the highest-value open item from 2026-08-28 to
+# 2026-09-15 and it took reading one table.
 REFERENCE_TABLE: dict[str, dict] = {
     "magnitude_pv":          {"num": 1,  "units": "PVU",                     "wj_median":  6.84,  "sign": "+", "name": "Magnitude of potential vorticity"},
     "colson_panofsky":       {"num": 2,  "units": "10^3 kt^2",               "wj_median": -34.8,  "sign": "+", "name": "Colson–Panofsky index"},  # Q-AGG-3: was "either" -- Williams(2017) Table 2 is a single monotonic ladder (light=-29.3 -> severe=-22.2), i.e. one-tailed; negative median != two-tailed criterion

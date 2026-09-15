@@ -59,6 +59,23 @@ REPO=$BASE/data_turbulence
 SEASON=${SEASON:-annual}
 SEVERITY=${SEVERITY:-moderate}
 
+# DERIVED / THRESHOLDS added 2026-09-15. Defaults reproduce every earlier run
+# of this script exactly. For the audit series the two MUST move together --
+# a series scored against the other convention's thresholds is meaningless for
+# f2d, whose variant change is not a monotone transform (STATUS.md 14.1 pt 3).
+# per_diagnostic_trend.py refuses the mismatch, so this is belt and braces.
+#
+#   sbatch --export=ALL,DERIVED=derived/north_atlantic_audit,\
+#          THRESHOLDS=$BASE/calibration/thresholds_2026-09-11.json,\
+#          SEASON=annual jobs/21_per_diagnostic_trend.sbatch
+DERIVED=${DERIVED:-derived/north_atlantic}
+THRESHOLDS=${THRESHOLDS:-}
+# A tag on the output so an audit fit never overwrites a baseline one.
+TAG=${TAG:-}
+if [ -z "$TAG" ] && [ "$DERIVED" != "derived/north_atlantic" ]; then
+    TAG="_audit"
+fi
+
 module load 2025
 module load pixi
 
@@ -68,13 +85,18 @@ cd "$REPO" || { echo "cannot cd to $REPO"; exit 1; }
 mkdir -p cat_outputs
 
 echo "=== per-diagnostic trend, season=$SEASON severity=$SEVERITY on $(hostname) at $(date -Is) ==="
+echo "    series     $DERIVED"
+echo "    thresholds ${THRESHOLDS:-<newest in calibration/>}"
+echo "    output tag '${TAG:-<none>}'"
 
 start=$(date +%s)
 pixi run python ada/per_diagnostic_trend.py \
     --base "$BASE" \
     --season "$SEASON" \
     --severity "$SEVERITY" \
-    --csv "cat_outputs/per_diagnostic_${SEASON}_${SEVERITY}.csv"
+    --derived-subdir "$DERIVED" \
+    ${THRESHOLDS:+--thresholds "$THRESHOLDS"} \
+    --csv "cat_outputs/per_diagnostic_${SEASON}_${SEVERITY}${TAG}.csv"
 status=$?
 end=$(date +%s)
 

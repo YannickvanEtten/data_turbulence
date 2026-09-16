@@ -213,7 +213,18 @@ def main() -> int:
     tc = ftc.tcrit(len(years) - 2)
     for n in sorted(out, key=lambda k: -out[k]["y0"]):
         o, f = out[n], out[n]["fit"]
-        sig = "yes" if abs(f["t"]) > tc else "NO"
+        # A degenerate fit is NOT significant. `abs(nan) > tc` is False, but
+        # `abs(inf) > tc` is TRUE -- and an all-zero exceedance series produces
+        # exactly that: zero variance in y, a slope of 0/0, t = inf. On
+        # 2026-09-15 (job 1107604) `magnitude_pv` had 0.000 % exceedance in
+        # every year because the series and the thresholds came from different
+        # conventions, and it was printed as "+nan% ... t=inf ... sig yes" and
+        # COUNTED in the 17/21. A diagnostic with no exceedance anywhere is the
+        # loudest possible signal that something is wrong; it must never be
+        # reported as a significant trend.
+        sig = "yes" if np.isfinite(f["t"]) and abs(f["t"]) > tc else "NO"
+        if not np.isfinite(f["t"]) or not np.isfinite(f.get("change", np.nan)):
+            sig = "DEGENERATE"
         ref = STATUS_12_6.get(n)
         refs = "{:+d}%".format(ref[1]) if ref else "--"
         ci = "[{:+.0%}, {:+.0%}]".format(o["lo"], o["hi"])
@@ -221,10 +232,21 @@ def main() -> int:
               .format(n, o["y0"], o["y1"], o["change"], ci,
                       f["t"], f["r2"], sig, refs))
 
-    n_sig = sum(1 for n in out if abs(out[n]["fit"]["t"]) > tc)
+    n_sig = sum(1 for n in out
+                if np.isfinite(out[n]["fit"]["t"]) and abs(out[n]["fit"]["t"]) > tc)
+    degenerate = [n for n in out if not np.isfinite(out[n]["fit"]["t"])]
     print("-" * 96)
     print(f"   significant at 5% (|t| > {tc:.2f}, df={len(years)-2}): "
           f"{n_sig}/{len(out)}")
+    if degenerate:
+        print()
+        print(f"   !! {len(degenerate)} DEGENERATE FIT(S): {', '.join(degenerate)}")
+        print(f"      A non-finite t means the exceedance series has no variance,")
+        print(f"      i.e. the diagnostic exceeds its threshold in NO year or in")
+        print(f"      EVERY year. That is almost always a convention mismatch")
+        print(f"      between the series and the thresholds -- check that")
+        print(f"      --derived-subdir and --thresholds describe the same run")
+        print(f"      (STATUS.md 14.1 pt 3). These are excluded from the count.")
 
     mean_of_21 = float(np.mean([out[n]["y0"] for n in out]))
     ens_fit = ftc.ols(x, np.asarray(ens, float))

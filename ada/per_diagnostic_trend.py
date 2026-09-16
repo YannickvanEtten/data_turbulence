@@ -207,28 +207,34 @@ def main() -> int:
     print(title)
     print("=" * 96)
     hdr = (f"   {'diagnostic':<23}{'1979':>9}{'2020':>9}{'change':>9}"
-           f"{'95% CI':>18}{'t':>7}{'R2':>7}{'sig':>5}   §12.6")
+           f"{'95% CI':>18}{'t':>7}{'R2':>7}{'sig':>6}   §12.6")
     print(hdr)
     print("-" * 96)
     tc = ftc.tcrit(len(years) - 2)
     for n in sorted(out, key=lambda k: -out[k]["y0"]):
         o, f = out[n], out[n]["fit"]
-        # A degenerate fit is NOT significant. `abs(nan) > tc` is False, but
-        # `abs(inf) > tc` is TRUE -- and an all-zero exceedance series produces
-        # exactly that: zero variance in y, a slope of 0/0, t = inf. On
-        # 2026-09-15 (job 1107604) `magnitude_pv` had 0.000 % exceedance in
-        # every year because the series and the thresholds came from different
-        # conventions, and it was printed as "+nan% ... t=inf ... sig yes" and
-        # COUNTED in the 17/21. A diagnostic with no exceedance anywhere is the
-        # loudest possible signal that something is wrong; it must never be
+        # A degenerate fit is NOT significant. abs(nan) > tc is False, but
+        # abs(inf) > tc is TRUE -- and an all-zero exceedance series produces
+        # exactly that: zero variance in y, slope 0/0, t = inf. On 2026-09-15
+        # (job 1107604) `magnitude_pv` showed 0.000 % exceedance in every year,
+        # because the series and the thresholds came from different conventions
+        # (archived Ertel PV scored against an A18 threshold ~100x higher), and
+        # it printed "+nan% ... t=inf ... sig yes" and was COUNTED in the
+        # 17/21. A diagnostic that exceeds its threshold in NO year is the
+        # loudest available signal that something is wrong; it must never be
         # reported as a significant trend.
         sig = "yes" if np.isfinite(f["t"]) and abs(f["t"]) > tc else "NO"
-        if not np.isfinite(f["t"]) or not np.isfinite(f.get("change", np.nan)):
-            sig = "DEGENERATE"
+        # `change` lives on the OUTER record, not the fit dict. Reading it as
+        # f.get("change", nan) returned nan for EVERY diagnostic and labelled
+        # all 21 DEGENERATE in job 1108148 -- cosmetic (the count below uses
+        # only t, and read 17/21 correctly) but exactly the kind of wrong label
+        # that gets quoted later. Fixed 2026-09-16.
+        if not np.isfinite(f["t"]) or not np.isfinite(o["change"]):
+            sig = "DGN"
         ref = STATUS_12_6.get(n)
         refs = "{:+d}%".format(ref[1]) if ref else "--"
         ci = "[{:+.0%}, {:+.0%}]".format(o["lo"], o["hi"])
-        print("   {:<23}{:>8.3%}{:>9.3%}{:>+9.0%}{:>18}{:>7.2f}{:>7.2f}{:>5}   {:>6}"
+        print("   {:<23}{:>8.3%}{:>9.3%}{:>+9.0%}{:>18}{:>7.2f}{:>7.2f}{:>6}   {:>6}"
               .format(n, o["y0"], o["y1"], o["change"], ci,
                       f["t"], f["r2"], sig, refs))
 
@@ -241,12 +247,12 @@ def main() -> int:
     if degenerate:
         print()
         print(f"   !! {len(degenerate)} DEGENERATE FIT(S): {', '.join(degenerate)}")
-        print(f"      A non-finite t means the exceedance series has no variance,")
-        print(f"      i.e. the diagnostic exceeds its threshold in NO year or in")
-        print(f"      EVERY year. That is almost always a convention mismatch")
-        print(f"      between the series and the thresholds -- check that")
-        print(f"      --derived-subdir and --thresholds describe the same run")
-        print(f"      (STATUS.md 14.1 pt 3). These are excluded from the count.")
+        print("      A non-finite t means the exceedance series has no variance,")
+        print("      i.e. the diagnostic exceeds its threshold in NO year or in")
+        print("      EVERY year. That is almost always a convention mismatch")
+        print("      between the series and the thresholds -- check that")
+        print("      --derived-subdir and --thresholds describe the same run")
+        print("      (STATUS.md 14.1 pt 3). Excluded from the count above.")
 
     mean_of_21 = float(np.mean([out[n]["y0"] for n in out]))
     ens_fit = ftc.ols(x, np.asarray(ens, float))

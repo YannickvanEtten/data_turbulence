@@ -1,0 +1,133 @@
+====================================================================================================
+FINAL PER-DIAGNOSTIC SCORECARD — series label 'baseline'
+   LOG  /nonexistent  MISSING
+   MOG  data_prosser/per_diagnostic_annual_moderate.csv  OK
+   SOG  data_prosser/per_diagnostic_annual_severe.csv  OK
+====================================================================================================
+
+CONSISTENCY 1 — new MOG table vs the existing audit MOG table
+   largest difference: 2413596.00 x half-last-printed-digit (DIFFERENT — read before using anything below)
+
+CONSISTENCY 2 — the five convention-invariant diagnostics, audit vs baseline
+   MOG: largest difference 0.00 x half-last-printed-digit (identical to printed precision)
+   SOG: largest difference 0.00 x half-last-printed-digit (identical to printed precision)
+
+READ-OFF VALIDATION — mean of Prosser's 21 read-off 1979 levels vs his exact Table 1
+   LOG: 5.3381 % vs 5.3253 %  (+0.2%)
+   MOG: 0.8009 % vs 0.7991 %  (+0.2%)
+   SOG: 0.2012 % vs 0.2021 %  (-0.4%)
+
+====================================================================================================
+MOG — annual, n = 42
+====================================================================================================
+   diagnostic             st lvl ours     his  ratio share o   his chg ours         95% CI     t his rel       p  in   sig
+   negative_richardson     S   0.019%  0.039%   0.49    0.05  0.10     +41%  [-41%,+123%]  1.00     -8%   6e-01   y     =
+   vertical_wind_shear     S   1.429%  1.680%   0.85    3.57  4.20     +39%  [+23%, +55%]  5.07    +38%   8e-07   y     =
+   colson_panofsky         S   0.039%  0.285%   0.14    0.10  0.71     +62%  [ -6%,+130%]  1.85    +45%   2e-03   y     h
+   f2d                     S   0.023%  0.055%   0.43    0.06  0.14     +26%  [-39%, +91%]  0.81     +0%   1e+00   y     =
+   brown1                  -   0.761%  0.700%   1.09    1.90  1.75     +45%  [+31%, +58%]  6.51    +45%   2e-07   y     =
+   brown2                  S   1.462%  1.600%   0.91    3.65  4.00     +46%  [+30%, +62%]  5.96    +46%   5e-08   y     =
+   ti1                     S   1.229%  1.400%   0.88    3.07  3.50     +44%  [+28%, +60%]  5.68    +42%   3e-07   y     =
+   ti2                     S   1.190%  1.370%   0.87    2.97  3.43     +29%  [+15%, +42%]  4.33    +27%   3e-05   y     =
+   deformation             -   0.699%  0.700%   1.00    1.75  1.75     +37%  [+23%, +51%]  5.53    +38%   6e-06   y     =
+   magnitude_pv            -   0.993%  1.620%   0.61    2.48  4.05     +26%  [ -1%, +53%]  1.97    +51%   4e-07   y     h
+   vorticity_squared       -   0.527%  0.470%   1.12    1.32  1.17     +40%  [+25%, +54%]  5.51    +37%   2e-05   y     =
+   temperature_gradient    -   1.597%  1.750%   0.91    3.99  4.38     +27%  [+16%, +38%]  4.88    +26%   2e-05   y     =
+   wind_speed              -   0.264%  0.280%   0.94    0.66  0.70     +74%  [+16%,+132%]  2.56    +76%   2e-02   y     =
+   endlich                 S   0.470%  0.920%   0.51    1.18  2.30     +38%  [+23%, +52%]  5.22    +28%   2e-05   y     =
+   ngm1                    -   0.775%  0.830%   0.93    1.94  2.07     +52%  [+27%, +78%]  4.12    +51%   3e-04   y     =
+   ngm2                    S   0.147%  0.240%   0.61    0.37  0.60     +28%  [ +5%, +51%]  2.49    +34%   1e-03   y     =
+   ubf                     -   0.139%  0.720%   0.19    0.35  1.80     +20%  [ +3%, +37%]  2.33    +32%   6e-05   y     =
+   horizontal_divergence   -   0.472%  0.540%   0.87    1.18  1.35      +5%  [ -5%, +16%]  0.99     +7%   2e-01   y     =
+   ncsu1                   S   0.425%  0.070%   6.07    1.06  0.18     +39%  [+20%, +58%]  4.18     +4%   7e-01   N     o
+   nva                     -   0.700%  0.720%   0.97    1.75  1.80     +29%  [+12%, +46%]  3.48    +28%   1e-03   y     =
+   rva_magnitude           -   0.748%  0.830%   0.90    1.87  2.07     +29%  [+11%, +47%]  3.20    +29%   3e-03   y     =
+
+   significant: ours 16/21, his 17/21; same call on 18/21  (differ: colson_panofsky, magnitude_pv, ncsu1)
+   his rel inside our 95% CI: 20/21  (outside: ncsu1)
+   median level ratio: stencil group (10) 0.73, single-level (11) 0.93
+   ensemble level gap (mean of 21 / his mean - 1): -0.161  = stencil group -0.073 + single-level group -0.088
+   ensemble trend sensitivity: mean of 21 +36.2%, without class C (5) +36.2%, difference +0.0 pp
+   ERA5-vs-ERA5.1 block test (2000-2006 dummy):
+      magnitude_pv           block  -17.3% (t -1.98)   change +26.0% -> +28.8% with the 2000-06 dummy
+      colson_panofsky        block  +22.8% (t +1.07)   change +62.3% -> +59.1% with the 2000-06 dummy
+      brown1                 block   -3.2% (t -0.72)   change +44.5% -> +45.0% with the 2000-06 dummy
+      temperature_gradient   block   +1.9% (t +0.47)   change +27.1% -> +26.8% with the 2000-06 dummy
+      horizontal_divergence  block   +0.3% (t +0.08)   change  +5.2% ->  +5.1% with the 2000-06 dummy
+      vertical_wind_shear    block   -6.2% (t -1.23)   change +39.0% -> +40.0% with the 2000-06 dummy
+      endlich                block   +0.4% (t +0.09)   change +37.7% -> +37.6% with the 2000-06 dummy
+      deformation            block   -2.8% (t -0.62)   change +37.0% -> +37.5% with the 2000-06 dummy
+      wind_speed             block  -32.4% (t -2.12)   change +73.9% -> +78.4% with the 2000-06 dummy
+      ngm2                   block   +0.7% (t +0.08)   change +28.0% -> +27.9% with the 2000-06 dummy
+      negative_richardson    block  +41.7% (t +1.46)   change +40.6% -> +34.3% with the 2000-06 dummy
+      rva_magnitude          block   -7.9% (t -1.27)   change +29.1% -> +30.3% with the 2000-06 dummy
+      ubf                    block   -3.6% (t -0.57)   change +20.0% -> +20.5% with the 2000-06 dummy
+      nva                    block   -7.7% (t -1.37)   change +28.8% -> +30.1% with the 2000-06 dummy
+      brown2                 block   -4.9% (t -0.99)   change +46.1% -> +46.8% with the 2000-06 dummy
+      vorticity_squared      block   -0.0% (t -0.00)   change +39.5% -> +39.5% with the 2000-06 dummy
+      ti1                    block   -5.0% (t -0.98)   change +44.2% -> +44.9% with the 2000-06 dummy
+      ngm1                   block  -11.4% (t -1.46)   change +52.2% -> +53.9% with the 2000-06 dummy
+      ti2                    block   -5.5% (t -1.20)   change +28.7% -> +29.5% with the 2000-06 dummy
+      f2d                    block  +35.9% (t +1.50)   change +26.2% -> +20.7% with the 2000-06 dummy
+      ncsu1                  block   -5.0% (t -0.80)   change +39.0% -> +39.8% with the 2000-06 dummy
+      ensemble               block   -5.5% (t -1.23)   change +36.2% -> +37.1% with the 2000-06 dummy
+   largest contributors: magnitude_pv -0.037, ubf -0.035, endlich -0.027, vertical_wind_shear -0.015 ... brown1 +0.004, ncsu1 +0.021
+
+====================================================================================================
+SOG — annual, n = 42
+====================================================================================================
+   diagnostic             st lvl ours     his  ratio share o   his chg ours         95% CI     t his rel       p  in   sig
+   negative_richardson     S   0.003%  0.013%   0.26    0.03  0.12     +18%  [-69%,+105%]  0.42    -14%   3e-01   y     =
+   vertical_wind_shear     S   0.417%  0.470%   0.89    4.17  4.70     +60%  [+36%, +83%]  5.18    +55%   6e-07   y     =
+   colson_panofsky         S   0.016%  0.130%   0.12    0.16  1.30     +68%  [-13%,+150%]  1.69    +55%   2e-03   y     h
+   f2d                     S   0.004%  0.013%   0.34    0.04  0.13     +25%  [-52%,+102%]  0.65     +0%   1e+00   y     =
+   brown1                  -   0.144%  0.145%   0.99    1.44  1.45     +73%  [+52%, +94%]  6.95    +71%   1e-07   y     =
+   brown2                  S   0.369%  0.420%   0.88    3.69  4.20     +76%  [+52%,+101%]  6.31    +69%   3e-08   y     =
+   ti1                     S   0.307%  0.370%   0.83    3.07  3.70     +69%  [+45%, +93%]  5.84    +58%   6e-07   y     =
+   ti2                     S   0.309%  0.370%   0.84    3.09  3.70     +40%  [+20%, +60%]  4.11    +32%   4e-04   y     =
+   deformation             -   0.139%  0.145%   0.96    1.39  1.45     +55%  [+36%, +74%]  5.92    +54%   5e-06   y     =
+   magnitude_pv            -   0.274%  0.450%   0.61    2.74  4.50     +43%  [+11%, +75%]  2.68    +90%   2e-09   N     =
+   vorticity_squared       -   0.098%  0.080%   1.22    0.98  0.80     +73%  [+51%, +95%]  6.68    +69%   5e-07   y     =
+   temperature_gradient    -   0.365%  0.400%   0.91    3.65  4.00     +41%  [+25%, +57%]  5.24    +40%   6e-06   y     =
+   wind_speed              -   0.050%  0.050%   1.01    0.50  0.50    +101%  [ +8%,+194%]  2.20   +102%   3e-02   y     =
+   endlich                 S   0.106%  0.230%   0.46    1.06  2.30     +58%  [+37%, +78%]  5.66    +36%   3e-05   N     =
+   ngm1                    -   0.185%  0.210%   0.88    1.85  2.10     +79%  [+41%,+116%]  4.23    +78%   2e-04   y     =
+   ngm2                    S   0.029%  0.051%   0.56    0.29  0.51     +37%  [+12%, +63%]  2.96    +42%   1e-03   y     =
+   ubf                     -   0.010%  0.135%   0.08    0.10  1.35     +18%  [ -6%, +42%]  1.55    +44%   9e-05   N     h
+   horizontal_divergence   -   0.099%  0.117%   0.85    0.99  1.17      +6%  [ -7%, +20%]  0.91     +8%   2e-01   y     =
+   ncsu1                   S   0.089%  0.036%   2.47    0.89  0.36     +47%  [+21%, +73%]  3.65    +10%   5e-01   N     o
+   nva                     -   0.172%  0.190%   0.91    1.72  1.90     +34%  [+13%, +56%]  3.24    +36%   2e-03   y     =
+   rva_magnitude           -   0.183%  0.200%   0.92    1.83  2.00     +33%  [+10%, +56%]  2.91    +35%   4e-03   y     =
+
+   significant: ours 16/21, his 17/21; same call on 18/21  (differ: colson_panofsky, ubf, ncsu1)
+   his rel inside our 95% CI: 17/21  (outside: magnitude_pv, endlich, ubf, ncsu1)
+   median level ratio: stencil group (10) 0.70, single-level (11) 0.91
+   ensemble level gap (mean of 21 / his mean - 1): -0.203  = stencil group -0.107 + single-level group -0.095
+   ensemble trend sensitivity: mean of 21 +54.6%, without class C (5) +54.9%, difference +0.3 pp
+   ERA5-vs-ERA5.1 block test (2000-2006 dummy):
+      magnitude_pv           block  -22.1% (t -2.29)   change +42.9% -> +46.3% with the 2000-06 dummy
+      colson_panofsky        block  +24.0% (t +0.96)   change +68.3% -> +65.0% with the 2000-06 dummy
+      brown1                 block   -4.0% (t -0.65)   change +72.9% -> +73.4% with the 2000-06 dummy
+      temperature_gradient   block   +2.2% (t +0.42)   change +41.4% -> +41.1% with the 2000-06 dummy
+      horizontal_divergence  block   +2.5% (t +0.47)   change  +6.1% ->  +5.7% with the 2000-06 dummy
+      vertical_wind_shear    block   -8.1% (t -1.16)   change +59.7% -> +60.9% with the 2000-06 dummy
+      endlich                block   +5.7% (t +0.88)   change +57.6% -> +56.8% with the 2000-06 dummy
+      deformation            block   -2.9% (t -0.50)   change +55.3% -> +55.8% with the 2000-06 dummy
+      wind_speed             block  -46.4% (t -2.16)   change +100.9% -> +106.4% with the 2000-06 dummy
+      ngm2                   block   +4.2% (t +0.48)   change +37.2% -> +36.6% with the 2000-06 dummy
+      negative_richardson    block  +57.8% (t +1.70)   change +18.0% ->  +9.1% with the 2000-06 dummy
+      rva_magnitude          block   -8.8% (t -1.15)   change +32.9% -> +34.3% with the 2000-06 dummy
+      ubf                    block   -3.9% (t -0.45)   change +18.4% -> +19.0% with the 2000-06 dummy
+      nva                    block   -8.3% (t -1.16)   change +34.5% -> +35.8% with the 2000-06 dummy
+      brown2                 block   -7.8% (t -1.13)   change +76.2% -> +77.3% with the 2000-06 dummy
+      vorticity_squared      block   -1.2% (t -0.18)   change +73.3% -> +73.4% with the 2000-06 dummy
+      ti1                    block   -7.5% (t -1.08)   change +69.2% -> +70.2% with the 2000-06 dummy
+      ngm1                   block  -12.2% (t -1.17)   change +78.7% -> +80.4% with the 2000-06 dummy
+      ti2                    block   -5.8% (t -0.91)   change +40.1% -> +41.0% with the 2000-06 dummy
+      f2d                    block  +33.9% (t +1.19)   change +24.8% -> +19.5% with the 2000-06 dummy
+      ncsu1                  block   -4.1% (t -0.48)   change +47.3% -> +47.9% with the 2000-06 dummy
+      ensemble               block   -7.1% (t -1.24)   change +54.6% -> +55.6% with the 2000-06 dummy
+   largest contributors: magnitude_pv -0.042, ubf -0.029, endlich -0.029, colson_panofsky -0.027 ... vorticity_squared +0.004, ncsu1 +0.012
+
+wrote /tmp/claude-0/work/SCORECARD_baseline_S4.csv
+wrote /tmp/claude-0/work/SCORECARD_baseline_S4.md

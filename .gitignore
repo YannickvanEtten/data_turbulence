@@ -37,7 +37,9 @@
 # ---------------------------------------------------------------------------
 __pycache__/
 *.py[cod]
-.pixi/          # pixi builds the environment here, inside the repo
+# pixi builds the environment here, inside the repo. A comment must be on its
+# own line: git does not strip trailing comments, so ".pixi/   # ..." never matched.
+.pixi/
 .venv/
 venv/
 env/

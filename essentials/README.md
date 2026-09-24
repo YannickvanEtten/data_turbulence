@@ -1,9 +1,17 @@
 # essentials — the CAT indicator pipeline, short and readable
 
-A compact re-implementation of the data pipeline in this repository. It
-produces **the same 21 clear-air-turbulence diagnostics, thresholds and trends**
-as the original code (verified bit for bit, see below), in six plain Python
-files with no classes and no rojak dependency.
+**Start with [`showcase.html`](showcase.html)** — open it in a browser and read the
+whole pipeline end to end: the data, every formula next to the code that runs it,
+the maps it produces, and the 42-year trend. `showcase.ipynb` is the same thing
+live: it runs on **one day** of ERA5 in about a minute and re-computes nothing
+else.
+
+Behind it is a compact re-implementation of the data pipeline in this repository.
+It produces **the same 21 clear-air-turbulence diagnostics, thresholds and
+trends** as the original code (verified bit for bit, see below), in six plain
+Python files with no classes and no rojak dependency. It exists to make the
+dataset inspectable, not to rebuild it: the 504 months on the share stay as they
+are.
 
 What it does: ERA5 → 21 CAT diagnostics at 200 hPa → severity thresholds from
 the global year 2000 → exceedance frequencies over Prosser's North Atlantic
@@ -14,6 +22,8 @@ box → 1979–2020 trends, compared with Prosser et al. (2023) Table 1.
 ## Files
 
 ```
+showcase.ipynb   THE SHOWCASE: the whole pipeline on one day, formulas + code + figures
+showcase.html    the same notebook already executed — nothing to install to read it
 config.py        every constant, path and choice (incl. the two CONVENTIONS)
 download.py      Stage 1  ERA5 from CDS: request, integrity check, atomic write
 diagnostics.py   Stage 2  geometry, derivative operators, the 21 formulas, month driver
@@ -64,6 +74,28 @@ levels: audit is closer to Prosser).
 Nothing is ever written into the original `derived/` or `calibration/`
 folders: all output goes under `$BASE/essentials/`.
 
+## The showcase
+
+`showcase.ipynb` imports these files rather than copying them, so it cannot drift
+from the pipeline: the formulas it prints are the running functions. It covers
+
+1. the ERA5 input (what is downloaded and why),
+2. the grid — degrees to metres, and where the two conventions first differ,
+3. the four derivative operators, with the curvature term demonstrated,
+4. the 21 diagnostics: formula, source equation, the code, a map and its statistics,
+5. the two conventions measured against each other on that day,
+6. how the severity thresholds are calibrated (and the streaming trick, checked against a full sort),
+7. exceedance → frequency → the 42-year trend, with the real figures read from `data_prosser/`,
+8. what was verified and how.
+
+To run it: `jupyter lab showcase.ipynb` from this folder. It needs `numpy`,
+`xarray`, `pyproj`, `matplotlib` and `cfgrib` (for the GRIB day; without cfgrib it
+falls back to `era5_validation_subset.nc` in the repository root). It looks for the
+day file at `../../../Universiteit/Turbulence project/Data/climate_data_01_01_2016.grib`
+or in `CAT_DEMO_FILE`; §6 and §7 use the real thresholds if a
+`calibration/thresholds_*.json` is copied next to the repo, and say so plainly when
+they fall back.
+
 ## Running on ADA
 
 From the repository root (`$BASE/data_turbulence`), in the existing pixi
@@ -88,7 +120,9 @@ stores (should match `thresholds_2026-09-11.json`) and recomputes the 42-year
 trends from the original `derived/north_atlantic_audit` stores (should match
 STATUS §18.15: 25/25 significant, 25/25 inside the interval).
 
-**A full run from scratch** (per convention, submit each array bare so `%N` is kept):
+**Only if the dataset ever has to be rebuilt** (per convention; submit each array
+bare so `%N` is kept). This is not the intended use — the existing stores are the
+dataset, and the checks above show this code reproduces them:
 
 ```bash
 sbatch essentials/jobs/1a_download_na.sbatch            # skips the 504 months already on disk
@@ -100,9 +134,8 @@ sbatch --export=ALL,CONVENTION=audit essentials/jobs/3_thresholds.sbatch        
 sbatch --export=ALL,CONVENTION=audit essentials/jobs/4_trends.sbatch
 ```
 
-Storage: a full re-derive is ~500 GB per convention on top of the ~1.5 TB
-already used. Since the check above shows the stores would be identical, the
-existing `derived/` stores can be used directly instead, e.g.
+Storage: a full re-derive is ~500 GB per convention on top of the ~1.5 TB already
+used, so in practice point the later stages at the stores that already exist:
 
 ```bash
 pixi run python essentials/main.py trends --convention audit \
@@ -118,9 +151,8 @@ python essentials/main.py demo --input climate_data_01_01_2016.grib --convention
 ```
 
 prints the median and 99th percentile of each diagnostic and, with a thresholds
-file, the exceedance frequency at each severity. This is the entry point the
-planned notebook will build on: one day or one month in, all formulas visible,
-every switch in `config.CONVENTIONS` open to change.
+file, the exceedance frequency at each severity — the same thing the showcase
+notebook does, without the figures.
 
 ## Tests
 
@@ -130,10 +162,12 @@ python essentials/tests/compare_with_original.py <file.grib>    # needs rojak (p
 python essentials/tests/compare_stages_3_4_with_original.py     # needs the original repo
 ```
 
-## Next: the notebook
+## Regenerating the showcase
 
-Planned as one notebook that walks through the same four stages on a test day
-or month: the formula for each operator and diagnostic (from the docstrings),
-the code that computes it (imported from these files, not copied, so the
-notebook cannot drift from the pipeline), and the resulting fields and
-exceedance frequencies, with the convention switches as editable cells.
+```bash
+jupyter nbconvert --to notebook --execute --inplace showcase.ipynb
+jupyter nbconvert --to html showcase.html showcase.ipynb
+```
+
+(The HTML renders its formulas with MathJax from a CDN, so read it online, or
+export to PDF from the browser if it has to travel offline.)

@@ -1,0 +1,384 @@
+=== step 0: configuration on node220 at 2026-09-21T10:37:18+02:00 ===
+    git     c7fbb11 2026-09-21 10:35:10 +0200
+    series  /scistor/SBE-EDS-ClimateKoopman/yen230/derived/north_atlantic_audit
+    thresh  /scistor/SBE-EDS-ClimateKoopman/yen230/calibration/thresholds_2026-09-11.json
+    ae19737891660de1efec1210528366234880c1980e3889557fdd422f4dfa7445  jobs/27_final_checks.sbatch
+    7556777bef3f959d5d97897994758b9dc4460e44f3fd32a34d7fbd36be862b79  ada/final_sweep.py
+    5ad7ffd71ecb7e544ecec7ce0cd353276c6f9f4b5e22b5a92c618a993a0a0c67  ada/per_diagnostic_all_severities.py
+    ce1504c438ab9e4523541a382fcdf2f835d215bb0490c2c2282a1f0c0edef01f  ada/final_scorecard.py
+    60d20690e097861c5ee4431d9228dc591597b213eedb21cf94de97377f0f2062  ada/prosser_published_s4.py
+    670c81b6e544c9ad8c4af19c84511fa332a91caad6336da3018b320c153ecc49  ada/final_tail_latitude.py
+
+=== step 1: store / thresholds / log sweep  2026-09-21T10:37:18+02:00 ===
+>>> final sweep  2026-09-21T10:37:29
+>>> base /scistor/SBE-EDS-ClimateKoopman/yen230
+>>> expected audit_fixes 'meridional_metric+four_variable_provenance', f2d A, DEF, 21 variables
+>>> logs: 1084 store writes found, covering 1032 stores (all series)
+
+==========================================================================================
+derived/north_atlantic_audit: expected 504, on disk 504
+==========================================================================================
+   audit_fixes values: {'meridional_metric+four_variable_provenance': 504}
+   f2d finite fraction at (first, last) step of the month: [(1.0, 1.0)]
+   stores with problems: 0 of 504
+
+==========================================================================================
+derived/global_audit: expected 12, on disk 12
+==========================================================================================
+   audit_fixes values: {'meridional_metric+four_variable_provenance': 12}
+   f2d finite fraction at (first, last) step of the month: [(1.0, 1.0)]
+   stores with problems: 0 of 12
+
+==========================================================================================
+THRESHOLDS
+==========================================================================================
+   file      : thresholds_2026-09-11.json  created 2026-09-11T10:41:48
+   period    : 'derived/global_audit (12 stores)'
+   n per diagnostic: [3039966720]  (full leap year 2000 on 721x1440 = 3,039,966,720)
+   signs     : ['+']
+   21 ladders finite and strictly increasing; pairing names the audit reference year
+
+wrote /net/sys/pscst201/SBE-EDS-ClimateKoopman@ada-nodes/yen230/data_turbulence/cat_outputs/final/store_sweep_audit.csv
+
+RESULT: 0 item(s) listed above  (wall 524 s)
+=== step 1 exit=0 in 8 min ===
+
+=== step 1b: tail latitude profile, reference year  2026-09-21T10:46:08+02:00 ===
+>>> archive    /scistor/SBE-EDS-ClimateKoopman/yen230/calibration/tails_2026-09-11
+>>> thresholds /scistor/SBE-EDS-ClimateKoopman/yen230/calibration/thresholds_2026-09-11.json  (period 'derived/global_audit (12 stores)')
+>>> latitude   721 rows, 90.0 .. -90.0
+
+   diagnostic            sev   global %    90S-60S  60S-30S    30S-0    0-30N  30N-60N  60N-90N   NH/SH
+   brown1                ligh    3.0000       0.90     1.56     0.52     0.58     1.91     0.43    1.11
+   brown1                mode    0.4000       0.49     1.44     0.63     0.75     1.87     0.25    1.20
+   brown1                seve    0.1000       0.53     1.34     0.68     0.84     1.74     0.31    1.23
+   brown2                ligh    3.0000       0.66     1.89     0.42     0.39     1.92     0.82    1.02
+   brown2                mode    0.4000       0.58     2.02     0.27     0.23     2.33     0.61    1.11
+   brown2                seve    0.1000       0.60     2.02     0.20     0.17     2.50     0.58    1.18
+   colson_panofsky       ligh    3.0000       0.00     0.08     1.80     2.06     0.12     0.00    1.14
+   colson_panofsky       mode    0.4000       0.00     0.12     1.87     1.94     0.13     0.00    1.02
+   colson_panofsky       seve    0.1000       0.01     0.15     1.89     1.89     0.15     0.00    0.97
+   deformation           ligh    3.0000       0.50     1.35     0.75     0.85     1.64     0.29    1.14
+   deformation           mode    0.4000       0.48     1.32     0.73     0.88     1.68     0.26    1.20
+   deformation           seve    0.1000       0.59     1.24     0.73     0.92     1.61     0.35    1.22
+   endlich               ligh    3.0000       0.29     1.41     1.06     0.96     1.11     0.17    0.84
+   endlich               mode    0.4000       0.22     1.51     1.02     0.90     1.22     0.12    0.83
+   endlich               seve    0.1000       0.24     1.53     1.05     0.80     1.28     0.13    0.79
+   f2d                   ligh    3.0000       0.02     0.19     1.68     1.98     0.25     0.00    1.17
+   f2d                   mode    0.4000       0.01     0.13     1.70     2.05     0.21     0.00    1.22
+   f2d                   seve    0.1000       0.01     0.09     1.74     2.08     0.15     0.00    1.19
+   horizontal_divergence ligh    3.0000       0.43     1.03     1.02     1.12     1.23     0.32    1.11
+   horizontal_divergence mode    0.4000       0.67     1.01     0.96     1.07     1.30     0.42    1.14
+   horizontal_divergence seve    0.1000       1.04     0.92     0.89     1.08     1.25     0.61    1.18
+   magnitude_pv          ligh    3.0000       3.40     1.30     0.00     0.00     1.51     3.82    1.15
+   magnitude_pv          mode    0.4000       2.20     1.15     0.00     0.01     2.13     3.71    1.80
+   magnitude_pv          seve    0.1000       1.93     1.07     0.00     0.01     2.50     3.19    2.08
+   ncsu1                 ligh    3.0000       0.26     1.01     1.03     1.35     1.06     0.14    1.17
+   ncsu1                 mode    0.4000       0.27     1.25     0.93     1.24     1.12     0.12    1.09
+   ncsu1                 seve    0.1000       0.32     1.30     0.98     1.22     0.98     0.18    0.99
+   negative_richardson   ligh    3.0000       0.01     0.21     1.75     1.94     0.21     0.01    1.09
+   negative_richardson   mode    0.4000       0.00     0.07     1.87     2.00     0.10     0.00    1.06
+   negative_richardson   seve    0.1000       0.01     0.05     1.87     2.02     0.09     0.00    1.08
+   ngm1                  ligh    3.0000       0.37     2.14     0.40     0.37     2.06     0.19    0.94
+   ngm1                  mode    0.4000       0.36     2.33     0.23     0.18     2.37     0.22    0.97
+   ngm1                  seve    0.1000       0.46     2.43     0.17     0.11     2.37     0.32    0.94
+   ngm2                  ligh    3.0000       0.10     0.40     1.45     1.76     0.62     0.02    1.25
+   ngm2                  mode    0.4000       0.12     0.40     1.36     1.85     0.62     0.05    1.37
+   ngm2                  seve    0.1000       0.23     0.40     1.28     1.87     0.63     0.16    1.45
+   nva                   ligh    3.0000       0.49     1.56     0.76     0.79     1.51     0.32    0.97
+   nva                   mode    0.4000       0.60     1.82     0.62     0.53     1.74     0.34    0.90
+   nva                   seve    0.1000       0.82     1.93     0.56     0.37     1.78     0.52    0.83
+   rva_magnitude         ligh    3.0000       0.50     1.64     0.67     0.73     1.63     0.31    1.00
+   rva_magnitude         mode    0.4000       0.64     1.83     0.54     0.49     1.85     0.41    0.96
+   rva_magnitude         seve    0.1000       0.99     1.85     0.47     0.35     1.84     0.76    0.92
+   temperature_gradient  ligh    3.0000       1.16     1.87     0.08     0.07     2.31     1.77    1.28
+   temperature_gradient  mode    0.4000       1.14     1.64     0.06     0.04     2.61     1.78    1.56
+   temperature_gradient  seve    0.1000       1.42     1.52     0.06     0.04     2.62     1.81    1.59
+   ti1                   ligh    3.0000       0.56     1.74     0.56     0.56     1.79     0.54    1.02
+   ti1                   mode    0.4000       0.58     1.90     0.37     0.37     2.16     0.50    1.09
+   ti1                   seve    0.1000       0.70     1.87     0.31     0.29     2.30     0.56    1.15
+   ti2                   ligh    3.0000       0.55     1.65     0.63     0.62     1.70     0.54    1.01
+   ti2                   mode    0.4000       0.67     1.84     0.41     0.37     2.11     0.57    1.07
+   ti2                   seve    0.1000       0.90     1.75     0.32     0.28     2.32     0.69    1.18
+   ubf                   ligh    3.0000       1.49     0.93     0.47     0.56     2.01     1.57    1.59
+   ubf                   mode    0.4000       2.93     0.81     0.34     0.39     1.75     2.27    1.33
+   ubf                   seve    0.1000       4.67     0.67     0.28     0.26     1.01     3.70    0.99
+   vertical_wind_shear   ligh    3.0000       0.45     1.68     0.67     0.63     1.60     0.67    0.98
+   vertical_wind_shear   mode    0.4000       0.37     2.02     0.40     0.34     2.12     0.51    1.03
+   vertical_wind_shear   seve    0.1000       0.35     2.18     0.20     0.16     2.51     0.41    1.12
+   vorticity_squared     ligh    3.0000       0.47     1.37     0.73     0.81     1.71     0.29    1.15
+   vorticity_squared     mode    0.4000       0.15     1.10     0.89     1.07     1.59     0.08    1.30
+   vorticity_squared     seve    0.1000       0.22     0.98     0.92     1.15     1.50     0.17    1.36
+   wind_speed            ligh    3.0000       0.10     2.09     0.47     0.46     2.05     0.05    0.98
+   wind_speed            mode    0.4000       0.02     1.56     0.16     0.14     3.48     0.02    2.08
+   wind_speed            seve    0.1000       0.01     1.06     0.03     0.01     4.34     0.00    3.96
+
+   21 diagnostics in 2.4 min
+   density = band share of the exceedance / band share of the area (1.00 = even)
+   W&S (2022) p. 1428-9: -Ri and CP tropical; TI1 two midlatitude peaks; UBF stronger in the NH; F2D no clear midlatitude peaks
+   wrote /net/sys/pscst201/SBE-EDS-ClimateKoopman@ada-nodes/yen230/data_turbulence/cat_outputs/final/tail_latitude_2000_audit.csv
+=== step 1b exit=0 in 2 min ===
+
+=== step 2: per-diagnostic fits, all severities  2026-09-21T10:48:39+02:00 ===
+>>> host        : node220  pid 1723506  2026-09-21T10:48:45
+>>> series      : /scistor/SBE-EDS-ClimateKoopman/yen230/derived/north_atlantic_audit
+>>> thresholds  : /scistor/SBE-EDS-ClimateKoopman/yen230/calibration/thresholds_2026-09-11.json
+    calibrated on 'derived/global_audit (12 stores)', domain global
+>>> severities  : light, light_to_moderate, moderate, moderate_to_severe, severe
+>>> years       : 1979-2020 (n=42), annual, box {'lat': (36.0, 60.0), 'lon': (-55.0, -10.0)}
+>>> diagnostics : 21
+>>> output      : cat_outputs/final  tag '_audit'
+>>> store attrs : audit_fixes='meridional_metric+four_variable_provenance' (diagnostics_na_1979-01.zarr)
+    pairing OK
+
+   1979 done in  29.5 s   min finite 1.000000 (magnitude_pv)   rss 6.2 G   ~20 min to go
+   1980 done in  29.4 s   min finite 1.000000 (magnitude_pv)   rss 6.2 G   ~20 min to go
+   1981 done in  29.2 s   min finite 1.000000 (magnitude_pv)   rss 6.3 G   ~19 min to go
+   1982 done in  29.3 s   min finite 1.000000 (magnitude_pv)   rss 6.3 G   ~19 min to go
+   1983 done in  29.0 s   min finite 1.000000 (magnitude_pv)   rss 6.3 G   ~18 min to go
+   1984 done in  30.3 s   min finite 1.000000 (magnitude_pv)   rss 6.3 G   ~18 min to go
+   1985 done in  31.4 s   min finite 1.000000 (magnitude_pv)   rss 6.3 G   ~17 min to go
+   1986 done in  30.6 s   min finite 1.000000 (magnitude_pv)   rss 6.3 G   ~17 min to go
+   1987 done in  29.9 s   min finite 1.000000 (magnitude_pv)   rss 6.3 G   ~16 min to go
+   1988 done in  29.6 s   min finite 1.000000 (magnitude_pv)   rss 6.3 G   ~16 min to go
+   1989 done in  30.6 s   min finite 1.000000 (magnitude_pv)   rss 6.3 G   ~15 min to go
+   1990 done in  29.8 s   min finite 1.000000 (magnitude_pv)   rss 6.3 G   ~15 min to go
+   1991 done in  29.6 s   min finite 1.000000 (magnitude_pv)   rss 6.3 G   ~14 min to go
+   1992 done in  29.3 s   min finite 1.000000 (magnitude_pv)   rss 6.3 G   ~14 min to go
+   1993 done in  29.7 s   min finite 1.000000 (magnitude_pv)   rss 6.3 G   ~13 min to go
+   1994 done in  29.6 s   min finite 1.000000 (magnitude_pv)   rss 6.3 G   ~13 min to go
+   1995 done in  29.3 s   min finite 1.000000 (magnitude_pv)   rss 6.3 G   ~12 min to go
+   1996 done in  29.7 s   min finite 1.000000 (magnitude_pv)   rss 6.3 G   ~12 min to go
+   1997 done in  29.6 s   min finite 1.000000 (magnitude_pv)   rss 6.3 G   ~11 min to go
+   1998 done in  30.7 s   min finite 1.000000 (magnitude_pv)   rss 6.3 G   ~11 min to go
+   1999 done in  31.4 s   min finite 1.000000 (magnitude_pv)   rss 6.3 G   ~10 min to go
+   2000 done in  30.3 s   min finite 1.000000 (magnitude_pv)   rss 6.3 G   ~10 min to go
+   2001 done in  29.8 s   min finite 1.000000 (magnitude_pv)   rss 6.3 G   ~9 min to go
+   2002 done in  29.7 s   min finite 1.000000 (magnitude_pv)   rss 6.3 G   ~9 min to go
+   2003 done in  29.6 s   min finite 1.000000 (magnitude_pv)   rss 6.3 G   ~8 min to go
+   2004 done in  29.9 s   min finite 1.000000 (magnitude_pv)   rss 6.3 G   ~8 min to go
+   2005 done in  29.9 s   min finite 1.000000 (magnitude_pv)   rss 6.3 G   ~7 min to go
+   2006 done in  30.0 s   min finite 1.000000 (magnitude_pv)   rss 6.3 G   ~7 min to go
+   2007 done in  31.4 s   min finite 1.000000 (magnitude_pv)   rss 6.3 G   ~6 min to go
+   2008 done in  31.5 s   min finite 1.000000 (magnitude_pv)   rss 6.3 G   ~6 min to go
+   2009 done in  31.6 s   min finite 1.000000 (magnitude_pv)   rss 6.3 G   ~6 min to go
+   2010 done in  30.8 s   min finite 1.000000 (magnitude_pv)   rss 6.3 G   ~5 min to go
+   2011 done in  29.9 s   min finite 1.000000 (magnitude_pv)   rss 6.3 G   ~5 min to go
+   2012 done in  29.9 s   min finite 1.000000 (magnitude_pv)   rss 6.3 G   ~4 min to go
+   2013 done in  29.7 s   min finite 1.000000 (magnitude_pv)   rss 6.3 G   ~4 min to go
+   2014 done in  30.8 s   min finite 1.000000 (magnitude_pv)   rss 6.3 G   ~3 min to go
+   2015 done in  32.0 s   min finite 1.000000 (magnitude_pv)   rss 6.3 G   ~3 min to go
+   2016 done in  31.2 s   min finite 1.000000 (magnitude_pv)   rss 6.3 G   ~2 min to go
+   2017 done in  29.4 s   min finite 1.000000 (magnitude_pv)   rss 6.3 G   ~2 min to go
+   2018 done in  29.7 s   min finite 1.000000 (magnitude_pv)   rss 6.3 G   ~1 min to go
+   2019 done in  29.8 s   min finite 1.000000 (magnitude_pv)   rss 6.3 G   ~1 min to go
+   2020 done in  29.6 s   min finite 1.000000 (magnitude_pv)   rss 6.3 G   ~0 min to go
+
+   loaded in 21.1 min
+
+   light                significant 18/21   degenerate none   mean-of-21 1979 4.8139% vs ensemble 4.8139%   -> per_diagnostic_annual_light_audit.csv
+   light_to_moderate    significant 17/21   degenerate none   mean-of-21 1979 1.5483% vs ensemble 1.5483%   -> per_diagnostic_annual_light_to_moderate_audit.csv
+   moderate             significant 17/21   degenerate none   mean-of-21 1979 0.7033% vs ensemble 0.7033%   -> per_diagnostic_annual_moderate_audit.csv
+   moderate_to_severe   significant 16/21   degenerate none   mean-of-21 1979 0.3501% vs ensemble 0.3501%   -> per_diagnostic_annual_moderate_to_severe_audit.csv
+   severe               significant 16/21   degenerate none   mean-of-21 1979 0.1702% vs ensemble 0.1702%   -> per_diagnostic_annual_severe_audit.csv
+
+FINITE CENSUS — 42 years x 21 diagnostics in the box -> finite_fraction_annual_audit.csv
+   every diagnostic is finite in every cell of every year
+
+   wall 21.1 min, peak RSS 6.3 GB
+=== step 2 exit=0 in 21 min ===
+
+=== step 3: scorecard  2026-09-21T11:09:50+02:00 ===
+====================================================================================================
+FINAL PER-DIAGNOSTIC SCORECARD — series label 'audit'
+   LOG  /net/sys/pscst201/SBE-EDS-ClimateKoopman@ada-nodes/yen230/data_turbulence/cat_outputs/final/per_diagnostic_annual_light_audit.csv  OK
+   MOG  /net/sys/pscst201/SBE-EDS-ClimateKoopman@ada-nodes/yen230/data_turbulence/cat_outputs/final/per_diagnostic_annual_moderate_audit.csv  OK
+   SOG  /net/sys/pscst201/SBE-EDS-ClimateKoopman@ada-nodes/yen230/data_turbulence/cat_outputs/final/per_diagnostic_annual_severe_audit.csv  OK
+====================================================================================================
+
+CONSISTENCY 1 — new MOG table vs the existing audit MOG table
+   largest difference: 0.00 x half-last-printed-digit (identical to printed precision)
+
+CONSISTENCY 2 — the five convention-invariant diagnostics, audit vs baseline
+   MOG: largest difference 8.00 x half-last-printed-digit (DIFFERENT)
+   SOG: largest difference 0.00 x half-last-printed-digit (identical to printed precision)
+
+READ-OFF VALIDATION — mean of Prosser's 21 read-off 1979 levels vs his exact Table 1
+   LOG: 5.3381 % vs 5.3253 %  (+0.2%)
+   MOG: 0.8009 % vs 0.7991 %  (+0.2%)
+   SOG: 0.2012 % vs 0.2021 %  (-0.4%)
+
+====================================================================================================
+LOG — annual, n = 42
+====================================================================================================
+   diagnostic             st lvl ours     his  ratio share o   his chg ours         95% CI     t his rel       p  in   sig
+   negative_richardson     S   0.568%  0.370%   1.53    0.19  0.12     +44%  [+15%, +74%]  3.01    +16%   3e-01   y     o
+   vertical_wind_shear     S   7.568%  8.500%   0.89    2.52  2.83     +13%  [ +5%, +21%]  3.38    +16%   4e-05   y     =
+   colson_panofsky         S   0.164%  0.810%   0.20    0.05  0.27     +37%  [-11%, +85%]  1.54    +33%   6e-03   y     h
+   f2d                     S   0.553%  0.570%   0.97    0.18  0.19     +14%  [-15%, +42%]  0.95    +14%   2e-01   y     =
+   brown1                  -   6.678%  6.600%   1.01    2.23  2.20     +18%  [+11%, +26%]  4.85    +18%   2e-05   y     =
+   brown2                  S   8.826%  9.400%   0.94    2.94  3.13     +14%  [ +7%, +21%]  3.89    +17%   1e-05   y     =
+   ti1                     S   7.636%  8.200%   0.93    2.55  2.73     +15%  [ +7%, +23%]  3.96    +17%   4e-05   y     =
+   ti2                     S   7.126%  7.550%   0.94    2.38  2.52     +11%  [ +4%, +18%]  3.19    +13%   2e-04   y     =
+   deformation             -   5.871%  5.750%   1.02    1.96  1.92     +17%  [ +9%, +25%]  4.32    +18%   1e-04   y     =
+   magnitude_pv            S   5.850%  8.100%   0.72    1.95  2.70     +28%  [+15%, +41%]  4.22    +22%   1e-03   y     =
+   vorticity_squared       -   6.220%  6.350%   0.98    2.07  2.12     +18%  [ +9%, +27%]  3.96    +19%   3e-04   y     =
+   temperature_gradient    -   9.932% 10.700%   0.93    3.31  3.57      +7%  [ +1%, +13%]  2.52     +7%   2e-02   y     =
+   wind_speed              -   3.080%  2.950%   1.04    1.03  0.98     +33%  [ +6%, +60%]  2.44    +32%   3e-02   y     =
+   endlich                 S   3.530%  5.250%   0.67    1.18  1.75     +18%  [+10%, +27%]  4.30    +14%   2e-04   y     =
+   ngm1                    -   5.581%  5.600%   1.00    1.86  1.87     +28%  [+14%, +43%]  3.97    +27%   5e-04   y     =
+   ngm2                    S   1.568%  1.900%   0.83    0.52  0.63     +18%  [ +0%, +35%]  2.04    +24%   2e-03   y     =
+   ubf                     -   2.471%  6.300%   0.39    0.82  2.10     +13%  [ +2%, +24%]  2.48    +18%   9e-05   y     =
+   horizontal_divergence   -   3.970%  4.100%   0.97    1.32  1.37      +3%  [ -5%, +10%]  0.73     +3%   4e-01   y     =
+   ncsu1                   S   3.393%  2.750%   1.23    1.13  0.92     +20%  [+10%, +30%]  4.00    +21%   9e-04   y     =
+   nva                     -   5.031%  4.950%   1.02    1.68  1.65     +17%  [ +7%, +27%]  3.52    +16%   2e-03   y     =
+   rva_magnitude           -   5.476%  5.400%   1.01    1.83  1.80     +20%  [ +8%, +31%]  3.44    +19%   2e-03   y     =
+
+   significant: ours 18/21, his 18/21; same call on 19/21  (differ: negative_richardson, colson_panofsky)
+   his rel inside our 95% CI: 21/21
+   median level ratio: stencil group (11) 0.93, single-level (10) 1.00
+   ensemble level gap (mean of 21 / his mean - 1): -0.098  = stencil group -0.059 + single-level group -0.039
+   ensemble trend sensitivity: mean of 21 +16.5%, without class C (5) +16.3%, difference -0.2 pp
+   ERA5-vs-ERA5.1 block test (2000-2006 dummy):
+      magnitude_pv           block   -3.6% (t -0.78)   change +27.8% -> +28.4% with the 2000-06 dummy
+      colson_panofsky        block  +10.4% (t +0.63)   change +36.9% -> +35.3% with the 2000-06 dummy
+      brown1                 block   -1.9% (t -0.69)   change +18.1% -> +18.4% with the 2000-06 dummy
+      temperature_gradient   block   +0.9% (t +0.42)   change  +7.0% ->  +6.8% with the 2000-06 dummy
+      horizontal_divergence  block   -2.0% (t -0.68)   change  +2.7% ->  +3.0% with the 2000-06 dummy
+      vertical_wind_shear    block   -3.3% (t -1.12)   change +13.2% -> +13.7% with the 2000-06 dummy
+      endlich                block   -2.4% (t -0.79)   change +18.1% -> +18.5% with the 2000-06 dummy
+      deformation            block   -2.8% (t -0.96)   change +17.1% -> +17.5% with the 2000-06 dummy
+      wind_speed             block  -14.3% (t -1.63)   change +32.7% -> +35.0% with the 2000-06 dummy
+      ngm2                   block   -4.0% (t -0.62)   change +17.9% -> +18.5% with the 2000-06 dummy
+      negative_richardson    block   -4.6% (t -0.48)   change +44.4% -> +45.1% with the 2000-06 dummy
+      rva_magnitude          block   -5.9% (t -1.44)   change +19.8% -> +20.8% with the 2000-06 dummy
+      ubf                    block   -2.6% (t -0.66)   change +13.0% -> +13.4% with the 2000-06 dummy
+      nva                    block   -5.1% (t -1.46)   change +16.9% -> +17.7% with the 2000-06 dummy
+      brown2                 block   -2.1% (t -0.79)   change +13.7% -> +14.1% with the 2000-06 dummy
+      vorticity_squared      block   -3.1% (t -0.96)   change +17.7% -> +18.2% with the 2000-06 dummy
+      ti1                    block   -3.1% (t -1.09)   change +15.1% -> +15.6% with the 2000-06 dummy
+      ngm1                   block   -8.3% (t -1.72)   change +28.4% -> +29.8% with the 2000-06 dummy
+      ti2                    block   -3.6% (t -1.40)   change +11.1% -> +11.7% with the 2000-06 dummy
+      f2d                    block   -9.8% (t -0.94)   change +13.5% -> +15.1% with the 2000-06 dummy
+      ncsu1                  block   -4.5% (t -1.24)   change +20.0% -> +20.7% with the 2000-06 dummy
+      ensemble               block   -3.6% (t -1.23)   change +16.5% -> +17.1% with the 2000-06 dummy
+   largest contributors: ubf -0.034, magnitude_pv -0.020, endlich -0.015, vertical_wind_shear -0.008 ... negative_richardson +0.002, ncsu1 +0.006
+
+====================================================================================================
+MOG — annual, n = 42
+====================================================================================================
+   diagnostic             st lvl ours     his  ratio share o   his chg ours         95% CI     t his rel       p  in   sig
+   negative_richardson     S   0.019%  0.039%   0.49    0.05  0.10     +41%  [-41%,+123%]  1.00     -8%   6e-01   y     =
+   vertical_wind_shear     S   1.429%  1.680%   0.85    3.57  4.20     +39%  [+23%, +55%]  5.07    +38%   8e-07   y     =
+   colson_panofsky         S   0.039%  0.285%   0.14    0.10  0.71     +62%  [ -6%,+130%]  1.85    +45%   2e-03   y     h
+   f2d                     S   0.034%  0.055%   0.62    0.08  0.14     +25%  [-31%, +81%]  0.91     +0%   1e+00   y     =
+   brown1                  -   0.771%  0.700%   1.10    1.93  1.75     +44%  [+31%, +58%]  6.49    +45%   2e-07   y     =
+   brown2                  S   1.464%  1.600%   0.92    3.66  4.00     +46%  [+30%, +62%]  5.96    +46%   5e-08   y     =
+   ti1                     S   1.232%  1.400%   0.88    3.08  3.50     +44%  [+28%, +60%]  5.68    +42%   3e-07   y     =
+   ti2                     S   1.198%  1.370%   0.87    3.00  3.43     +29%  [+16%, +42%]  4.36    +27%   3e-05   y     =
+   deformation             -   0.704%  0.700%   1.01    1.76  1.75     +37%  [+23%, +50%]  5.52    +38%   6e-06   y     =
+   magnitude_pv            S   1.402%  1.620%   0.87    3.50  4.05     +42%  [+24%, +60%]  4.65    +51%   4e-07   y     =
+   vorticity_squared       -   0.559%  0.470%   1.19    1.40  1.17     +39%  [+24%, +53%]  5.36    +37%   2e-05   y     =
+   temperature_gradient    -   1.597%  1.750%   0.91    3.99  4.38     +27%  [+16%, +38%]  4.88    +26%   2e-05   y     =
+   wind_speed              -   0.264%  0.280%   0.94    0.66  0.70     +74%  [+16%,+132%]  2.56    +76%   2e-02   y     =
+   endlich                 S   0.470%  0.920%   0.51    1.18  2.30     +38%  [+23%, +52%]  5.22    +28%   2e-05   y     =
+   ngm1                    -   0.779%  0.830%   0.94    1.95  2.07     +52%  [+27%, +78%]  4.13    +51%   3e-04   y     =
+   ngm2                    S   0.149%  0.240%   0.62    0.37  0.60     +28%  [ +5%, +51%]  2.49    +34%   1e-03   y     =
+   ubf                     -   0.138%  0.720%   0.19    0.35  1.80     +20%  [ +3%, +37%]  2.33    +32%   6e-05   y     =
+   horizontal_divergence   -   0.519%  0.540%   0.96    1.30  1.35      +5%  [ -5%, +16%]  1.01     +7%   2e-01   y     =
+   ncsu1                   S   0.446%  0.070%   6.38    1.12  0.18     +39%  [+20%, +57%]  4.20     +4%   7e-01   N     o
+   nva                     -   0.754%  0.720%   1.05    1.88  1.80     +29%  [+12%, +45%]  3.53    +28%   1e-03   y     =
+   rva_magnitude           -   0.802%  0.830%   0.97    2.00  2.07     +29%  [+11%, +47%]  3.26    +29%   3e-03   y     =
+
+   significant: ours 17/21, his 17/21; same call on 19/21  (differ: colson_panofsky, ncsu1)
+   his rel inside our 95% CI: 20/21  (outside: ncsu1)
+   median level ratio: stencil group (11) 0.85, single-level (10) 0.96
+   ensemble level gap (mean of 21 / his mean - 1): -0.122  = stencil group -0.083 + single-level group -0.039
+   ensemble trend sensitivity: mean of 21 +37.2%, without class C (5) +37.3%, difference +0.1 pp
+   ERA5-vs-ERA5.1 block test (2000-2006 dummy):
+      magnitude_pv           block   -2.6% (t -0.44)   change +41.8% -> +42.2% with the 2000-06 dummy
+      colson_panofsky        block  +22.8% (t +1.07)   change +62.3% -> +59.1% with the 2000-06 dummy
+      brown1                 block   -3.2% (t -0.72)   change +44.4% -> +44.9% with the 2000-06 dummy
+      temperature_gradient   block   +1.9% (t +0.47)   change +27.1% -> +26.8% with the 2000-06 dummy
+      horizontal_divergence  block   +0.2% (t +0.04)   change  +5.3% ->  +5.3% with the 2000-06 dummy
+      vertical_wind_shear    block   -6.2% (t -1.23)   change +39.0% -> +40.0% with the 2000-06 dummy
+      endlich                block   +0.4% (t +0.09)   change +37.7% -> +37.6% with the 2000-06 dummy
+      deformation            block   -2.8% (t -0.62)   change +36.9% -> +37.4% with the 2000-06 dummy
+      wind_speed             block  -32.4% (t -2.12)   change +73.9% -> +78.4% with the 2000-06 dummy
+      ngm2                   block   +0.6% (t +0.08)   change +27.9% -> +27.8% with the 2000-06 dummy
+      negative_richardson    block  +41.7% (t +1.46)   change +40.6% -> +34.3% with the 2000-06 dummy
+      rva_magnitude          block   -8.1% (t -1.32)   change +29.3% -> +30.5% with the 2000-06 dummy
+      ubf                    block   -3.6% (t -0.57)   change +20.1% -> +20.6% with the 2000-06 dummy
+      nva                    block   -7.8% (t -1.40)   change +28.9% -> +30.1% with the 2000-06 dummy
+      brown2                 block   -4.9% (t -0.99)   change +46.0% -> +46.8% with the 2000-06 dummy
+      vorticity_squared      block   -0.0% (t -0.00)   change +38.6% -> +38.6% with the 2000-06 dummy
+      ti1                    block   -5.0% (t -0.98)   change +44.1% -> +44.9% with the 2000-06 dummy
+      ngm1                   block  -11.4% (t -1.47)   change +52.1% -> +53.8% with the 2000-06 dummy
+      ti2                    block   -5.5% (t -1.21)   change +29.0% -> +29.9% with the 2000-06 dummy
+      f2d                    block  +19.7% (t +0.97)   change +25.0% -> +21.9% with the 2000-06 dummy
+      ncsu1                  block   -5.0% (t -0.82)   change +38.6% -> +39.4% with the 2000-06 dummy
+      ensemble               block   -4.5% (t -1.01)   change +37.2% -> +37.9% with the 2000-06 dummy
+   largest contributors: ubf -0.035, endlich -0.027, vertical_wind_shear -0.015, colson_panofsky -0.015 ... vorticity_squared +0.005, ncsu1 +0.022
+
+====================================================================================================
+SOG — annual, n = 42
+====================================================================================================
+   diagnostic             st lvl ours     his  ratio share o   his chg ours         95% CI     t his rel       p  in   sig
+   negative_richardson     S   0.003%  0.013%   0.26    0.03  0.12     +18%  [-69%,+105%]  0.42    -14%   3e-01   y     =
+   vertical_wind_shear     S   0.417%  0.470%   0.89    4.17  4.70     +60%  [+36%, +83%]  5.18    +55%   6e-07   y     =
+   colson_panofsky         S   0.016%  0.130%   0.12    0.16  1.30     +68%  [-13%,+150%]  1.69    +55%   2e-03   y     h
+   f2d                     S   0.005%  0.013%   0.38    0.05  0.13     +27%  [-48%,+101%]  0.72     +0%   1e+00   y     =
+   brown1                  -   0.146%  0.145%   1.00    1.46  1.45     +73%  [+52%, +94%]  6.93    +71%   1e-07   y     =
+   brown2                  S   0.370%  0.420%   0.88    3.70  4.20     +76%  [+52%,+101%]  6.30    +69%   3e-08   y     =
+   ti1                     S   0.307%  0.370%   0.83    3.07  3.70     +69%  [+45%, +93%]  5.84    +58%   6e-07   y     =
+   ti2                     S   0.312%  0.370%   0.84    3.12  3.70     +41%  [+21%, +61%]  4.16    +32%   4e-04   y     =
+   deformation             -   0.140%  0.145%   0.97    1.40  1.45     +55%  [+36%, +74%]  5.91    +54%   5e-06   y     =
+   magnitude_pv            S   0.432%  0.450%   0.96    4.32  4.50     +70%  [+46%, +95%]  5.75    +90%   2e-09   y     =
+   vorticity_squared       -   0.103%  0.080%   1.29    1.03  0.80     +73%  [+51%, +95%]  6.59    +69%   5e-07   y     =
+   temperature_gradient    -   0.364%  0.400%   0.91    3.64  4.00     +41%  [+25%, +57%]  5.24    +40%   6e-06   y     =
+   wind_speed              -   0.050%  0.050%   1.01    0.50  0.50    +101%  [ +8%,+194%]  2.20   +102%   3e-02   y     =
+   endlich                 S   0.106%  0.230%   0.46    1.06  2.30     +58%  [+37%, +78%]  5.66    +36%   3e-05   N     =
+   ngm1                    -   0.186%  0.210%   0.88    1.86  2.10     +79%  [+41%,+116%]  4.23    +78%   2e-04   y     =
+   ngm2                    S   0.029%  0.051%   0.57    0.29  0.51     +37%  [+12%, +62%]  2.95    +42%   1e-03   y     =
+   ubf                     -   0.010%  0.135%   0.08    0.10  1.35     +18%  [ -6%, +42%]  1.56    +44%   9e-05   N     h
+   horizontal_divergence   -   0.109%  0.117%   0.94    1.09  1.17      +6%  [ -7%, +20%]  0.96     +8%   2e-01   y     =
+   ncsu1                   S   0.093%  0.036%   2.57    0.93  0.36     +47%  [+21%, +73%]  3.67    +10%   5e-01   N     o
+   nva                     -   0.184%  0.190%   0.97    1.84  1.90     +35%  [+14%, +56%]  3.35    +36%   2e-03   y     =
+   rva_magnitude           -   0.190%  0.200%   0.95    1.90  2.00     +34%  [+11%, +57%]  3.00    +35%   4e-03   y     =
+
+   significant: ours 16/21, his 17/21; same call on 18/21  (differ: colson_panofsky, ubf, ncsu1)
+   his rel inside our 95% CI: 18/21  (outside: endlich, ubf, ncsu1)
+   median level ratio: stencil group (11) 0.83, single-level (10) 0.96
+   ensemble level gap (mean of 21 / his mean - 1): -0.154  = stencil group -0.110 + single-level group -0.045
+   ensemble trend sensitivity: mean of 21 +57.3%, without class C (5) +57.7%, difference +0.4 pp
+   ERA5-vs-ERA5.1 block test (2000-2006 dummy):
+      magnitude_pv           block   +0.7% (t +0.09)   change +70.3% -> +70.2% with the 2000-06 dummy
+      colson_panofsky        block  +24.0% (t +0.96)   change +68.3% -> +65.0% with the 2000-06 dummy
+      brown1                 block   -4.0% (t -0.65)   change +72.9% -> +73.5% with the 2000-06 dummy
+      temperature_gradient   block   +2.2% (t +0.42)   change +41.4% -> +41.0% with the 2000-06 dummy
+      horizontal_divergence  block   +2.7% (t +0.52)   change  +6.5% ->  +6.0% with the 2000-06 dummy
+      vertical_wind_shear    block   -8.1% (t -1.16)   change +59.7% -> +60.9% with the 2000-06 dummy
+      endlich                block   +5.7% (t +0.88)   change +57.6% -> +56.8% with the 2000-06 dummy
+      deformation            block   -2.9% (t -0.49)   change +55.2% -> +55.6% with the 2000-06 dummy
+      wind_speed             block  -46.4% (t -2.16)   change +100.9% -> +106.4% with the 2000-06 dummy
+      ngm2                   block   +4.1% (t +0.48)   change +37.1% -> +36.4% with the 2000-06 dummy
+      negative_richardson    block  +57.8% (t +1.70)   change +18.0% ->  +9.1% with the 2000-06 dummy
+      rva_magnitude          block   -9.1% (t -1.21)   change +33.8% -> +35.2% with the 2000-06 dummy
+      ubf                    block   -4.0% (t -0.46)   change +18.5% -> +19.1% with the 2000-06 dummy
+      nva                    block   -8.5% (t -1.21)   change +35.2% -> +36.5% with the 2000-06 dummy
+      brown2                 block   -7.8% (t -1.13)   change +76.2% -> +77.3% with the 2000-06 dummy
+      vorticity_squared      block   -1.2% (t -0.19)   change +73.1% -> +73.2% with the 2000-06 dummy
+      ti1                    block   -7.5% (t -1.08)   change +69.1% -> +70.2% with the 2000-06 dummy
+      ngm1                   block  -12.2% (t -1.17)   change +78.6% -> +80.3% with the 2000-06 dummy
+      ti2                    block   -6.0% (t -0.92)   change +40.8% -> +41.7% with the 2000-06 dummy
+      f2d                    block  +38.8% (t +1.41)   change +26.6% -> +20.6% with the 2000-06 dummy
+      ncsu1                  block   -4.3% (t -0.52)   change +47.2% -> +47.9% with the 2000-06 dummy
+      ensemble               block   -5.0% (t -0.87)   change +57.3% -> +58.0% with the 2000-06 dummy
+   largest contributors: ubf -0.030, endlich -0.029, colson_panofsky -0.027, ti1 -0.015 ... vorticity_squared +0.005, ncsu1 +0.013
+
+wrote /net/sys/pscst201/SBE-EDS-ClimateKoopman@ada-nodes/yen230/data_turbulence/cat_outputs/final/FINAL_SCORECARD.csv
+wrote /net/sys/pscst201/SBE-EDS-ClimateKoopman@ada-nodes/yen230/data_turbulence/cat_outputs/final/FINAL_SCORECARD.md
+=== step 3 exit=0 ===
+
+=== done at 2026-09-21T11:09:51+02:00: sweep=0 tails=0 fits=0 scorecard=0 ===
+    bring back: git add cat_outputs/final/*.csv cat_outputs/final/*.md logs/final-1124312.out

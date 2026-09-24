@@ -87,3 +87,48 @@ TABLE1_ANNUAL_1979_PCT = {"light": 466.5 / 8760 * 100,
 
 assert len(S4_LOG) == 21 and len(S4_SOG) == 21
 assert set(S4_LOG) == set(S4_SOG)
+
+# The `abs=` line printed in each panel: the slope of his regression, in
+# percentage points per year. Transcribed from the same two renders.
+#
+# SELF-CHECK, run at import: for a straight line through 42 years,
+#     abs ~= rel/100 * level_1979 / 41 .
+# `rel` is exact and `level_1979` is a read-off, so agreement to a few per cent
+# tests BOTH transcriptions at once — a mis-read level or a mistyped abs shows
+# up here rather than in a figure caption three weeks later.
+S4_LOG_ABS = {
+    "negative_richardson": 0.001, "vertical_wind_shear": 0.033,
+    "colson_panofsky": 0.006, "f2d": 0.002, "brown1": 0.030, "brown2": 0.038,
+    "ti1": 0.033, "ti2": 0.023, "deformation": 0.024, "magnitude_pv": 0.044,
+    "vorticity_squared": 0.030, "temperature_gradient": 0.017,
+    "wind_speed": 0.023, "endlich": 0.018, "ngm1": 0.037, "ngm2": 0.011,
+    "ubf": 0.028, "horizontal_divergence": 0.003, "ncsu1": 0.014,
+    "nva": 0.019, "rva_magnitude": 0.025,
+}
+S4_SOG_ABS = {
+    "negative_richardson": -0.000, "vertical_wind_shear": 0.006,
+    "colson_panofsky": 0.002, "f2d": 0.000, "brown1": 0.003, "brown2": 0.007,
+    "ti1": 0.005, "ti2": 0.003, "deformation": 0.002, "magnitude_pv": 0.010,
+    "vorticity_squared": 0.001, "temperature_gradient": 0.004,
+    "wind_speed": 0.001, "endlich": 0.002, "ngm1": 0.004, "ngm2": 0.001,
+    "ubf": 0.001, "horizontal_divergence": 0.000, "ncsu1": 0.000,
+    "nva": 0.002, "rva_magnitude": 0.002,
+}
+
+
+def _check_abs(src, abs_map, label):
+    bad = []
+    for k, v in src.items():
+        implied = v[1] / 100.0 * v[3] / 41.0          # rel% * level% / 41 yr
+        got = abs_map[k]
+        if abs(implied - got) > max(0.0006, 0.15 * abs(got)):
+            bad.append(f"{label} {k}: printed abs={got:+.3f}, "
+                       f"rel and level imply {implied:+.4f}")
+    return bad
+
+
+_PROBLEMS = _check_abs(S4_LOG, S4_LOG_ABS, "S4-LOG") + \
+            _check_abs(S4_SOG, S4_SOG_ABS, "S4-SOG")
+if _PROBLEMS:                       # never silent: a bad transcription is a bug
+    raise AssertionError("S4 transcription is not self-consistent:\n  "
+                         + "\n  ".join(_PROBLEMS))

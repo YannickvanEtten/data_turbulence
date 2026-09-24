@@ -193,16 +193,24 @@ def read_fit(path) -> dict[str, dict]:
         return {r["diagnostic"]: r for r in csv.DictReader(fh)}
 
 
-def discover(outputs: Path) -> list[tuple[str, str, Path]]:
-    """Find every per_diagnostic_<season>_<severity>_series.csv present."""
+def discover(outputs: Path) -> list[tuple[str, str, str, Path]]:
+    """Find every per_diagnostic_<season>_<severity>[<tag>]_series.csv present.
+
+    The tag exists because two series now coexist: the tables written by
+    jobs/21 for the baseline series carry no tag, and those written for the
+    final audit series carry `_audit` (ada/per_diagnostic_trend.py's TAG, and
+    ada/per_diagnostic_all_severities.py's default). Returns
+    (season, severity, tag, path) so every figure filename can carry the tag
+    and the two can never overwrite each other.
+    """
     found = []
     for p in sorted(outputs.glob("per_diagnostic_*_series.csv")):
         stem = p.name[len("per_diagnostic_"):-len("_series.csv")]
         for sev in sorted(SEVERITY_LABEL, key=len, reverse=True):
-            if stem.endswith("_" + sev):
-                season = stem[: -len(sev) - 1]
+            if "_" + sev in stem:
+                season, _, tag = stem.partition("_" + sev)
                 if season in SEASON_TITLE:
-                    found.append((season, sev, p))
+                    found.append((season, sev, tag, p))
                 break
     return found
 
@@ -236,7 +244,7 @@ def _panel(ax, years, rate, s, title, *, show_prosser=None, compact=False):
     ax.margins(x=0.03)
 
 
-def figure_ensemble(years, rate, season, severity, figdir, fig_id):
+def figure_ensemble(years, rate, season, severity, figdir, fig_id, tag=""):
     import matplotlib.pyplot as plt
 
     s = fit_summary(years, rate)
@@ -256,14 +264,14 @@ def figure_ensemble(years, rate, season, severity, figdir, fig_id):
     fig.suptitle(f"replicating {fig_id}", fontsize=9, color="#666666", y=0.995)
     fig.tight_layout(rect=(0, 0.03, 1, 0.97))
 
-    out = figdir / f"fig3_{season}_{severity}_ensemble.png"
+    out = figdir / f"fig3_{season}_{severity}{tag}_ensemble.png"
     fig.savefig(out, dpi=200)
     fig.savefig(out.with_suffix(".pdf"))
     plt.close(fig)
     return out, s
 
 
-def figure_per_diagnostic(years, data, season, severity, figdir, fig_id):
+def figure_per_diagnostic(years, data, season, severity, figdir, fig_id, tag=""):
     import matplotlib.pyplot as plt
 
     names = [c for c in data if c != "ensemble"]
@@ -295,7 +303,7 @@ def figure_per_diagnostic(years, data, season, severity, figdir, fig_id):
     fig.supylabel(f"{SEVERITY_LABEL[severity]} CAT probability (%)", fontsize=10)
     fig.tight_layout(rect=(0.012, 0.012, 1, 0.965))
 
-    out = figdir / f"fig4_{season}_{severity}_per_diagnostic.png"
+    out = figdir / f"fig4_{season}_{severity}{tag}_per_diagnostic.png"
     fig.savefig(out, dpi=170)
     fig.savefig(out.with_suffix(".pdf"))
     plt.close(fig)
@@ -388,8 +396,40 @@ def _fmt_p(p: float) -> str:
     return f"{p:.0e}".replace("e-0", "e-")
 
 
-def figure_prosser_layout(years, data, figdir, published, ylims,
-                          match_axes: bool = True):
+def published_for(severity: str):
+    """Prosser's per-diagnostic panel values for one severity, in one shape.
+
+    Main-text Figure 4 is annual MOG and is transcribed in
+    ada/prosser_published.py with his rel, abs, p, approximate 1979 level AND
+    his y-axis limits. Supporting Information Figures S4-LOG and S4-SOG print
+    rel and p in every panel too (ada/prosser_published_s4.py, transcribed
+    2026-09-16); their axis limits were not transcribed, so those layouts are
+    drawn on OUR axes and only the printed numbers are compared.
+
+    Returns (published, ylims_or_None, figure_id) or None when the severity
+    has no published per-diagnostic counterpart (LMOG and MSOG have none).
+    """
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    from prosser_published import FIGURE4, FIGURE4_YLIM
+    if severity == "moderate":
+        return FIGURE4, FIGURE4_YLIM, "Figure 4"
+    if severity in ("light", "severe"):
+        from prosser_published_s4 import (S4_LOG, S4_LOG_ABS, S4_SOG,
+                                          S4_SOG_ABS)
+        src, abs_map = ((S4_LOG, S4_LOG_ABS) if severity == "light"
+                        else (S4_SOG, S4_SOG_ABS))
+        # (panel, title, rel, abs, p, level) — his titles come from Figure 4,
+        # which S4 repeats panel for panel.
+        published = {k: (v[0], FIGURE4[k][1], v[1], abs_map[k], v[2], v[3])
+                     for k, v in src.items()}
+        return published, None, ("Figure S4-LOG" if severity == "light"
+                                 else "Figure S4-SOG")
+    return None
+
+
+def figure_prosser_layout(years, data, figdir, published, ylims=None,
+                          match_axes: bool = True, tag: str = "",
+                          sev_label: str = "MOG", fig_id: str = "Figure 4"):
     """Our 21 panels in Prosser's Figure 4 layout, for direct comparison.
 
     His figure fills 7 rows x 3 columns COLUMN-MAJOR: (a)-(g) down the first
@@ -408,6 +448,8 @@ def figure_prosser_layout(years, data, figdir, published, ylims,
     """
     import matplotlib.pyplot as plt
 
+    if ylims is None:          # LOG and SOG: his panel limits were never
+        match_axes = False     # transcribed, only his printed rel/abs/p
     order = sorted(published, key=lambda k: published[k][0])   # a..u
     ncol, nrow = 3, 7
     fig, axes = plt.subplots(nrow, ncol, figsize=(16.5, 26), squeeze=False)
@@ -421,7 +463,7 @@ def figure_prosser_layout(years, data, figdir, published, ylims,
         ax.set_title(f"{title}\n({panel})", fontsize=9, linespacing=1.3)
 
         vals = data[name] * 100.0
-        lo, hi = ylims[name]
+        lo, hi = ylims[name] if ylims else (float("-inf"), float("inf"))
         n_out = int(((vals < lo) | (vals > hi)).sum())
         fit_out = not (lo <= s["y0"] * 100 <= hi and lo <= s["y1"] * 100 <= hi)
         if match_axes:
@@ -444,8 +486,9 @@ def figure_prosser_layout(years, data, figdir, published, ylims,
 
         our_abs = s["fit"]["slope"] * 100.0
         our_p = pvalue(s["fit"]["t"], s["fit"]["df"])
+        his_abs = f"{abs_:+.3f}" if abs_ is not None else "  n/a"
         ax.text(0.0, -0.30,
-                f"his   rel={rel:+.1f}   abs={abs_:+.3f}   p={_fmt_p(p)}",
+                f"his   rel={rel:+.1f}   abs={his_abs}   p={_fmt_p(p)}",
                 transform=ax.transAxes, fontsize=8.5, family="monospace",
                 color="#333333")
         ax.text(0.0, -0.42,
@@ -456,7 +499,7 @@ def figure_prosser_layout(years, data, figdir, published, ylims,
 
     axis_note = ("drawn on HIS y axes" if match_axes else "drawn on OUR y axes")
     fig.suptitle(
-        "Prosser (2023) Figure 4 — his layout, his titles, "
+        f"Prosser (2023) {fig_id} ({sev_label}) — his layout, his titles, "
         f"{axis_note}\n"
         "blue crosses: our 42 annual values · red crosses: our fitted 1979 and "
         "2020 · solid green: significant at p=0.05\n"
@@ -466,7 +509,7 @@ def figure_prosser_layout(years, data, figdir, published, ylims,
     fig.tight_layout(rect=(0, 0, 1, 0.972), h_pad=5.2)
 
     suffix = "his_axes" if match_axes else "our_axes"
-    out = figdir / f"fig4_prosser_layout_{suffix}.png"
+    out = figdir / f"fig4_prosser_layout_{sev_label.lower()}{tag}_{suffix}.png"
     fig.savefig(out, dpi=170)
     fig.savefig(out.with_suffix(".pdf"))
     plt.close(fig)
@@ -540,7 +583,7 @@ def main() -> int:
     print(f"figures : {figdir}\n")
 
     all_problems = []
-    for season, severity, series_path in available:
+    for season, severity, tag, series_path in available:
         years, data = read_series(series_path)
         fit_csv = read_fit(series_path.with_name(
             series_path.name.replace("_series.csv", ".csv")))
@@ -551,11 +594,12 @@ def main() -> int:
              f"[no published counterpart: {SEASON_TITLE[season]} "
              f"{SEVERITY_LABEL[severity]} per-diagnostic]"))
 
-        print(f"=== {SEASON_TITLE[season]} {SEVERITY_LABEL[severity]} "
+        print(f"=== {SEASON_TITLE[season]} {SEVERITY_LABEL[severity]}"
+              f"{'  [' + tag.lstrip('_') + ' series]' if tag else '  [baseline series]'} "
               f"({len(years)} years, {len(data) - 1} diagnostics)")
 
         p1, s_ens = figure_ensemble(years, data["ensemble"], season, severity,
-                                    figdir, ens_id)
+                                    figdir, ens_id, tag)
         print(f"    {p1.name:<48} {ens_id}")
         print(f"      ours {s_ens['rel']:+.0%} "
               f"[{s_ens['lo']:+.0%}, {s_ens['hi']:+.0%}], "
@@ -568,49 +612,50 @@ def main() -> int:
                   f"inside our 95% CI: {'yes' if inside else 'NO'}")
 
         p2, s_diag = figure_per_diagnostic(years, data, season, severity,
-                                           figdir, diag_id)
+                                           figdir, diag_id, tag)
         n_sig = sum(1 for s in s_diag.values() if s["significant"])
         print(f"    {p2.name:<48} {diag_id}")
         print(f"      {n_sig}/{len(s_diag)} per-diagnostic trends significant")
 
-        # The direct comparison: only annual MOG has a published counterpart.
-        if (season, severity) == ("annual", "moderate"):
-            try:
-                sys.path.insert(0, str(Path(__file__).resolve().parent))
-                from prosser_published import (FIGURE4, FIGURE4_SUMMARY,
-                                               FIGURE4_YLIM)
-            except ImportError:
-                print("      (ada/prosser_published.py not found — skipping "
-                      "the side-by-side layout)")
-            else:
-                for match in (True, False):
-                    p3, offscale = figure_prosser_layout(
-                        years, data, figdir, FIGURE4, FIGURE4_YLIM,
-                        match_axes=match)
-                    print(f"    {p3.name:<48} "
-                          f"{'his axes' if match else 'our axes'}")
+        # The direct per-panel comparison. Annual MOG is main-text Figure 4;
+        # annual LOG and SOG are S4-LOG and S4-SOG, whose panels print rel and
+        # p as well (transcribed 2026-09-16), so all three can be laid out.
+        pub = published_for(severity) if season == "annual" else None
+        if pub is not None:
+            published, ylims, fig_id = pub
+            from prosser_published import FIGURE4_SUMMARY
+            # his axes last, so `offscale` below is the his-axes run
+            for match in ((False, True) if ylims else (False,)):
+                p3, offscale = figure_prosser_layout(
+                    years, data, figdir, published, ylims, match_axes=match,
+                    tag=tag, sev_label=SEVERITY_LABEL[severity], fig_id=fig_id)
+                print(f"    {p3.name:<48} "
+                      f"{'his axes' if match else 'our axes'}")
+            n_in = sum(1 for k, v in published.items()
+                       if s_diag[k]["lo"] <= v[2] / 100 <= s_diag[k]["hi"])
+            n_his_sig = sum(1 for v in published.values() if v[4] < 0.05)
+            print(f"      his rel inside our 95% CI: {n_in}/{len(published)}; "
+                  f"significant ours {n_sig}/{len(s_diag)}, his {n_his_sig}/21")
+            if severity == "moderate":
                 print(f"      Prosser states {FIGURE4_SUMMARY['n_significant']}"
                       f"/{FIGURE4_SUMMARY['n_total']} significant, max "
-                      f"{FIGURE4_SUMMARY['max_change']:+.1f}%; "
-                      f"ours {n_sig}/{len(s_diag)}, max "
+                      f"{FIGURE4_SUMMARY['max_change']:+.1f}%; ours max "
                       f"{max(v['rel'] for v in s_diag.values()) * 100:+.1f}%")
-                if offscale:
-                    material = {k: v for k, v in offscale.items()
-                                if v["fit_out"] or v["n_out"] > 0.1 * len(years)}
-                    print(f"      PANELS THAT DO NOT FIT HIS AXIS: "
-                          f"{len(material)} material, {len(offscale)} including "
-                          f"one-or-two-point overhangs (his limits are read off "
-                          f"a figure, so small overhangs mean nothing).")
-                    for nm, d in sorted(
-                            material.items(),
-                            key=lambda kv: -kv[1]["n_out"]):
-                        tag = ("ENTIRELY off" if d["n_out"] == len(years)
-                               else f"{d['n_out']}/{len(years)} off")
-                        fit = "  fitted line off too" if d["fit_out"] else ""
-                        print(f"        {nm:<23}{tag:<16}"
-                              f"ours {d['ours'][0]:.3f}-{d['ours'][1]:.3f}  "
-                              f"his axis {d['his'][0]:.3f}-{d['his'][1]:.3f}"
-                              f"{fit}")
+            if offscale:
+                material = {k: v for k, v in offscale.items()
+                            if v["fit_out"] or v["n_out"] > 0.1 * len(years)}
+                print(f"      PANELS THAT DO NOT FIT HIS AXIS: "
+                      f"{len(material)} material, {len(offscale)} including "
+                      f"one-or-two-point overhangs (his limits are read off "
+                      f"a figure, so small overhangs mean nothing).")
+                for nm, d in sorted(material.items(),
+                                    key=lambda kv: -kv[1]["n_out"]):
+                    t = ("ENTIRELY off" if d["n_out"] == len(years)
+                         else f"{d['n_out']}/{len(years)} off")
+                    fit = "  fitted line off too" if d["fit_out"] else ""
+                    print(f"        {nm:<23}{t:<16}"
+                          f"ours {d['ours'][0]:.3f}-{d['ours'][1]:.3f}  "
+                          f"his axis {d['his'][0]:.3f}-{d['his'][1]:.3f}{fit}")
 
         probs = crosscheck(s_diag, fit_csv)
         if probs:

@@ -1,0 +1,3313 @@
+{
+  "input": "/scistor/SBE-EDS-ClimateKoopman/yen230/raw/global/era5_glob_2000-01.grib",
+  "target_level": 200,
+  "baseline": {
+    "audit_fixes": "baseline",
+    "audit_fix_meridional_metric": 0,
+    "audit_fix_ubf_computed_vorticity": 0,
+    "audit_fix_pv_sharman_a18": 0,
+    "audit_fix_endlich_component_shear": 0,
+    "audit_fix_ncsu1_computed_vorticity": 0,
+    "audit_fix_four_variable_provenance": 0
+  },
+  "variant": {
+    "audit_fixes": "four_variable_provenance",
+    "audit_fix_meridional_metric": 0,
+    "audit_fix_ubf_computed_vorticity": 0,
+    "audit_fix_pv_sharman_a18": 0,
+    "audit_fix_endlich_component_shear": 0,
+    "audit_fix_ncsu1_computed_vorticity": 0,
+    "audit_fix_four_variable_provenance": 1
+  },
+  "flip_inert_threshold": 0.005,
+  "severity_percentiles": {
+    "light": 97.0,
+    "light_moderate": 99.1,
+    "moderate": 99.6,
+    "moderate_severe": 99.8,
+    "severe": 99.9
+  },
+  "material": [
+    "brown1",
+    "brown2",
+    "horizontal_divergence",
+    "magnitude_pv",
+    "ncsu1",
+    "nva",
+    "rva_magnitude",
+    "ti2",
+    "ubf",
+    "vorticity_squared"
+  ],
+  "inert": [],
+  "untouched": [
+    "colson_panofsky",
+    "deformation",
+    "endlich",
+    "f2d",
+    "negative_richardson",
+    "ngm1",
+    "ngm2",
+    "temperature_gradient",
+    "ti1",
+    "vertical_wind_shear",
+    "wind_speed"
+  ],
+  "per_diagnostic": {
+    "brown1": {
+      "n_finite": 33223680,
+      "identical": false,
+      "spearman_rho": 0.9995483972603257,
+      "median_rel_diff": 0.0019490285726024347,
+      "severities": {
+        "light": {
+          "percentile": 97.0,
+          "n_exceed_baseline": 1191466,
+          "threshold_baseline": 0.00012617106492325862,
+          "threshold_variant": 0.0001259328142838349,
+          "threshold_rel_shift": -0.001888314405276922,
+          "exceedance_freq_baseline": 0.03000001406828994,
+          "exceedance_freq_variant": 0.029999990464551114,
+          "flip_rate": 0.01797673947281421,
+          "material": true
+        },
+        "light_moderate": {
+          "percentile": 99.1,
+          "n_exceed_baseline": 446670,
+          "threshold_baseline": 0.00015731601152168132,
+          "threshold_variant": 0.00015692665004512124,
+          "threshold_rel_shift": -0.002475027638915321,
+          "exceedance_freq_baseline": 0.00900001820512466,
+          "exceedance_freq_variant": 0.009000004492878709,
+          "flip_rate": 0.02095629272272735,
+          "material": true
+        },
+        "moderate": {
+          "percentile": 99.6,
+          "n_exceed_baseline": 289682,
+          "threshold_baseline": 0.0001817195065218745,
+          "threshold_variant": 0.00018114021376548737,
+          "threshold_rel_shift": -0.0031878402460739064,
+          "exceedance_freq_baseline": 0.004000000974497515,
+          "exceedance_freq_variant": 0.004000007255138615,
+          "flip_rate": 0.02390371323908989,
+          "material": true
+        },
+        "moderate_severe": {
+          "percentile": 99.8,
+          "n_exceed_baseline": 225427,
+          "threshold_baseline": 0.00020487947882752466,
+          "threshold_variant": 0.00020408652982182565,
+          "threshold_rel_shift": -0.0038703193225444483,
+          "exceedance_freq_baseline": 0.002000001384281041,
+          "exceedance_freq_variant": 0.001999983857028655,
+          "flip_rate": 0.026821032104007814,
+          "material": true
+        },
+        "severe": {
+          "percentile": 99.9,
+          "n_exceed_baseline": 187570,
+          "threshold_baseline": 0.00022922011206554538,
+          "threshold_variant": 0.00022828338172256965,
+          "threshold_rel_shift": -0.004086597526432909,
+          "exceedance_freq_baseline": 0.0009999775886591145,
+          "exceedance_freq_variant": 0.001000008065399895,
+          "flip_rate": 0.027498314688120206,
+          "material": true
+        }
+      },
+      "lat_bands": {
+        "-90..-80": {
+          "freq_baseline_pct": 0.12852250206718804,
+          "freq_variant_pct": 0.12852250206718804,
+          "delta_pp": 0.0
+        },
+        "-80..-70": {
+          "freq_baseline_pct": 0.1043319474963565,
+          "freq_variant_pct": 0.10504026746130711,
+          "delta_pp": 0.0007083199649506088
+        },
+        "-70..-60": {
+          "freq_baseline_pct": 2.1379123498909802,
+          "freq_variant_pct": 2.1432741235141592,
+          "delta_pp": 0.005361773623178967
+        },
+        "-60..-50": {
+          "freq_baseline_pct": 5.855378829719511,
+          "freq_variant_pct": 5.885177137275383,
+          "delta_pp": 0.029798307555871373
+        },
+        "-50..-40": {
+          "freq_baseline_pct": 8.192299294367594,
+          "freq_variant_pct": 8.21964476031498,
+          "delta_pp": 0.027345465947385683
+        },
+        "-40..-30": {
+          "freq_baseline_pct": 8.260851501243561,
+          "freq_variant_pct": 8.284506118666478,
+          "delta_pp": 0.02365461742291769
+        },
+        "-30..-20": {
+          "freq_baseline_pct": 4.348093046813816,
+          "freq_variant_pct": 4.347091287268932,
+          "delta_pp": -0.0010017595448837124
+        },
+        "-20..-10": {
+          "freq_baseline_pct": 2.3642996885752536,
+          "freq_variant_pct": 2.3367578394192132,
+          "delta_pp": -0.027541849156040646
+        },
+        "-10..+0": {
+          "freq_baseline_pct": 0.9608284038984618,
+          "freq_variant_pct": 0.9324177744789361,
+          "delta_pp": -0.028410629419525595
+        },
+        "+0..+10": {
+          "freq_baseline_pct": 0.8006844170973002,
+          "freq_variant_pct": 0.7780716470440896,
+          "delta_pp": -0.022612770053210673
+        },
+        "+10..+20": {
+          "freq_baseline_pct": 0.6485577586938536,
+          "freq_variant_pct": 0.6450194363859927,
+          "delta_pp": -0.0035383223078609347
+        },
+        "+20..+30": {
+          "freq_baseline_pct": 1.1832068253135217,
+          "freq_variant_pct": 1.187404819699909,
+          "delta_pp": 0.004197994386387176
+        },
+        "+30..+40": {
+          "freq_baseline_pct": 3.5064532459369557,
+          "freq_variant_pct": 3.5219815807359063,
+          "delta_pp": 0.015528334798950438
+        },
+        "+40..+50": {
+          "freq_baseline_pct": 3.2104447559798674,
+          "freq_variant_pct": 3.2186311405027417,
+          "delta_pp": 0.008186384522874263
+        },
+        "+50..+60": {
+          "freq_baseline_pct": 2.3314321578116095,
+          "freq_variant_pct": 2.335543103485096,
+          "delta_pp": 0.0041109456734866184
+        },
+        "+60..+70": {
+          "freq_baseline_pct": 0.8998840013115619,
+          "freq_variant_pct": 0.8939607699576148,
+          "delta_pp": -0.00592323135394715
+        },
+        "+70..+80": {
+          "freq_baseline_pct": 1.8204824214918203,
+          "freq_variant_pct": 1.8193454360407657,
+          "delta_pp": -0.0011369854510546312
+        },
+        "+80..+90": {
+          "freq_baseline_pct": 6.435866065387831,
+          "freq_variant_pct": 6.454851826679686,
+          "delta_pp": 0.018985761291855086
+        }
+      }
+    },
+    "brown2": {
+      "n_finite": 33223680,
+      "identical": false,
+      "spearman_rho": 0.9999615397600091,
+      "median_rel_diff": 0.0019490285726024177,
+      "severities": {
+        "light": {
+          "percentile": 97.0,
+          "n_exceed_baseline": 1073221,
+          "threshold_baseline": 4.046209172818319e-10,
+          "threshold_variant": 4.04407205976942e-10,
+          "threshold_rel_shift": -0.0005281766111489626,
+          "exceedance_freq_baseline": 0.029999985775111163,
+          "exceedance_freq_variant": 0.030000012995512953,
+          "flip_rate": 0.006354995248783413,
+          "material": true
+        },
+        "light_moderate": {
+          "percentile": 99.1,
+          "n_exceed_baseline": 361782,
+          "threshold_baseline": 7.735554629083003e-10,
+          "threshold_variant": 7.72764695684392e-10,
+          "threshold_rel_shift": -0.001022250196431047,
+          "exceedance_freq_baseline": 0.00900001154545561,
+          "exceedance_freq_variant": 0.008999992104304928,
+          "flip_rate": 0.006935613747739657,
+          "material": true
+        },
+        "moderate": {
+          "percentile": 99.6,
+          "n_exceed_baseline": 198274,
+          "threshold_baseline": 1.134926432384434e-09,
+          "threshold_variant": 1.133768570954191e-09,
+          "threshold_rel_shift": -0.0010202083564222165,
+          "exceedance_freq_baseline": 0.003999987914686309,
+          "exceedance_freq_variant": 0.003999993240595264,
+          "flip_rate": 0.007504099990846962,
+          "material": true
+        },
+        "moderate_severe": {
+          "percentile": 99.8,
+          "n_exceed_baseline": 130281,
+          "threshold_baseline": 1.5223937153937054e-09,
+          "threshold_variant": 1.5201943152254286e-09,
+          "threshold_rel_shift": -0.0014446986650282808,
+          "exceedance_freq_baseline": 0.002000019548197647,
+          "exceedance_freq_variant": 0.001999998162516315,
+          "flip_rate": 0.00887808455812762,
+          "material": true
+        },
+        "severe": {
+          "percentile": 99.9,
+          "n_exceed_baseline": 94640,
+          "threshold_baseline": 1.9655941870625194e-09,
+          "threshold_variant": 1.961593183138288e-09,
+          "threshold_rel_shift": -0.0020355188016763868,
+          "exceedance_freq_baseline": 0.000999996721418266,
+          "exceedance_freq_variant": 0.0009999789798569554,
+          "flip_rate": 0.009081130245956024,
+          "material": true
+        }
+      },
+      "lat_bands": {
+        "-90..-80": {
+          "freq_baseline_pct": 0.09636398538240636,
+          "freq_variant_pct": 0.09779201318315288,
+          "delta_pp": 0.0014280278007465117
+        },
+        "-80..-70": {
+          "freq_baseline_pct": 0.4150269809932673,
+          "freq_variant_pct": 0.4148291311314883,
+          "delta_pp": -0.0001978498617789988
+        },
+        "-70..-60": {
+          "freq_baseline_pct": 1.944117714027018,
+          "freq_variant_pct": 1.9446214953328287,
+          "delta_pp": 0.0005037813058106355
+        },
+        "-60..-50": {
+          "freq_baseline_pct": 7.360541646272724,
+          "freq_variant_pct": 7.363555724433489,
+          "delta_pp": 0.0030140781607651546
+        },
+        "-50..-40": {
+          "freq_baseline_pct": 7.372291813940941,
+          "freq_variant_pct": 7.371825387986189,
+          "delta_pp": -0.0004664259547523808
+        },
+        "-40..-30": {
+          "freq_baseline_pct": 5.1313192292631715,
+          "freq_variant_pct": 5.132998609817804,
+          "delta_pp": 0.0016793805546325147
+        },
+        "-30..-20": {
+          "freq_baseline_pct": 1.512793549777395,
+          "freq_variant_pct": 1.507797172388996,
+          "delta_pp": -0.004996377388398997
+        },
+        "-20..-10": {
+          "freq_baseline_pct": 1.2606377509496656,
+          "freq_variant_pct": 1.2629763290043095,
+          "delta_pp": 0.0023385780546439014
+        },
+        "-10..+0": {
+          "freq_baseline_pct": 0.7626932858256731,
+          "freq_variant_pct": 0.7617084227750148,
+          "delta_pp": -0.000984863050658251
+        },
+        "+0..+10": {
+          "freq_baseline_pct": 0.8836396108841502,
+          "freq_variant_pct": 0.8781158240051216,
+          "delta_pp": -0.005523786879028589
+        },
+        "+10..+20": {
+          "freq_baseline_pct": 1.746240882312781,
+          "freq_variant_pct": 1.744110270857515,
+          "delta_pp": -0.002130611455266121
+        },
+        "+20..+30": {
+          "freq_baseline_pct": 1.7074532933634787,
+          "freq_variant_pct": 1.708117693902442,
+          "delta_pp": 0.0006644005389633278
+        },
+        "+30..+40": {
+          "freq_baseline_pct": 4.120115328111031,
+          "freq_variant_pct": 4.122887825035681,
+          "delta_pp": 0.002772496924649537
+        },
+        "+40..+50": {
+          "freq_baseline_pct": 6.982121224924981,
+          "freq_variant_pct": 6.985471375583491,
+          "delta_pp": 0.003350150658509854
+        },
+        "+50..+60": {
+          "freq_baseline_pct": 4.9031295751932245,
+          "freq_variant_pct": 4.906376361116308,
+          "delta_pp": 0.0032467859230833618
+        },
+        "+60..+70": {
+          "freq_baseline_pct": 0.784298806856574,
+          "freq_variant_pct": 0.7847324411110598,
+          "delta_pp": 0.000433634254485768
+        },
+        "+70..+80": {
+          "freq_baseline_pct": 1.8416961862072736,
+          "freq_variant_pct": 1.8423322401479032,
+          "delta_pp": 0.0006360539406297799
+        },
+        "+80..+90": {
+          "freq_baseline_pct": 5.096098147750014,
+          "freq_variant_pct": 5.099695229491561,
+          "delta_pp": 0.0035970817415471867
+        }
+      }
+    },
+    "colson_panofsky": {
+      "n_finite": 33223680,
+      "identical": true,
+      "spearman_rho": 1.0,
+      "median_rel_diff": 0.0,
+      "severities": {
+        "light": {
+          "percentile": 97.0,
+          "n_exceed_baseline": 654144,
+          "threshold_baseline": -22.918644821849814,
+          "threshold_variant": -22.918644821849814,
+          "threshold_rel_shift": 0.0,
+          "exceedance_freq_baseline": 0.0299999881854384,
+          "exceedance_freq_variant": 0.0299999881854384,
+          "flip_rate": 0.0,
+          "material": false
+        },
+        "light_moderate": {
+          "percentile": 99.1,
+          "n_exceed_baseline": 197598,
+          "threshold_baseline": -6.596702854676499,
+          "threshold_variant": -6.596702854676499,
+          "threshold_rel_shift": 0.0,
+          "exceedance_freq_baseline": 0.008999986844533622,
+          "exceedance_freq_variant": 0.008999986844533622,
+          "flip_rate": 0.0,
+          "material": false
+        },
+        "moderate": {
+          "percentile": 99.6,
+          "n_exceed_baseline": 88222,
+          "threshold_baseline": 2.84367664991965,
+          "threshold_variant": 2.84367664991965,
+          "threshold_rel_shift": 0.0,
+          "exceedance_freq_baseline": 0.003999998703205198,
+          "exceedance_freq_variant": 0.003999998703205198,
+          "flip_rate": 0.0,
+          "material": false
+        },
+        "moderate_severe": {
+          "percentile": 99.8,
+          "n_exceed_baseline": 44156,
+          "threshold_baseline": 11.613716368319025,
+          "threshold_variant": 11.613716368319025,
+          "threshold_rel_shift": 0.0,
+          "exceedance_freq_baseline": 0.00199999426250093,
+          "exceedance_freq_variant": 0.00199999426250093,
+          "flip_rate": 0.0,
+          "material": false
+        },
+        "severe": {
+          "percentile": 99.9,
+          "n_exceed_baseline": 22118,
+          "threshold_baseline": 22.528236826038476,
+          "threshold_variant": 22.528236826038476,
+          "threshold_rel_shift": 0.0,
+          "exceedance_freq_baseline": 0.0009999834129145956,
+          "exceedance_freq_variant": 0.0009999834129145956,
+          "flip_rate": 0.0,
+          "material": false
+        }
+      },
+      "lat_bands": {
+        "-90..-80": {
+          "freq_baseline_pct": 0.0,
+          "freq_variant_pct": 0.0,
+          "delta_pp": 0.0
+        },
+        "-80..-70": {
+          "freq_baseline_pct": 0.0,
+          "freq_variant_pct": 0.0,
+          "delta_pp": 0.0
+        },
+        "-70..-60": {
+          "freq_baseline_pct": 0.0,
+          "freq_variant_pct": 0.0,
+          "delta_pp": 0.0
+        },
+        "-60..-50": {
+          "freq_baseline_pct": 0.0,
+          "freq_variant_pct": 0.0,
+          "delta_pp": 0.0
+        },
+        "-50..-40": {
+          "freq_baseline_pct": 0.1450762563838925,
+          "freq_variant_pct": 0.1450762563838925,
+          "delta_pp": 0.0
+        },
+        "-40..-30": {
+          "freq_baseline_pct": 2.074485782939489,
+          "freq_variant_pct": 2.074485782939489,
+          "delta_pp": 0.0
+        },
+        "-30..-20": {
+          "freq_baseline_pct": 2.2836429542503733,
+          "freq_variant_pct": 2.2836429542503733,
+          "delta_pp": 0.0
+        },
+        "-20..-10": {
+          "freq_baseline_pct": 6.215521137530657,
+          "freq_variant_pct": 6.215521137530657,
+          "delta_pp": 0.0
+        },
+        "-10..+0": {
+          "freq_baseline_pct": 8.77243210238843,
+          "freq_variant_pct": 8.77243210238843,
+          "delta_pp": 0.0
+        },
+        "+0..+10": {
+          "freq_baseline_pct": 10.061994420061838,
+          "freq_variant_pct": 10.061994420061838,
+          "delta_pp": 0.0
+        },
+        "+10..+20": {
+          "freq_baseline_pct": 5.73663742480983,
+          "freq_variant_pct": 5.73663742480983,
+          "delta_pp": 0.0
+        },
+        "+20..+30": {
+          "freq_baseline_pct": 0.17505943230845997,
+          "freq_variant_pct": 0.17505943230845997,
+          "delta_pp": 0.0
+        },
+        "+30..+40": {
+          "freq_baseline_pct": 0.000712717105366497,
+          "freq_variant_pct": 0.000712717105366497,
+          "delta_pp": 0.0
+        },
+        "+40..+50": {
+          "freq_baseline_pct": 0.12312883917782605,
+          "freq_variant_pct": 0.12312883917782605,
+          "delta_pp": 0.0
+        },
+        "+50..+60": {
+          "freq_baseline_pct": 0.0,
+          "freq_variant_pct": 0.0,
+          "delta_pp": 0.0
+        },
+        "+60..+70": {
+          "freq_baseline_pct": 0.0,
+          "freq_variant_pct": 0.0,
+          "delta_pp": 0.0
+        },
+        "+70..+80": {
+          "freq_baseline_pct": 0.0006747689886945283,
+          "freq_variant_pct": 0.0006747689886945283,
+          "delta_pp": 0.0
+        },
+        "+80..+90": {
+          "freq_baseline_pct": 0.0,
+          "freq_variant_pct": 0.0,
+          "delta_pp": 0.0
+        }
+      }
+    },
+    "deformation": {
+      "n_finite": 33223680,
+      "identical": true,
+      "spearman_rho": 0.9999999999999999,
+      "median_rel_diff": 0.0,
+      "severities": {
+        "light": {
+          "percentile": 97.0,
+          "n_exceed_baseline": 1069715,
+          "threshold_baseline": 9.969903498820626e-05,
+          "threshold_variant": 9.969903498820626e-05,
+          "threshold_rel_shift": 0.0,
+          "exceedance_freq_baseline": 0.0300000198807721,
+          "exceedance_freq_variant": 0.0300000198807721,
+          "flip_rate": 0.0,
+          "material": false
+        },
+        "light_moderate": {
+          "percentile": 99.1,
+          "n_exceed_baseline": 442519,
+          "threshold_baseline": 0.00013000122831445063,
+          "threshold_variant": 0.00013000122831445063,
+          "threshold_rel_shift": 0.0,
+          "exceedance_freq_baseline": 0.009000003112791095,
+          "exceedance_freq_variant": 0.009000003112791095,
+          "flip_rate": 0.0,
+          "material": false
+        },
+        "moderate": {
+          "percentile": 99.6,
+          "n_exceed_baseline": 292102,
+          "threshold_baseline": 0.00015261020396314205,
+          "threshold_variant": 0.00015261020396314205,
+          "threshold_rel_shift": 0.0,
+          "exceedance_freq_baseline": 0.003999988898208842,
+          "exceedance_freq_variant": 0.003999988898208842,
+          "flip_rate": 0.0,
+          "material": false
+        },
+        "moderate_severe": {
+          "percentile": 99.8,
+          "n_exceed_baseline": 230694,
+          "threshold_baseline": 0.00017341101266969052,
+          "threshold_variant": 0.00017341101266969052,
+          "threshold_rel_shift": 0.0,
+          "exceedance_freq_baseline": 0.0020000047494817532,
+          "exceedance_freq_variant": 0.0020000047494817532,
+          "flip_rate": 0.0,
+          "material": false
+        },
+        "severe": {
+          "percentile": 99.9,
+          "n_exceed_baseline": 195399,
+          "threshold_baseline": 0.00019531402627646666,
+          "threshold_variant": 0.00019531402627646666,
+          "threshold_rel_shift": 0.0,
+          "exceedance_freq_baseline": 0.001000000142934559,
+          "exceedance_freq_variant": 0.001000000142934559,
+          "flip_rate": 0.0,
+          "material": false
+        }
+      },
+      "lat_bands": {
+        "-90..-80": {
+          "freq_baseline_pct": 0.12852250206718804,
+          "freq_variant_pct": 0.12852250206718804,
+          "delta_pp": 0.0
+        },
+        "-80..-70": {
+          "freq_baseline_pct": 0.1151038634930817,
+          "freq_variant_pct": 0.1151038634930817,
+          "delta_pp": 0.0
+        },
+        "-70..-60": {
+          "freq_baseline_pct": 1.0212180033110174,
+          "freq_variant_pct": 1.0212180033110174,
+          "delta_pp": 0.0
+        },
+        "-60..-50": {
+          "freq_baseline_pct": 2.6511379127528123,
+          "freq_variant_pct": 2.6511379127528123,
+          "delta_pp": 0.0
+        },
+        "-50..-40": {
+          "freq_baseline_pct": 7.6805671436871865,
+          "freq_variant_pct": 7.6805671436871865,
+          "delta_pp": 0.0
+        },
+        "-40..-30": {
+          "freq_baseline_pct": 7.540956623565409,
+          "freq_variant_pct": 7.540956623565409,
+          "delta_pp": 0.0
+        },
+        "-30..-20": {
+          "freq_baseline_pct": 5.417172754718721,
+          "freq_variant_pct": 5.417172754718721,
+          "delta_pp": 0.0
+        },
+        "-20..-10": {
+          "freq_baseline_pct": 3.6689508696492372,
+          "freq_variant_pct": 3.6689508696492372,
+          "delta_pp": 0.0
+        },
+        "-10..+0": {
+          "freq_baseline_pct": 2.1185248955156184,
+          "freq_variant_pct": 2.1185248955156184,
+          "delta_pp": 0.0
+        },
+        "+0..+10": {
+          "freq_baseline_pct": 1.7476155158922875,
+          "freq_variant_pct": 1.7476155158922875,
+          "delta_pp": 0.0
+        },
+        "+10..+20": {
+          "freq_baseline_pct": 0.9837618936953153,
+          "freq_variant_pct": 0.9837618936953153,
+          "delta_pp": 0.0
+        },
+        "+20..+30": {
+          "freq_baseline_pct": 1.2640931079335105,
+          "freq_variant_pct": 1.2640931079335105,
+          "delta_pp": 0.0
+        },
+        "+30..+40": {
+          "freq_baseline_pct": 2.8692498115018834,
+          "freq_variant_pct": 2.8692498115018834,
+          "delta_pp": 0.0
+        },
+        "+40..+50": {
+          "freq_baseline_pct": 2.576295983274288,
+          "freq_variant_pct": 2.576295983274288,
+          "delta_pp": 0.0
+        },
+        "+50..+60": {
+          "freq_baseline_pct": 2.1297026591389767,
+          "freq_variant_pct": 2.1297026591389767,
+          "delta_pp": 0.0
+        },
+        "+60..+70": {
+          "freq_baseline_pct": 0.7613040822047643,
+          "freq_variant_pct": 0.7613040822047643,
+          "delta_pp": 0.0
+        },
+        "+70..+80": {
+          "freq_baseline_pct": 1.5972752421387806,
+          "freq_variant_pct": 1.5972752421387806,
+          "delta_pp": 0.0
+        },
+        "+80..+90": {
+          "freq_baseline_pct": 3.4464914495240704,
+          "freq_variant_pct": 3.4464914495240704,
+          "delta_pp": 0.0
+        }
+      }
+    },
+    "endlich": {
+      "n_finite": 33223680,
+      "identical": true,
+      "spearman_rho": 1.0,
+      "median_rel_diff": 0.0,
+      "severities": {
+        "light": {
+          "percentile": 97.0,
+          "n_exceed_baseline": 775591,
+          "threshold_baseline": 0.00787655430386214,
+          "threshold_variant": 0.00787655430386214,
+          "threshold_rel_shift": 0.0,
+          "exceedance_freq_baseline": 0.029999991068062424,
+          "exceedance_freq_variant": 0.029999991068062424,
+          "flip_rate": 0.0,
+          "material": false
+        },
+        "light_moderate": {
+          "percentile": 99.1,
+          "n_exceed_baseline": 231249,
+          "threshold_baseline": 0.010074874772461991,
+          "threshold_variant": 0.010074874772461991,
+          "threshold_rel_shift": 0.0,
+          "exceedance_freq_baseline": 0.00900002003636143,
+          "exceedance_freq_variant": 0.00900002003636143,
+          "flip_rate": 0.0,
+          "material": false
+        },
+        "moderate": {
+          "percentile": 99.6,
+          "n_exceed_baseline": 103148,
+          "threshold_baseline": 0.011427532997827863,
+          "threshold_variant": 0.011427532997827863,
+          "threshold_rel_shift": 0.0,
+          "exceedance_freq_baseline": 0.003999986808919699,
+          "exceedance_freq_variant": 0.003999986808919699,
+          "flip_rate": 0.0,
+          "material": false
+        },
+        "moderate_severe": {
+          "percentile": 99.8,
+          "n_exceed_baseline": 51951,
+          "threshold_baseline": 0.012556374792731032,
+          "threshold_variant": 0.012556374792731032,
+          "threshold_rel_shift": 0.0,
+          "exceedance_freq_baseline": 0.0020000082464810185,
+          "exceedance_freq_variant": 0.0020000082464810185,
+          "flip_rate": 0.0,
+          "material": false
+        },
+        "severe": {
+          "percentile": 99.9,
+          "n_exceed_baseline": 26146,
+          "threshold_baseline": 0.013653838472011357,
+          "threshold_variant": 0.013653838472011357,
+          "threshold_rel_shift": 0.0,
+          "exceedance_freq_baseline": 0.0009999778014431588,
+          "exceedance_freq_variant": 0.0009999778014431588,
+          "flip_rate": 0.0,
+          "material": false
+        }
+      },
+      "lat_bands": {
+        "-90..-80": {
+          "freq_baseline_pct": 0.0029665718654509335,
+          "freq_variant_pct": 0.0029665718654509335,
+          "delta_pp": 0.0
+        },
+        "-80..-70": {
+          "freq_baseline_pct": 0.1267486504386908,
+          "freq_variant_pct": 0.1267486504386908,
+          "delta_pp": 0.0
+        },
+        "-70..-60": {
+          "freq_baseline_pct": 0.3217335631954535,
+          "freq_variant_pct": 0.3217335631954535,
+          "delta_pp": 0.0
+        },
+        "-60..-50": {
+          "freq_baseline_pct": 2.0848981959408173,
+          "freq_variant_pct": 2.0848981959408173,
+          "delta_pp": 0.0
+        },
+        "-50..-40": {
+          "freq_baseline_pct": 4.373781310394006,
+          "freq_variant_pct": 4.373781310394006,
+          "delta_pp": 0.0
+        },
+        "-40..-30": {
+          "freq_baseline_pct": 3.3415327272050566,
+          "freq_variant_pct": 3.3415327272050566,
+          "delta_pp": 0.0
+        },
+        "-30..-20": {
+          "freq_baseline_pct": 1.6375976671565096,
+          "freq_variant_pct": 1.6375976671565096,
+          "delta_pp": 0.0
+        },
+        "-20..-10": {
+          "freq_baseline_pct": 1.8152080861731912,
+          "freq_variant_pct": 1.8152080861731912,
+          "delta_pp": 0.0
+        },
+        "-10..+0": {
+          "freq_baseline_pct": 2.653646015369697,
+          "freq_variant_pct": 2.653646015369697,
+          "delta_pp": 0.0
+        },
+        "+0..+10": {
+          "freq_baseline_pct": 3.8641628211117744,
+          "freq_variant_pct": 3.8641628211117744,
+          "delta_pp": 0.0
+        },
+        "+10..+20": {
+          "freq_baseline_pct": 7.877023790760651,
+          "freq_variant_pct": 7.877023790760651,
+          "delta_pp": 0.0
+        },
+        "+20..+30": {
+          "freq_baseline_pct": 2.5622689634547786,
+          "freq_variant_pct": 2.5622689634547786,
+          "delta_pp": 0.0
+        },
+        "+30..+40": {
+          "freq_baseline_pct": 3.6980882970169597,
+          "freq_variant_pct": 3.6980882970169597,
+          "delta_pp": 0.0
+        },
+        "+40..+50": {
+          "freq_baseline_pct": 4.177057044129284,
+          "freq_variant_pct": 4.177057044129284,
+          "delta_pp": 0.0
+        },
+        "+50..+60": {
+          "freq_baseline_pct": 1.5240095828613651,
+          "freq_variant_pct": 1.5240095828613651,
+          "delta_pp": 0.0
+        },
+        "+60..+70": {
+          "freq_baseline_pct": 0.9606504972875308,
+          "freq_variant_pct": 0.9606504972875308,
+          "delta_pp": 0.0
+        },
+        "+70..+80": {
+          "freq_baseline_pct": 0.9978323425351562,
+          "freq_variant_pct": 0.9978323425351562,
+          "delta_pp": 0.0
+        },
+        "+80..+90": {
+          "freq_baseline_pct": 0.41302213110476477,
+          "freq_variant_pct": 0.41302213110476477,
+          "delta_pp": 0.0
+        }
+      }
+    },
+    "f2d": {
+      "n_finite": 33223680,
+      "identical": true,
+      "spearman_rho": 1.0,
+      "median_rel_diff": 0.0,
+      "severities": {
+        "light": {
+          "percentile": 97.0,
+          "n_exceed_baseline": 663149,
+          "threshold_baseline": 0.000261085643680127,
+          "threshold_variant": 0.000261085643680127,
+          "threshold_rel_shift": 0.0,
+          "exceedance_freq_baseline": 0.02999999677328108,
+          "exceedance_freq_variant": 0.02999999677328108,
+          "flip_rate": 0.0,
+          "material": false
+        },
+        "light_moderate": {
+          "percentile": 99.1,
+          "n_exceed_baseline": 199172,
+          "threshold_baseline": 0.0009208373804243231,
+          "threshold_variant": 0.0009208373804243231,
+          "threshold_rel_shift": 0.0,
+          "exceedance_freq_baseline": 0.008999977874862463,
+          "exceedance_freq_variant": 0.008999977874862463,
+          "flip_rate": 0.0,
+          "material": false
+        },
+        "moderate": {
+          "percentile": 99.6,
+          "n_exceed_baseline": 88643,
+          "threshold_baseline": 0.002376189287626317,
+          "threshold_variant": 0.002376189287626317,
+          "threshold_rel_shift": 0.0,
+          "exceedance_freq_baseline": 0.004000021488686259,
+          "exceedance_freq_variant": 0.004000021488686259,
+          "flip_rate": 0.0,
+          "material": false
+        },
+        "moderate_severe": {
+          "percentile": 99.8,
+          "n_exceed_baseline": 44282,
+          "threshold_baseline": 0.006794924371985425,
+          "threshold_variant": 0.006794924371985425,
+          "threshold_rel_shift": 0.0,
+          "exceedance_freq_baseline": 0.0020000189740290225,
+          "exceedance_freq_variant": 0.0020000189740290225,
+          "flip_rate": 0.0,
+          "material": false
+        },
+        "severe": {
+          "percentile": 99.9,
+          "n_exceed_baseline": 22067,
+          "threshold_baseline": 0.027022283893330182,
+          "threshold_variant": 0.027022283893330182,
+          "threshold_rel_shift": 0.0,
+          "exceedance_freq_baseline": 0.0009999842786176617,
+          "exceedance_freq_variant": 0.0009999842786176617,
+          "flip_rate": 0.0,
+          "material": false
+        }
+      },
+      "lat_bands": {
+        "-90..-80": {
+          "freq_baseline_pct": 0.0,
+          "freq_variant_pct": 0.0,
+          "delta_pp": 0.0
+        },
+        "-80..-70": {
+          "freq_baseline_pct": 0.0,
+          "freq_variant_pct": 0.0,
+          "delta_pp": 0.0
+        },
+        "-70..-60": {
+          "freq_baseline_pct": 0.014011881624800078,
+          "freq_variant_pct": 0.014011881624800078,
+          "delta_pp": 0.0
+        },
+        "-60..-50": {
+          "freq_baseline_pct": 0.041915690383212106,
+          "freq_variant_pct": 0.041915690383212106,
+          "delta_pp": 0.0
+        },
+        "-50..-40": {
+          "freq_baseline_pct": 0.5111042407023517,
+          "freq_variant_pct": 0.5111042407023517,
+          "delta_pp": 0.0
+        },
+        "-40..-30": {
+          "freq_baseline_pct": 2.89307346585952,
+          "freq_variant_pct": 2.89307346585952,
+          "delta_pp": 0.0
+        },
+        "-30..-20": {
+          "freq_baseline_pct": 3.4131982895499338,
+          "freq_variant_pct": 3.4131982895499338,
+          "delta_pp": 0.0
+        },
+        "-20..-10": {
+          "freq_baseline_pct": 5.898769619901553,
+          "freq_variant_pct": 5.898769619901553,
+          "delta_pp": 0.0
+        },
+        "-10..+0": {
+          "freq_baseline_pct": 7.791685888655661,
+          "freq_variant_pct": 7.791685888655661,
+          "delta_pp": 0.0
+        },
+        "+0..+10": {
+          "freq_baseline_pct": 9.214219831173635,
+          "freq_variant_pct": 9.214219831173635,
+          "delta_pp": 0.0
+        },
+        "+10..+20": {
+          "freq_baseline_pct": 5.233126771717171,
+          "freq_variant_pct": 5.233126771717171,
+          "delta_pp": 0.0
+        },
+        "+20..+30": {
+          "freq_baseline_pct": 0.6699143858957068,
+          "freq_variant_pct": 0.6699143858957068,
+          "delta_pp": 0.0
+        },
+        "+30..+40": {
+          "freq_baseline_pct": 0.022623443869896242,
+          "freq_variant_pct": 0.022623443869896242,
+          "delta_pp": 0.0
+        },
+        "+40..+50": {
+          "freq_baseline_pct": 0.3221867744335251,
+          "freq_variant_pct": 0.3221867744335251,
+          "delta_pp": 0.0
+        },
+        "+50..+60": {
+          "freq_baseline_pct": 0.036484582977844786,
+          "freq_variant_pct": 0.036484582977844786,
+          "delta_pp": 0.0
+        },
+        "+60..+70": {
+          "freq_baseline_pct": 0.0029305343125485975,
+          "freq_variant_pct": 0.0029305343125485975,
+          "delta_pp": 0.0
+        },
+        "+70..+80": {
+          "freq_baseline_pct": 0.009645086064090112,
+          "freq_variant_pct": 0.009645086064090112,
+          "delta_pp": 0.0
+        },
+        "+80..+90": {
+          "freq_baseline_pct": 0.012083434205371602,
+          "freq_variant_pct": 0.012083434205371602,
+          "delta_pp": 0.0
+        }
+      }
+    },
+    "horizontal_divergence": {
+      "n_finite": 33223680,
+      "identical": false,
+      "spearman_rho": 0.9706614161730153,
+      "median_rel_diff": 0.05344640172376826,
+      "severities": {
+        "light": {
+          "percentile": 97.0,
+          "n_exceed_baseline": 787549,
+          "threshold_baseline": 6.161699845970248e-05,
+          "threshold_variant": 5.8682359393177434e-05,
+          "threshold_rel_shift": -0.04762710193428681,
+          "exceedance_freq_baseline": 0.030000298887506317,
+          "exceedance_freq_variant": 0.029999995008608938,
+          "flip_rate": 0.11568823256558891,
+          "material": true
+        },
+        "light_moderate": {
+          "percentile": 99.1,
+          "n_exceed_baseline": 236490,
+          "threshold_baseline": 9.004197384224972e-05,
+          "threshold_variant": 8.511226863307564e-05,
+          "threshold_rel_shift": -0.05474896871775314,
+          "exceedance_freq_baseline": 0.008999904714257703,
+          "exceedance_freq_variant": 0.009000014154844227,
+          "flip_rate": 0.14493786647785453,
+          "material": true
+        },
+        "moderate": {
+          "percentile": 99.6,
+          "n_exceed_baseline": 105730,
+          "threshold_baseline": 0.00011103714189325213,
+          "threshold_variant": 0.00010462688410737841,
+          "threshold_rel_shift": -0.0577307527605164,
+          "exceedance_freq_baseline": 0.004000066232635798,
+          "exceedance_freq_variant": 0.0039999994787034065,
+          "flip_rate": 0.16673776821787542,
+          "material": true
+        },
+        "moderate_severe": {
+          "percentile": 99.8,
+          "n_exceed_baseline": 53250,
+          "threshold_baseline": 0.00013043208298622847,
+          "threshold_variant": 0.00012248055026898596,
+          "threshold_rel_shift": -0.060963012590100785,
+          "exceedance_freq_baseline": 0.00199999212273822,
+          "exceedance_freq_variant": 0.001999985658842967,
+          "flip_rate": 0.18255720427179406,
+          "material": true
+        },
+        "severe": {
+          "percentile": 99.9,
+          "n_exceed_baseline": 26825,
+          "threshold_baseline": 0.00015213929979411374,
+          "threshold_variant": 0.00014269233225205444,
+          "threshold_rel_shift": -0.06209419627173024,
+          "exceedance_freq_baseline": 0.000999988599842956,
+          "exceedance_freq_variant": 0.0010000123183109052,
+          "flip_rate": 0.19450227713918614,
+          "material": true
+        }
+      },
+      "lat_bands": {
+        "-90..-80": {
+          "freq_baseline_pct": 0.001150339178979604,
+          "freq_variant_pct": 0.13027455967364784,
+          "delta_pp": 0.12912422049466823
+        },
+        "-80..-70": {
+          "freq_baseline_pct": 0.043874241918997,
+          "freq_variant_pct": 0.05009357760247901,
+          "delta_pp": 0.006219335683482015
+        },
+        "-70..-60": {
+          "freq_baseline_pct": 0.41044323407194516,
+          "freq_variant_pct": 0.4416634935925233,
+          "delta_pp": 0.03122025952057815
+        },
+        "-60..-50": {
+          "freq_baseline_pct": 1.616158350826726,
+          "freq_variant_pct": 1.713579312335935,
+          "delta_pp": 0.09742096150920886
+        },
+        "-50..-40": {
+          "freq_baseline_pct": 3.2981445124455595,
+          "freq_variant_pct": 3.4740847771987293,
+          "delta_pp": 0.1759402647531695
+        },
+        "-40..-30": {
+          "freq_baseline_pct": 3.8979812312036533,
+          "freq_variant_pct": 4.006824939648465,
+          "delta_pp": 0.10884370844481128
+        },
+        "-30..-20": {
+          "freq_baseline_pct": 3.7830997275778273,
+          "freq_variant_pct": 3.770280722967776,
+          "delta_pp": -0.012819004610051254
+        },
+        "-20..-10": {
+          "freq_baseline_pct": 5.26225517720352,
+          "freq_variant_pct": 5.019001652619302,
+          "delta_pp": -0.24325352458421795
+        },
+        "-10..+0": {
+          "freq_baseline_pct": 5.001309475531087,
+          "freq_variant_pct": 4.729391643201334,
+          "delta_pp": -0.27191783232975303
+        },
+        "+0..+10": {
+          "freq_baseline_pct": 3.6725289952393156,
+          "freq_variant_pct": 3.5487524031045368,
+          "delta_pp": -0.12377659213477915
+        },
+        "+10..+20": {
+          "freq_baseline_pct": 1.0667853898839004,
+          "freq_variant_pct": 1.1134249974466477,
+          "delta_pp": 0.04663960756274739
+        },
+        "+20..+30": {
+          "freq_baseline_pct": 1.4172883518083166,
+          "freq_variant_pct": 1.4482880535007867,
+          "delta_pp": 0.03099970169247023
+        },
+        "+30..+40": {
+          "freq_baseline_pct": 3.9480717816457545,
+          "freq_variant_pct": 4.043461966562878,
+          "delta_pp": 0.09539018491712403
+        },
+        "+40..+50": {
+          "freq_baseline_pct": 4.230324403608665,
+          "freq_variant_pct": 4.34267502924657,
+          "delta_pp": 0.11235062563790532
+        },
+        "+50..+60": {
+          "freq_baseline_pct": 2.239140674099548,
+          "freq_variant_pct": 2.336852274380246,
+          "delta_pp": 0.0977116002806977
+        },
+        "+60..+70": {
+          "freq_baseline_pct": 1.0596396810153892,
+          "freq_variant_pct": 1.1081390386083343,
+          "delta_pp": 0.04849935759294512
+        },
+        "+70..+80": {
+          "freq_baseline_pct": 0.8879541331484211,
+          "freq_variant_pct": 0.9353784280366847,
+          "delta_pp": 0.04742429488826354
+        },
+        "+80..+90": {
+          "freq_baseline_pct": 1.44224325039698,
+          "freq_variant_pct": 1.7267596771794167,
+          "delta_pp": 0.2845164267824366
+        }
+      }
+    },
+    "magnitude_pv": {
+      "n_finite": 33223680,
+      "identical": false,
+      "spearman_rho": 0.983832256548977,
+      "median_rel_diff": 101.3595603712775,
+      "severities": {
+        "light": {
+          "percentile": 97.0,
+          "n_exceed_baseline": 2051337,
+          "threshold_baseline": 8.971782150206736e-06,
+          "threshold_variant": 0.0009185814313299172,
+          "threshold_rel_shift": 101.38561480326965,
+          "exceedance_freq_baseline": 0.029999937982179183,
+          "exceedance_freq_variant": 0.03000001378210084,
+          "flip_rate": 0.29814029919194346,
+          "material": true
+        },
+        "light_moderate": {
+          "percentile": 99.1,
+          "n_exceed_baseline": 444593,
+          "threshold_baseline": 9.716199789830816e-06,
+          "threshold_variant": 0.0010003071766376652,
+          "threshold_rel_shift": 101.9525121215198,
+          "exceedance_freq_baseline": 0.009000087681614102,
+          "exceedance_freq_variant": 0.008999998451340049,
+          "flip_rate": 0.4441454969798409,
+          "material": true
+        },
+        "moderate": {
+          "percentile": 99.6,
+          "n_exceed_baseline": 191455,
+          "threshold_baseline": 1.0101325243504172e-05,
+          "threshold_variant": 0.0010434845501898142,
+          "threshold_rel_shift": 102.30174754652559,
+          "exceedance_freq_baseline": 0.003999996199868005,
+          "exceedance_freq_variant": 0.003999990817871914,
+          "flip_rate": 0.5754258787946709,
+          "material": true
+        },
+        "moderate_severe": {
+          "percentile": 99.8,
+          "n_exceed_baseline": 96405,
+          "threshold_baseline": 1.0398524823067591e-05,
+          "threshold_variant": 0.001079734721124733,
+          "threshold_rel_shift": 102.83537468021436,
+          "exceedance_freq_baseline": 0.0019999780351524143,
+          "exceedance_freq_variant": 0.001999996333784909,
+          "flip_rate": 0.7032915249889388,
+          "material": true
+        },
+        "severe": {
+          "percentile": 99.9,
+          "n_exceed_baseline": 48612,
+          "threshold_baseline": 1.0670499920997636e-05,
+          "threshold_variant": 0.0011195703020385115,
+          "threshold_rel_shift": 103.92201024578027,
+          "exceedance_freq_baseline": 0.0010000034840307133,
+          "exceedance_freq_variant": 0.0010000150289513478,
+          "flip_rate": 0.834057285813185,
+          "material": true
+        }
+      },
+      "lat_bands": {
+        "-90..-80": {
+          "freq_baseline_pct": 28.042331641707584,
+          "freq_variant_pct": 18.226972072730653,
+          "delta_pp": -9.815359568976934
+        },
+        "-80..-70": {
+          "freq_baseline_pct": 32.620310007297334,
+          "freq_variant_pct": 28.42226474692793,
+          "delta_pp": -4.198045260369404
+        },
+        "-70..-60": {
+          "freq_baseline_pct": 26.228387647310754,
+          "freq_variant_pct": 23.78749529033731,
+          "delta_pp": -2.44089235697344
+        },
+        "-60..-50": {
+          "freq_baseline_pct": 14.791571057611819,
+          "freq_variant_pct": 16.01322811120327,
+          "delta_pp": 1.2216570535914517
+        },
+        "-50..-40": {
+          "freq_baseline_pct": 3.011876481979558,
+          "freq_variant_pct": 3.7554086561718667,
+          "delta_pp": 0.7435321741923083
+        },
+        "-40..-30": {
+          "freq_baseline_pct": 0.25099060993493,
+          "freq_variant_pct": 0.4388731552854506,
+          "delta_pp": 0.18788254535052062
+        },
+        "-30..-20": {
+          "freq_baseline_pct": 0.0006090195817515871,
+          "freq_variant_pct": 0.00031189572463441884,
+          "delta_pp": -0.0002971238571171683
+        },
+        "-20..-10": {
+          "freq_baseline_pct": 0.0,
+          "freq_variant_pct": 0.0,
+          "delta_pp": 0.0
+        },
+        "-10..+0": {
+          "freq_baseline_pct": 0.0,
+          "freq_variant_pct": 0.0,
+          "delta_pp": 0.0
+        },
+        "+0..+10": {
+          "freq_baseline_pct": 5.3988996342427086e-05,
+          "freq_variant_pct": 0.0,
+          "delta_pp": -5.3988996342427086e-05
+        },
+        "+10..+20": {
+          "freq_baseline_pct": 0.0,
+          "freq_variant_pct": 0.0,
+          "delta_pp": 0.0
+        },
+        "+20..+30": {
+          "freq_baseline_pct": 0.002249645132988535,
+          "freq_variant_pct": 0.005564802000911966,
+          "delta_pp": 0.00331515686792343
+        },
+        "+30..+40": {
+          "freq_baseline_pct": 0.7848962081885184,
+          "freq_variant_pct": 0.9830789757523767,
+          "delta_pp": 0.19818276756385836
+        },
+        "+40..+50": {
+          "freq_baseline_pct": 1.2556368813065908,
+          "freq_variant_pct": 2.366224253312291,
+          "delta_pp": 1.1105873720057002
+        },
+        "+50..+60": {
+          "freq_baseline_pct": 0.3418192520685735,
+          "freq_variant_pct": 1.1850723805746777,
+          "delta_pp": 0.8432531285061042
+        },
+        "+60..+70": {
+          "freq_baseline_pct": 0.2515651448737566,
+          "freq_variant_pct": 0.4040465606554695,
+          "delta_pp": 0.15248141578171293
+        },
+        "+70..+80": {
+          "freq_baseline_pct": 0.012239141244306938,
+          "freq_variant_pct": 0.1370910784823208,
+          "delta_pp": 0.12485193723801384
+        },
+        "+80..+90": {
+          "freq_baseline_pct": 0.00148181230886317,
+          "freq_variant_pct": 0.30427348185858627,
+          "delta_pp": 0.30279166954972314
+        }
+      }
+    },
+    "ncsu1": {
+      "n_finite": 33223680,
+      "identical": false,
+      "spearman_rho": 0.9982117100707218,
+      "median_rel_diff": 0.07076921012912549,
+      "severities": {
+        "light": {
+          "percentile": 97.0,
+          "n_exceed_baseline": 816161,
+          "threshold_baseline": 9.199211882959192e-14,
+          "threshold_variant": 8.571370321087647e-14,
+          "threshold_rel_shift": -0.06824949461535627,
+          "exceedance_freq_baseline": 0.029999981628130636,
+          "exceedance_freq_variant": 0.029999999998137832,
+          "flip_rate": 0.06722077815353891,
+          "material": true
+        },
+        "light_moderate": {
+          "percentile": 99.1,
+          "n_exceed_baseline": 252381,
+          "threshold_baseline": 3.478040933921283e-13,
+          "threshold_variant": 3.2284208840902177e-13,
+          "threshold_rel_shift": -0.07177030247014189,
+          "exceedance_freq_baseline": 0.008999993071509383,
+          "exceedance_freq_variant": 0.009000017637689747,
+          "flip_rate": 0.07807770326981964,
+          "material": true
+        },
+        "moderate": {
+          "percentile": 99.6,
+          "n_exceed_baseline": 119297,
+          "threshold_baseline": 7.581371163422354e-13,
+          "threshold_variant": 7.039014484759176e-13,
+          "threshold_rel_shift": -0.07153807233180615,
+          "exceedance_freq_baseline": 0.004000012161802481,
+          "exceedance_freq_variant": 0.003999994722913697,
+          "flip_rate": 0.08277299037729614,
+          "material": true
+        },
+        "moderate_severe": {
+          "percentile": 99.8,
+          "n_exceed_baseline": 65368,
+          "threshold_baseline": 1.397296161686337e-12,
+          "threshold_variant": 1.3076173637726421e-12,
+          "threshold_rel_shift": -0.06418023635409209,
+          "exceedance_freq_baseline": 0.0019999919002038646,
+          "exceedance_freq_variant": 0.0019999915613182744,
+          "flip_rate": 0.08336462488789052,
+          "material": true
+        },
+        "severe": {
+          "percentile": 99.9,
+          "n_exceed_baseline": 38562,
+          "threshold_baseline": 2.5223267042511703e-12,
+          "threshold_variant": 2.3705002598629714e-12,
+          "threshold_rel_shift": -0.060193013114561295,
+          "exceedance_freq_baseline": 0.0010000153293836748,
+          "exceedance_freq_variant": 0.0010000218478990964,
+          "flip_rate": 0.08299488011084222,
+          "material": true
+        }
+      },
+      "lat_bands": {
+        "-90..-80": {
+          "freq_baseline_pct": 0.0014168713335531821,
+          "freq_variant_pct": 0.09913881770767538,
+          "delta_pp": 0.0977219463741222
+        },
+        "-80..-70": {
+          "freq_baseline_pct": 0.09739571451919019,
+          "freq_variant_pct": 0.10090389517605539,
+          "delta_pp": 0.0035081806568652103
+        },
+        "-70..-60": {
+          "freq_baseline_pct": 0.6870325741394113,
+          "freq_variant_pct": 0.7034018510684771,
+          "delta_pp": 0.016369276929065722
+        },
+        "-60..-50": {
+          "freq_baseline_pct": 2.755772728162111,
+          "freq_variant_pct": 2.824746951034459,
+          "delta_pp": 0.06897422287234813
+        },
+        "-50..-40": {
+          "freq_baseline_pct": 3.7119584790356845,
+          "freq_variant_pct": 3.7835162830544657,
+          "delta_pp": 0.07155780401878128
+        },
+        "-40..-30": {
+          "freq_baseline_pct": 6.192471491968842,
+          "freq_variant_pct": 6.28651471783613,
+          "delta_pp": 0.09404322586728728
+        },
+        "-30..-20": {
+          "freq_baseline_pct": 4.019313103615381,
+          "freq_variant_pct": 4.035743500807179,
+          "delta_pp": 0.016430397191798812
+        },
+        "-20..-10": {
+          "freq_baseline_pct": 3.7092688648409893,
+          "freq_variant_pct": 3.603533018420076,
+          "delta_pp": -0.10573584642091377
+        },
+        "-10..+0": {
+          "freq_baseline_pct": 4.609451879634668,
+          "freq_variant_pct": 4.472986294605219,
+          "delta_pp": -0.1364655850294494
+        },
+        "+0..+10": {
+          "freq_baseline_pct": 3.885283141078783,
+          "freq_variant_pct": 3.7636589321544873,
+          "delta_pp": -0.12162420892429596
+        },
+        "+10..+20": {
+          "freq_baseline_pct": 2.796384484015891,
+          "freq_variant_pct": 2.8156354539358945,
+          "delta_pp": 0.01925096992000351
+        },
+        "+20..+30": {
+          "freq_baseline_pct": 1.39143042530182,
+          "freq_variant_pct": 1.4142755355053693,
+          "delta_pp": 0.022845110203549394
+        },
+        "+30..+40": {
+          "freq_baseline_pct": 2.4587464286096155,
+          "freq_variant_pct": 2.4811759131521236,
+          "delta_pp": 0.0224294845425084
+        },
+        "+40..+50": {
+          "freq_baseline_pct": 2.9432097382786844,
+          "freq_variant_pct": 3.002911712102296,
+          "delta_pp": 0.05970197382361153
+        },
+        "+50..+60": {
+          "freq_baseline_pct": 1.1588355922708757,
+          "freq_variant_pct": 1.1919228801985284,
+          "delta_pp": 0.033087287927652774
+        },
+        "+60..+70": {
+          "freq_baseline_pct": 0.2267189981497767,
+          "freq_variant_pct": 0.23954631397393203,
+          "delta_pp": 0.012827315824155347
+        },
+        "+70..+80": {
+          "freq_baseline_pct": 0.6088280661650386,
+          "freq_variant_pct": 0.6452156078049003,
+          "delta_pp": 0.03638754163986166
+        },
+        "+80..+90": {
+          "freq_baseline_pct": 1.9654786052416713,
+          "freq_variant_pct": 2.271856199871224,
+          "delta_pp": 0.30637759462955294
+        }
+      }
+    },
+    "negative_richardson": {
+      "n_finite": 33223680,
+      "identical": true,
+      "spearman_rho": 1.0,
+      "median_rel_diff": 0.0,
+      "severities": {
+        "light": {
+          "percentile": 97.0,
+          "n_exceed_baseline": 665929,
+          "threshold_baseline": -1.1209819099812663,
+          "threshold_variant": -1.1209819099812663,
+          "threshold_rel_shift": 0.0,
+          "exceedance_freq_baseline": 0.029999996902388904,
+          "exceedance_freq_variant": 0.029999996902388904,
+          "flip_rate": 0.0,
+          "material": false
+        },
+        "light_moderate": {
+          "percentile": 99.1,
+          "n_exceed_baseline": 198411,
+          "threshold_baseline": -0.6320621029840165,
+          "threshold_variant": -0.6320621029840165,
+          "threshold_rel_shift": 0.0,
+          "exceedance_freq_baseline": 0.009000013319501766,
+          "exceedance_freq_variant": 0.009000013319501766,
+          "flip_rate": 0.0,
+          "material": false
+        },
+        "moderate": {
+          "percentile": 99.6,
+          "n_exceed_baseline": 88122,
+          "threshold_baseline": -0.45083191984050686,
+          "threshold_variant": -0.45083191984050686,
+          "threshold_rel_shift": 0.0,
+          "exceedance_freq_baseline": 0.004000019329357529,
+          "exceedance_freq_variant": 0.004000019329357529,
+          "flip_rate": 0.0,
+          "material": false
+        },
+        "moderate_severe": {
+          "percentile": 99.8,
+          "n_exceed_baseline": 43967,
+          "threshold_baseline": -0.34304310139672384,
+          "threshold_variant": -0.34304310139672384,
+          "threshold_rel_shift": 0.0,
+          "exceedance_freq_baseline": 0.001999988391693429,
+          "exceedance_freq_variant": 0.001999988391693429,
+          "flip_rate": 0.0,
+          "material": false
+        },
+        "severe": {
+          "percentile": 99.9,
+          "n_exceed_baseline": 21880,
+          "threshold_baseline": -0.2511475191837995,
+          "threshold_variant": -0.2511475191837995,
+          "threshold_rel_shift": 0.0,
+          "exceedance_freq_baseline": 0.0010000140289691437,
+          "exceedance_freq_variant": 0.0010000140289691437,
+          "flip_rate": 0.0,
+          "material": false
+        }
+      },
+      "lat_bands": {
+        "-90..-80": {
+          "freq_baseline_pct": 0.0,
+          "freq_variant_pct": 0.0,
+          "delta_pp": 0.0
+        },
+        "-80..-70": {
+          "freq_baseline_pct": 0.0,
+          "freq_variant_pct": 0.0,
+          "delta_pp": 0.0
+        },
+        "-70..-60": {
+          "freq_baseline_pct": 0.14531974191143046,
+          "freq_variant_pct": 0.14531974191143046,
+          "delta_pp": 0.0
+        },
+        "-60..-50": {
+          "freq_baseline_pct": 0.12478558046474982,
+          "freq_variant_pct": 0.12478558046474982,
+          "delta_pp": 0.0
+        },
+        "-50..-40": {
+          "freq_baseline_pct": 0.5281501899798525,
+          "freq_variant_pct": 0.5281501899798525,
+          "delta_pp": 0.0
+        },
+        "-40..-30": {
+          "freq_baseline_pct": 2.598208886713888,
+          "freq_variant_pct": 2.598208886713888,
+          "delta_pp": 0.0
+        },
+        "-30..-20": {
+          "freq_baseline_pct": 1.9828811364677734,
+          "freq_variant_pct": 1.9828811364677734,
+          "delta_pp": 0.0
+        },
+        "-20..-10": {
+          "freq_baseline_pct": 4.528691669038334,
+          "freq_variant_pct": 4.528691669038334,
+          "delta_pp": 0.0
+        },
+        "-10..+0": {
+          "freq_baseline_pct": 6.690609901481784,
+          "freq_variant_pct": 6.690609901481784,
+          "delta_pp": 0.0
+        },
+        "+0..+10": {
+          "freq_baseline_pct": 9.097491466064987,
+          "freq_variant_pct": 9.097491466064987,
+          "delta_pp": 0.0
+        },
+        "+10..+20": {
+          "freq_baseline_pct": 8.968842248399564,
+          "freq_variant_pct": 8.968842248399564,
+          "delta_pp": 0.0
+        },
+        "+20..+30": {
+          "freq_baseline_pct": 0.7223125074228408,
+          "freq_variant_pct": 0.7223125074228408,
+          "delta_pp": 0.0
+        },
+        "+30..+40": {
+          "freq_baseline_pct": 0.0689750834026765,
+          "freq_variant_pct": 0.0689750834026765,
+          "delta_pp": 0.0
+        },
+        "+40..+50": {
+          "freq_baseline_pct": 0.5725502952818707,
+          "freq_variant_pct": 0.5725502952818707,
+          "delta_pp": 0.0
+        },
+        "+50..+60": {
+          "freq_baseline_pct": 0.1832663988365703,
+          "freq_variant_pct": 0.1832663988365703,
+          "delta_pp": 0.0
+        },
+        "+60..+70": {
+          "freq_baseline_pct": 0.0010147909926213154,
+          "freq_variant_pct": 0.0010147909926213154,
+          "delta_pp": 0.0
+        },
+        "+70..+80": {
+          "freq_baseline_pct": 0.013629842945656629,
+          "freq_variant_pct": 0.013629842945656629,
+          "delta_pp": 0.0
+        },
+        "+80..+90": {
+          "freq_baseline_pct": 0.0,
+          "freq_variant_pct": 0.0,
+          "delta_pp": 0.0
+        }
+      }
+    },
+    "ngm1": {
+      "n_finite": 33223680,
+      "identical": true,
+      "spearman_rho": 0.9999999999999999,
+      "median_rel_diff": 0.0,
+      "severities": {
+        "light": {
+          "percentile": 97.0,
+          "n_exceed_baseline": 969957,
+          "threshold_baseline": 0.003604262169971734,
+          "threshold_variant": 0.003604262169971734,
+          "threshold_rel_shift": 0.0,
+          "exceedance_freq_baseline": 0.03000001736627352,
+          "exceedance_freq_variant": 0.03000001736627352,
+          "flip_rate": 0.0,
+          "material": false
+        },
+        "light_moderate": {
+          "percentile": 99.1,
+          "n_exceed_baseline": 363798,
+          "threshold_baseline": 0.0051731376465400025,
+          "threshold_variant": 0.0051731376465400025,
+          "threshold_rel_shift": 0.0,
+          "exceedance_freq_baseline": 0.008999997593876104,
+          "exceedance_freq_variant": 0.008999997593876104,
+          "flip_rate": 0.0,
+          "material": false
+        },
+        "moderate": {
+          "percentile": 99.6,
+          "n_exceed_baseline": 214030,
+          "threshold_baseline": 0.0064000487591163455,
+          "threshold_variant": 0.0064000487591163455,
+          "threshold_rel_shift": 0.0,
+          "exceedance_freq_baseline": 0.003999997723097092,
+          "exceedance_freq_variant": 0.003999997723097092,
+          "flip_rate": 0.0,
+          "material": false
+        },
+        "moderate_severe": {
+          "percentile": 99.8,
+          "n_exceed_baseline": 153324,
+          "threshold_baseline": 0.007490681957503325,
+          "threshold_variant": 0.007490681957503325,
+          "threshold_rel_shift": 0.0,
+          "exceedance_freq_baseline": 0.002000006209813622,
+          "exceedance_freq_variant": 0.002000006209813622,
+          "flip_rate": 0.0,
+          "material": false
+        },
+        "severe": {
+          "percentile": 99.9,
+          "n_exceed_baseline": 122184,
+          "threshold_baseline": 0.008653380759093804,
+          "threshold_variant": 0.008653380759093804,
+          "threshold_rel_shift": 0.0,
+          "exceedance_freq_baseline": 0.0009999983005769958,
+          "exceedance_freq_variant": 0.0009999983005769958,
+          "flip_rate": 0.0,
+          "material": false
+        }
+      },
+      "lat_bands": {
+        "-90..-80": {
+          "freq_baseline_pct": 0.12852250206718624,
+          "freq_variant_pct": 0.12852250206718624,
+          "delta_pp": 0.0
+        },
+        "-80..-70": {
+          "freq_baseline_pct": 0.14114838631572316,
+          "freq_variant_pct": 0.14114838631572316,
+          "delta_pp": 0.0
+        },
+        "-70..-60": {
+          "freq_baseline_pct": 1.3905022257665922,
+          "freq_variant_pct": 1.3905022257665922,
+          "delta_pp": 0.0
+        },
+        "-60..-50": {
+          "freq_baseline_pct": 5.860056320859399,
+          "freq_variant_pct": 5.860056320859399,
+          "delta_pp": 0.0
+        },
+        "-50..-40": {
+          "freq_baseline_pct": 10.286933739450795,
+          "freq_variant_pct": 10.286933739450795,
+          "delta_pp": 0.0
+        },
+        "-40..-30": {
+          "freq_baseline_pct": 7.618465026036746,
+          "freq_variant_pct": 7.618465026036746,
+          "delta_pp": 0.0
+        },
+        "-30..-20": {
+          "freq_baseline_pct": 1.7088792436659888,
+          "freq_variant_pct": 1.7088792436659888,
+          "delta_pp": 0.0
+        },
+        "-20..-10": {
+          "freq_baseline_pct": 0.11392664646262124,
+          "freq_variant_pct": 0.11392664646262124,
+          "delta_pp": 0.0
+        },
+        "-10..+0": {
+          "freq_baseline_pct": 0.018766121195062234,
+          "freq_variant_pct": 0.018766121195062234,
+          "delta_pp": 0.0
+        },
+        "+0..+10": {
+          "freq_baseline_pct": 0.17350669831685783,
+          "freq_variant_pct": 0.17350669831685783,
+          "delta_pp": 0.0
+        },
+        "+10..+20": {
+          "freq_baseline_pct": 0.37367962717019754,
+          "freq_variant_pct": 0.37367962717019754,
+          "delta_pp": 0.0
+        },
+        "+20..+30": {
+          "freq_baseline_pct": 4.50171904788683,
+          "freq_variant_pct": 4.50171904788683,
+          "delta_pp": 0.0
+        },
+        "+30..+40": {
+          "freq_baseline_pct": 5.452386452182653,
+          "freq_variant_pct": 5.452386452182653,
+          "delta_pp": 0.0
+        },
+        "+40..+50": {
+          "freq_baseline_pct": 5.91433567131242,
+          "freq_variant_pct": 5.91433567131242,
+          "delta_pp": 0.0
+        },
+        "+50..+60": {
+          "freq_baseline_pct": 3.0879480992237465,
+          "freq_variant_pct": 3.0879480992237465,
+          "delta_pp": 0.0
+        },
+        "+60..+70": {
+          "freq_baseline_pct": 0.2545097397958025,
+          "freq_variant_pct": 0.2545097397958025,
+          "delta_pp": 0.0
+        },
+        "+70..+80": {
+          "freq_baseline_pct": 0.16152912068564568,
+          "freq_variant_pct": 0.16152912068564568,
+          "delta_pp": 0.0
+        },
+        "+80..+90": {
+          "freq_baseline_pct": 0.715287150051898,
+          "freq_variant_pct": 0.715287150051898,
+          "delta_pp": 0.0
+        }
+      }
+    },
+    "ngm2": {
+      "n_finite": 33223680,
+      "identical": true,
+      "spearman_rho": 0.9999999999999999,
+      "median_rel_diff": 0.0,
+      "severities": {
+        "light": {
+          "percentile": 97.0,
+          "n_exceed_baseline": 794234,
+          "threshold_baseline": 6.514840130175853e-07,
+          "threshold_variant": 6.514840130175853e-07,
+          "threshold_rel_shift": 0.0,
+          "exceedance_freq_baseline": 0.030000000065182365,
+          "exceedance_freq_variant": 0.030000000065182365,
+          "flip_rate": 0.0,
+          "material": false
+        },
+        "light_moderate": {
+          "percentile": 99.1,
+          "n_exceed_baseline": 315345,
+          "threshold_baseline": 8.877461211895862e-07,
+          "threshold_variant": 8.877461211895862e-07,
+          "threshold_rel_shift": 0.0,
+          "exceedance_freq_baseline": 0.008999981555806438,
+          "exceedance_freq_variant": 0.008999981555806438,
+          "flip_rate": 0.0,
+          "material": false
+        },
+        "moderate": {
+          "percentile": 99.6,
+          "n_exceed_baseline": 198391,
+          "threshold_baseline": 1.0614733921415144e-06,
+          "threshold_variant": 1.0614733921415144e-06,
+          "threshold_rel_shift": 0.0,
+          "exceedance_freq_baseline": 0.003999985000348446,
+          "exceedance_freq_variant": 0.003999985000348446,
+          "flip_rate": 0.0,
+          "material": false
+        },
+        "moderate_severe": {
+          "percentile": 99.8,
+          "n_exceed_baseline": 151524,
+          "threshold_baseline": 1.2259945849490033e-06,
+          "threshold_variant": 1.2259945849490033e-06,
+          "threshold_rel_shift": 0.0,
+          "exceedance_freq_baseline": 0.002000013498442237,
+          "exceedance_freq_variant": 0.002000013498442237,
+          "flip_rate": 0.0,
+          "material": false
+        },
+        "severe": {
+          "percentile": 99.9,
+          "n_exceed_baseline": 128846,
+          "threshold_baseline": 1.4029850865379085e-06,
+          "threshold_variant": 1.4029850865379085e-06,
+          "threshold_rel_shift": 0.0,
+          "exceedance_freq_baseline": 0.0009999967553245518,
+          "exceedance_freq_variant": 0.0009999967553245518,
+          "flip_rate": 0.0,
+          "material": false
+        }
+      },
+      "lat_bands": {
+        "-90..-80": {
+          "freq_baseline_pct": 0.12852250206718624,
+          "freq_variant_pct": 0.12852250206718624,
+          "delta_pp": 0.0
+        },
+        "-80..-70": {
+          "freq_baseline_pct": 0.0,
+          "freq_variant_pct": 0.0,
+          "delta_pp": 0.0
+        },
+        "-70..-60": {
+          "freq_baseline_pct": 0.0039069849121438965,
+          "freq_variant_pct": 0.0039069849121438965,
+          "delta_pp": 0.0
+        },
+        "-60..-50": {
+          "freq_baseline_pct": 0.1015039715643086,
+          "freq_variant_pct": 0.1015039715643086,
+          "delta_pp": 0.0
+        },
+        "-50..-40": {
+          "freq_baseline_pct": 1.7799052903472143,
+          "freq_variant_pct": 1.7799052903472143,
+          "delta_pp": 0.0
+        },
+        "-40..-30": {
+          "freq_baseline_pct": 4.081827158161741,
+          "freq_variant_pct": 4.081827158161741,
+          "delta_pp": 0.0
+        },
+        "-30..-20": {
+          "freq_baseline_pct": 7.587728680189115,
+          "freq_variant_pct": 7.587728680189115,
+          "delta_pp": 0.0
+        },
+        "-20..-10": {
+          "freq_baseline_pct": 8.451783023406069,
+          "freq_variant_pct": 8.451783023406069,
+          "delta_pp": 0.0
+        },
+        "-10..+0": {
+          "freq_baseline_pct": 6.484070982261607,
+          "freq_variant_pct": 6.484070982261607,
+          "delta_pp": 0.0
+        },
+        "+0..+10": {
+          "freq_baseline_pct": 5.320162189920277,
+          "freq_variant_pct": 5.320162189920277,
+          "delta_pp": 0.0
+        },
+        "+10..+20": {
+          "freq_baseline_pct": 2.184644223049582,
+          "freq_variant_pct": 2.184644223049582,
+          "delta_pp": 0.0
+        },
+        "+20..+30": {
+          "freq_baseline_pct": 0.6688492932994057,
+          "freq_variant_pct": 0.6688492932994057,
+          "delta_pp": 0.0
+        },
+        "+30..+40": {
+          "freq_baseline_pct": 0.0691242697782942,
+          "freq_variant_pct": 0.0691242697782942,
+          "delta_pp": 0.0
+        },
+        "+40..+50": {
+          "freq_baseline_pct": 0.19875437625138473,
+          "freq_variant_pct": 0.19875437625138473,
+          "delta_pp": 0.0
+        },
+        "+50..+60": {
+          "freq_baseline_pct": 0.0463555816449927,
+          "freq_variant_pct": 0.0463555816449927,
+          "delta_pp": 0.0
+        },
+        "+60..+70": {
+          "freq_baseline_pct": 0.007730911844289196,
+          "freq_variant_pct": 0.007730911844289196,
+          "delta_pp": 0.0
+        },
+        "+70..+80": {
+          "freq_baseline_pct": 0.019308851987684263,
+          "freq_variant_pct": 0.019308851987684263,
+          "delta_pp": 0.0
+        },
+        "+80..+90": {
+          "freq_baseline_pct": 0.19527785558399277,
+          "freq_variant_pct": 0.19527785558399277,
+          "delta_pp": 0.0
+        }
+      }
+    },
+    "nva": {
+      "n_finite": 33223680,
+      "identical": false,
+      "spearman_rho": 0.9397957511485121,
+      "median_rel_diff": 0.11350757669472995,
+      "severities": {
+        "light": {
+          "percentile": 97.0,
+          "n_exceed_baseline": 841804,
+          "threshold_baseline": 9.004981981386644e-09,
+          "threshold_variant": 8.408902551749893e-09,
+          "threshold_rel_shift": -0.06619440559335389,
+          "exceedance_freq_baseline": 0.030000013501831947,
+          "exceedance_freq_variant": 0.029999983084398385,
+          "flip_rate": 0.1396117308006304,
+          "material": true
+        },
+        "light_moderate": {
+          "percentile": 99.1,
+          "n_exceed_baseline": 255371,
+          "threshold_baseline": 1.578472844262547e-08,
+          "threshold_variant": 1.4670549600731027e-08,
+          "threshold_rel_shift": -0.07058587329799641,
+          "exceedance_freq_baseline": 0.009000010077034926,
+          "exceedance_freq_variant": 0.008999978982832014,
+          "flip_rate": 0.1606601566333943,
+          "material": true
+        },
+        "moderate": {
+          "percentile": 99.6,
+          "n_exceed_baseline": 114601,
+          "threshold_baseline": 2.1720391210785665e-08,
+          "threshold_variant": 2.0148945999441246e-08,
+          "threshold_rel_shift": -0.07234884473738616,
+          "exceedance_freq_baseline": 0.004000007210868344,
+          "exceedance_freq_variant": 0.003999998095903363,
+          "flip_rate": 0.17447293442653877,
+          "material": true
+        },
+        "moderate_severe": {
+          "percentile": 99.8,
+          "n_exceed_baseline": 57677,
+          "threshold_baseline": 2.7796231011822635e-08,
+          "threshold_variant": 2.580364499471446e-08,
+          "threshold_rel_shift": -0.07168547477752153,
+          "exceedance_freq_baseline": 0.001999985060494605,
+          "exceedance_freq_variant": 0.002000010475583233,
+          "flip_rate": 0.18641948918194925,
+          "material": true
+        },
+        "severe": {
+          "percentile": 99.9,
+          "n_exceed_baseline": 28934,
+          "threshold_baseline": 3.4937020946958e-08,
+          "threshold_variant": 3.248999065994972e-08,
+          "threshold_rel_shift": -0.07004118326869967,
+          "exceedance_freq_baseline": 0.000999987282677543,
+          "exceedance_freq_variant": 0.0010000005105990758,
+          "flip_rate": 0.2087242708611074,
+          "material": true
+        }
+      },
+      "lat_bands": {
+        "-90..-80": {
+          "freq_baseline_pct": 0.0,
+          "freq_variant_pct": 0.3246181842815928,
+          "delta_pp": 0.3246181842815928
+        },
+        "-80..-70": {
+          "freq_baseline_pct": 0.06710223159974456,
+          "freq_variant_pct": 0.07327544454968649,
+          "delta_pp": 0.006173212949941921
+        },
+        "-70..-60": {
+          "freq_baseline_pct": 1.037191470060606,
+          "freq_variant_pct": 1.1235212640519325,
+          "delta_pp": 0.08632979399132659
+        },
+        "-60..-50": {
+          "freq_baseline_pct": 3.3855854582124625,
+          "freq_variant_pct": 3.6202943542668233,
+          "delta_pp": 0.2347088960543607
+        },
+        "-50..-40": {
+          "freq_baseline_pct": 5.07149190691416,
+          "freq_variant_pct": 5.323083061576624,
+          "delta_pp": 0.2515911546624644
+        },
+        "-40..-30": {
+          "freq_baseline_pct": 5.4869953524366535,
+          "freq_variant_pct": 5.623694030960761,
+          "delta_pp": 0.13669867852410741
+        },
+        "-30..-20": {
+          "freq_baseline_pct": 3.8769272661189005,
+          "freq_variant_pct": 3.828197096564639,
+          "delta_pp": -0.048730169554261904
+        },
+        "-20..-10": {
+          "freq_baseline_pct": 2.2343661744402206,
+          "freq_variant_pct": 1.9865114683171412,
+          "delta_pp": -0.24785470612307958
+        },
+        "-10..+0": {
+          "freq_baseline_pct": 2.3529335442875503,
+          "freq_variant_pct": 2.0992785939767944,
+          "delta_pp": -0.2536549503107558
+        },
+        "+0..+10": {
+          "freq_baseline_pct": 2.703776834936995,
+          "freq_variant_pct": 2.4981622495019526,
+          "delta_pp": -0.20561458543504224
+        },
+        "+10..+20": {
+          "freq_baseline_pct": 1.527626318573163,
+          "freq_variant_pct": 1.500814880043454,
+          "delta_pp": -0.026811438529708922
+        },
+        "+20..+30": {
+          "freq_baseline_pct": 1.8667056171985243,
+          "freq_variant_pct": 1.7431557638882509,
+          "delta_pp": -0.12354985331027336
+        },
+        "+30..+40": {
+          "freq_baseline_pct": 4.538736615184892,
+          "freq_variant_pct": 4.615052720963675,
+          "delta_pp": 0.07631610577878353
+        },
+        "+40..+50": {
+          "freq_baseline_pct": 5.768718467996751,
+          "freq_variant_pct": 5.953969012010908,
+          "delta_pp": 0.18525054401415594
+        },
+        "+50..+60": {
+          "freq_baseline_pct": 2.4031987931813563,
+          "freq_variant_pct": 2.514945447397891,
+          "delta_pp": 0.11174665421653483
+        },
+        "+60..+70": {
+          "freq_baseline_pct": 1.0812588848151365,
+          "freq_variant_pct": 1.1458449933306405,
+          "delta_pp": 0.06458610851550403
+        },
+        "+70..+80": {
+          "freq_baseline_pct": 1.0952916910960862,
+          "freq_variant_pct": 1.1912557508713844,
+          "delta_pp": 0.09596405977529802
+        },
+        "+80..+90": {
+          "freq_baseline_pct": 1.7009013724212436,
+          "freq_variant_pct": 2.5876628341597154,
+          "delta_pp": 0.8867614617384716
+        }
+      }
+    },
+    "rva_magnitude": {
+      "n_finite": 33223680,
+      "identical": false,
+      "spearman_rho": 0.9206642605491263,
+      "median_rel_diff": 0.1106160757067478,
+      "severities": {
+        "light": {
+          "percentile": 97.0,
+          "n_exceed_baseline": 844184,
+          "threshold_baseline": 1.2751198598785844e-08,
+          "threshold_variant": 1.1882498937873935e-08,
+          "threshold_rel_shift": -0.06812690228153341,
+          "exceedance_freq_baseline": 0.029999984924216763,
+          "exceedance_freq_variant": 0.029999995278473822,
+          "flip_rate": 0.15211565539087413,
+          "material": true
+        },
+        "light_moderate": {
+          "percentile": 99.1,
+          "n_exceed_baseline": 256667,
+          "threshold_baseline": 2.0968164785031028e-08,
+          "threshold_variant": 1.94939946624527e-08,
+          "threshold_rel_shift": -0.07030515725585695,
+          "exceedance_freq_baseline": 0.009000013353779519,
+          "exceedance_freq_variant": 0.008999988167998204,
+          "flip_rate": 0.17325513215145524,
+          "material": true
+        },
+        "moderate": {
+          "percentile": 99.6,
+          "n_exceed_baseline": 115092,
+          "threshold_baseline": 2.8003792767389507e-08,
+          "threshold_variant": 2.6035487468946114e-08,
+          "threshold_rel_shift": -0.0702870969940718,
+          "exceedance_freq_baseline": 0.003999999087843725,
+          "exceedance_freq_variant": 0.0040000158457097375,
+          "flip_rate": 0.18845400405401574,
+          "material": true
+        },
+        "moderate_severe": {
+          "percentile": 99.8,
+          "n_exceed_baseline": 57853,
+          "threshold_baseline": 3.5104764823218986e-08,
+          "threshold_variant": 3.268771880121892e-08,
+          "threshold_rel_shift": -0.06885236332366444,
+          "exceedance_freq_baseline": 0.0019999975583365644,
+          "exceedance_freq_variant": 0.002000010366700653,
+          "flip_rate": 0.21177238575726337,
+          "material": true
+        },
+        "severe": {
+          "percentile": 99.9,
+          "n_exceed_baseline": 29032,
+          "threshold_baseline": 4.334801734908032e-08,
+          "threshold_variant": 4.0418474978723685e-08,
+          "threshold_rel_shift": -0.06758192299235082,
+          "exceedance_freq_baseline": 0.001000010033148968,
+          "exceedance_freq_variant": 0.0009999944183207692,
+          "flip_rate": 0.24747516166482758,
+          "material": true
+        }
+      },
+      "lat_bands": {
+        "-90..-80": {
+          "freq_baseline_pct": 0.0,
+          "freq_variant_pct": 0.5206847093322321,
+          "delta_pp": 0.5206847093322321
+        },
+        "-80..-70": {
+          "freq_baseline_pct": 0.06912700310921054,
+          "freq_variant_pct": 0.07806057227418323,
+          "delta_pp": 0.008933569164972692
+        },
+        "-70..-60": {
+          "freq_baseline_pct": 0.8510253994965093,
+          "freq_variant_pct": 0.9419084558350027,
+          "delta_pp": 0.09088305633849336
+        },
+        "-60..-50": {
+          "freq_baseline_pct": 3.676017508082842,
+          "freq_variant_pct": 3.974638904925926,
+          "delta_pp": 0.2986213968430837
+        },
+        "-50..-40": {
+          "freq_baseline_pct": 5.675581177432092,
+          "freq_variant_pct": 6.005968982331856,
+          "delta_pp": 0.33038780489976355
+        },
+        "-40..-30": {
+          "freq_baseline_pct": 5.990522034890987,
+          "freq_variant_pct": 6.124711918661818,
+          "delta_pp": 0.13418988377083066
+        },
+        "-30..-20": {
+          "freq_baseline_pct": 3.827879297871207,
+          "freq_variant_pct": 3.6736942325673225,
+          "delta_pp": -0.15418506530388426
+        },
+        "-20..-10": {
+          "freq_baseline_pct": 1.729206930529862,
+          "freq_variant_pct": 1.467395845144886,
+          "delta_pp": -0.261811085384976
+        },
+        "-10..+0": {
+          "freq_baseline_pct": 1.784185619619132,
+          "freq_variant_pct": 1.4983782889231305,
+          "delta_pp": -0.28580733069600156
+        },
+        "+0..+10": {
+          "freq_baseline_pct": 2.4286762591274993,
+          "freq_variant_pct": 2.192640342244105,
+          "delta_pp": -0.23603591688339426
+        },
+        "+10..+20": {
+          "freq_baseline_pct": 1.4212050350481076,
+          "freq_variant_pct": 1.3919921278433818,
+          "delta_pp": -0.029212907204725913
+        },
+        "+20..+30": {
+          "freq_baseline_pct": 1.9784444241222072,
+          "freq_variant_pct": 1.8290113911761157,
+          "delta_pp": -0.14943303294609156
+        },
+        "+30..+40": {
+          "freq_baseline_pct": 4.825557027657591,
+          "freq_variant_pct": 4.918190337614447,
+          "delta_pp": 0.09263330995685631
+        },
+        "+40..+50": {
+          "freq_baseline_pct": 6.097722925865325,
+          "freq_variant_pct": 6.309040331097799,
+          "delta_pp": 0.21131740523247441
+        },
+        "+50..+60": {
+          "freq_baseline_pct": 2.5513146786972123,
+          "freq_variant_pct": 2.680726581169574,
+          "delta_pp": 0.1294119024723619
+        },
+        "+60..+70": {
+          "freq_baseline_pct": 1.0101050262155784,
+          "freq_variant_pct": 1.0922873871972623,
+          "delta_pp": 0.08218236098168387
+        },
+        "+70..+80": {
+          "freq_baseline_pct": 0.7732152234714242,
+          "freq_variant_pct": 0.8583491703280367,
+          "delta_pp": 0.08513394685661238
+        },
+        "+80..+90": {
+          "freq_baseline_pct": 1.7942252444123075,
+          "freq_variant_pct": 3.1409968045630827,
+          "delta_pp": 1.3467715601507755
+        }
+      }
+    },
+    "temperature_gradient": {
+      "n_finite": 33223680,
+      "identical": true,
+      "spearman_rho": 1.0,
+      "median_rel_diff": 0.0,
+      "severities": {
+        "light": {
+          "percentile": 97.0,
+          "n_exceed_baseline": 1150883,
+          "threshold_baseline": 2.3935514933100747e-05,
+          "threshold_variant": 2.3935514933100747e-05,
+          "threshold_rel_shift": 0.0,
+          "exceedance_freq_baseline": 0.02999998838093053,
+          "exceedance_freq_variant": 0.02999998838093053,
+          "flip_rate": 0.0,
+          "material": false
+        },
+        "light_moderate": {
+          "percentile": 99.1,
+          "n_exceed_baseline": 332442,
+          "threshold_baseline": 3.346773324679325e-05,
+          "threshold_variant": 3.346773324679325e-05,
+          "threshold_rel_shift": 0.0,
+          "exceedance_freq_baseline": 0.009000013429938473,
+          "exceedance_freq_variant": 0.009000013429938473,
+          "flip_rate": 0.0,
+          "material": false
+        },
+        "moderate": {
+          "percentile": 99.6,
+          "n_exceed_baseline": 142417,
+          "threshold_baseline": 4.071113123528735e-05,
+          "threshold_variant": 4.071113123528735e-05,
+          "threshold_rel_shift": 0.0,
+          "exceedance_freq_baseline": 0.004000011506331473,
+          "exceedance_freq_variant": 0.004000011506331473,
+          "flip_rate": 0.0,
+          "material": false
+        },
+        "moderate_severe": {
+          "percentile": 99.8,
+          "n_exceed_baseline": 70267,
+          "threshold_baseline": 4.7121947895164675e-05,
+          "threshold_variant": 4.7121947895164675e-05,
+          "threshold_rel_shift": 0.0,
+          "exceedance_freq_baseline": 0.0020000150396547486,
+          "exceedance_freq_variant": 0.0020000150396547486,
+          "flip_rate": 0.0,
+          "material": false
+        },
+        "severe": {
+          "percentile": 99.9,
+          "n_exceed_baseline": 34921,
+          "threshold_baseline": 5.385288953912654e-05,
+          "threshold_variant": 5.385288953912654e-05,
+          "threshold_rel_shift": 0.0,
+          "exceedance_freq_baseline": 0.0009999979701453682,
+          "exceedance_freq_variant": 0.0009999979701453682,
+          "flip_rate": 0.0,
+          "material": false
+        }
+      },
+      "lat_bands": {
+        "-90..-80": {
+          "freq_baseline_pct": 0.014389189946368291,
+          "freq_variant_pct": 0.014389189946368291,
+          "delta_pp": 0.0
+        },
+        "-80..-70": {
+          "freq_baseline_pct": 0.4922667720061613,
+          "freq_variant_pct": 0.4922667720061613,
+          "delta_pp": 0.0
+        },
+        "-70..-60": {
+          "freq_baseline_pct": 2.7037993246320466,
+          "freq_variant_pct": 2.7037993246320466,
+          "delta_pp": 0.0
+        },
+        "-60..-50": {
+          "freq_baseline_pct": 8.660543631600634,
+          "freq_variant_pct": 8.660543631600634,
+          "delta_pp": 0.0
+        },
+        "-50..-40": {
+          "freq_baseline_pct": 7.28902118499448,
+          "freq_variant_pct": 7.28902118499448,
+          "delta_pp": 0.0
+        },
+        "-40..-30": {
+          "freq_baseline_pct": 2.525584597885305,
+          "freq_variant_pct": 2.525584597885305,
+          "delta_pp": 0.0
+        },
+        "-30..-20": {
+          "freq_baseline_pct": 0.39128144402515375,
+          "freq_variant_pct": 0.39128144402515375,
+          "delta_pp": 0.0
+        },
+        "-20..-10": {
+          "freq_baseline_pct": 0.029561012254622158,
+          "freq_variant_pct": 0.029561012254622158,
+          "delta_pp": 0.0
+        },
+        "-10..+0": {
+          "freq_baseline_pct": 0.029751607338367663,
+          "freq_variant_pct": 0.029751607338367663,
+          "delta_pp": 0.0
+        },
+        "+0..+10": {
+          "freq_baseline_pct": 0.07276614559321626,
+          "freq_variant_pct": 0.07276614559321626,
+          "delta_pp": 0.0
+        },
+        "+10..+20": {
+          "freq_baseline_pct": 0.18119020495114319,
+          "freq_variant_pct": 0.18119020495114319,
+          "delta_pp": 0.0
+        },
+        "+20..+30": {
+          "freq_baseline_pct": 0.9870804520306253,
+          "freq_variant_pct": 0.9870804520306253,
+          "delta_pp": 0.0
+        },
+        "+30..+40": {
+          "freq_baseline_pct": 6.071054985153203,
+          "freq_variant_pct": 6.071054985153203,
+          "delta_pp": 0.0
+        },
+        "+40..+50": {
+          "freq_baseline_pct": 9.919824128586482,
+          "freq_variant_pct": 9.919824128586482,
+          "delta_pp": 0.0
+        },
+        "+50..+60": {
+          "freq_baseline_pct": 6.824414385349718,
+          "freq_variant_pct": 6.824414385349718,
+          "delta_pp": 0.0
+        },
+        "+60..+70": {
+          "freq_baseline_pct": 3.723841113669467,
+          "freq_variant_pct": 3.723841113669467,
+          "delta_pp": 0.0
+        },
+        "+70..+80": {
+          "freq_baseline_pct": 4.749669242821008,
+          "freq_variant_pct": 4.749669242821008,
+          "delta_pp": 0.0
+        },
+        "+80..+90": {
+          "freq_baseline_pct": 7.642929454793508,
+          "freq_variant_pct": 7.642929454793508,
+          "delta_pp": 0.0
+        }
+      }
+    },
+    "ti1": {
+      "n_finite": 33223680,
+      "identical": true,
+      "spearman_rho": 0.9999999999999999,
+      "median_rel_diff": 0.0,
+      "severities": {
+        "light": {
+          "percentile": 97.0,
+          "n_exceed_baseline": 1040536,
+          "threshold_baseline": 7.328375409897994e-07,
+          "threshold_variant": 7.328375409897994e-07,
+          "threshold_rel_shift": 0.0,
+          "exceedance_freq_baseline": 0.03000001891177196,
+          "exceedance_freq_variant": 0.03000001891177196,
+          "flip_rate": 0.0,
+          "material": false
+        },
+        "light_moderate": {
+          "percentile": 99.1,
+          "n_exceed_baseline": 371321,
+          "threshold_baseline": 1.184284050416392e-06,
+          "threshold_variant": 1.184284050416392e-06,
+          "threshold_rel_shift": 0.0,
+          "exceedance_freq_baseline": 0.00899999081716132,
+          "exceedance_freq_variant": 0.00899999081716132,
+          "flip_rate": 0.0,
+          "material": false
+        },
+        "moderate": {
+          "percentile": 99.6,
+          "n_exceed_baseline": 217368,
+          "threshold_baseline": 1.5584050011752454e-06,
+          "threshold_variant": 1.5584050011752454e-06,
+          "threshold_rel_shift": 0.0,
+          "exceedance_freq_baseline": 0.003999994907593324,
+          "exceedance_freq_variant": 0.003999994907593324,
+          "flip_rate": 0.0,
+          "material": false
+        },
+        "moderate_severe": {
+          "percentile": 99.8,
+          "n_exceed_baseline": 155068,
+          "threshold_baseline": 1.932703949832022e-06,
+          "threshold_variant": 1.932703949832022e-06,
+          "threshold_rel_shift": 0.0,
+          "exceedance_freq_baseline": 0.002000015615575761,
+          "exceedance_freq_variant": 0.002000015615575761,
+          "flip_rate": 0.0,
+          "material": false
+        },
+        "severe": {
+          "percentile": 99.9,
+          "n_exceed_baseline": 123336,
+          "threshold_baseline": 2.3453186880328423e-06,
+          "threshold_variant": 2.3453186880328423e-06,
+          "threshold_rel_shift": 0.0,
+          "exceedance_freq_baseline": 0.000999992320893502,
+          "exceedance_freq_variant": 0.000999992320893502,
+          "flip_rate": 0.0,
+          "material": false
+        }
+      },
+      "lat_bands": {
+        "-90..-80": {
+          "freq_baseline_pct": 0.12833563124169792,
+          "freq_variant_pct": 0.12833563124169792,
+          "delta_pp": 0.0
+        },
+        "-80..-70": {
+          "freq_baseline_pct": 0.33580980398752747,
+          "freq_variant_pct": 0.33580980398752747,
+          "delta_pp": 0.0
+        },
+        "-70..-60": {
+          "freq_baseline_pct": 1.7048208772320592,
+          "freq_variant_pct": 1.7048208772320592,
+          "delta_pp": 0.0
+        },
+        "-60..-50": {
+          "freq_baseline_pct": 5.037911543195164,
+          "freq_variant_pct": 5.037911543195164,
+          "delta_pp": 0.0
+        },
+        "-50..-40": {
+          "freq_baseline_pct": 7.504090502600615,
+          "freq_variant_pct": 7.504090502600615,
+          "delta_pp": 0.0
+        },
+        "-40..-30": {
+          "freq_baseline_pct": 6.2625353369018715,
+          "freq_variant_pct": 6.2625353369018715,
+          "delta_pp": 0.0
+        },
+        "-30..-20": {
+          "freq_baseline_pct": 2.6652222579345084,
+          "freq_variant_pct": 2.6652222579345084,
+          "delta_pp": 0.0
+        },
+        "-20..-10": {
+          "freq_baseline_pct": 1.9356487801379347,
+          "freq_variant_pct": 1.9356487801379347,
+          "delta_pp": 0.0
+        },
+        "-10..+0": {
+          "freq_baseline_pct": 1.1773960896135358,
+          "freq_variant_pct": 1.1773960896135358,
+          "delta_pp": 0.0
+        },
+        "+0..+10": {
+          "freq_baseline_pct": 1.3097436809696494,
+          "freq_variant_pct": 1.3097436809696494,
+          "delta_pp": 0.0
+        },
+        "+10..+20": {
+          "freq_baseline_pct": 1.813559058418904,
+          "freq_variant_pct": 1.813559058418904,
+          "delta_pp": 0.0
+        },
+        "+20..+30": {
+          "freq_baseline_pct": 1.771807579986449,
+          "freq_variant_pct": 1.771807579986449,
+          "delta_pp": 0.0
+        },
+        "+30..+40": {
+          "freq_baseline_pct": 3.8031236380585023,
+          "freq_variant_pct": 3.8031236380585023,
+          "delta_pp": 0.0
+        },
+        "+40..+50": {
+          "freq_baseline_pct": 5.250451317123177,
+          "freq_variant_pct": 5.250451317123177,
+          "delta_pp": 0.0
+        },
+        "+50..+60": {
+          "freq_baseline_pct": 4.05130451684874,
+          "freq_variant_pct": 4.05130451684874,
+          "delta_pp": 0.0
+        },
+        "+60..+70": {
+          "freq_baseline_pct": 0.6915585859510495,
+          "freq_variant_pct": 0.6915585859510495,
+          "delta_pp": 0.0
+        },
+        "+70..+80": {
+          "freq_baseline_pct": 1.186737513331165,
+          "freq_variant_pct": 1.186737513331165,
+          "delta_pp": 0.0
+        },
+        "+80..+90": {
+          "freq_baseline_pct": 4.644592393362483,
+          "freq_variant_pct": 4.644592393362483,
+          "delta_pp": 0.0
+        }
+      }
+    },
+    "ti2": {
+      "n_finite": 33223680,
+      "identical": false,
+      "spearman_rho": 0.9969784448731298,
+      "median_rel_diff": 0.01601341281521365,
+      "severities": {
+        "light": {
+          "percentile": 97.0,
+          "n_exceed_baseline": 1027394,
+          "threshold_baseline": 8.562980340748297e-07,
+          "threshold_variant": 8.493839199106673e-07,
+          "threshold_rel_shift": -0.008074424895337471,
+          "exceedance_freq_baseline": 0.029999989490316042,
+          "exceedance_freq_variant": 0.029999999819756668,
+          "flip_rate": 0.033398943871979864,
+          "material": true
+        },
+        "light_moderate": {
+          "percentile": 99.1,
+          "n_exceed_baseline": 374614,
+          "threshold_baseline": 1.42841833370138e-06,
+          "threshold_variant": 1.4144303752498683e-06,
+          "threshold_rel_shift": -0.009792620356016772,
+          "exceedance_freq_baseline": 0.009000010338283735,
+          "exceedance_freq_variant": 0.009000008588535283,
+          "flip_rate": 0.03809393973740774,
+          "material": true
+        },
+        "moderate": {
+          "percentile": 99.6,
+          "n_exceed_baseline": 218890,
+          "threshold_baseline": 1.9270016924135208e-06,
+          "threshold_variant": 1.9066315677884705e-06,
+          "threshold_rel_shift": -0.01057089088465574,
+          "exceedance_freq_baseline": 0.003999991846324055,
+          "exceedance_freq_variant": 0.003999996383176231,
+          "flip_rate": 0.04208702297266744,
+          "material": true
+        },
+        "moderate_severe": {
+          "percentile": 99.8,
+          "n_exceed_baseline": 155769,
+          "threshold_baseline": 2.4364473750053703e-06,
+          "threshold_variant": 2.4092985436452395e-06,
+          "threshold_rel_shift": -0.011142794069201252,
+          "exceedance_freq_baseline": 0.00199998220626594,
+          "exceedance_freq_variant": 0.001999993951744324,
+          "flip_rate": 0.043632809578133036,
+          "material": true
+        },
+        "severe": {
+          "percentile": 99.9,
+          "n_exceed_baseline": 123848,
+          "threshold_baseline": 3.014294254093621e-06,
+          "threshold_variant": 2.9759971578212515e-06,
+          "threshold_rel_shift": -0.012705161820336364,
+          "exceedance_freq_baseline": 0.0009999973434102105,
+          "exceedance_freq_variant": 0.0009999925025818807,
+          "flip_rate": 0.04541511339755497,
+          "material": true
+        }
+      },
+      "lat_bands": {
+        "-90..-80": {
+          "freq_baseline_pct": 0.12829379448972292,
+          "freq_variant_pct": 0.11738555869144245,
+          "delta_pp": -0.010908235798280479
+        },
+        "-80..-70": {
+          "freq_baseline_pct": 0.25677202938971344,
+          "freq_variant_pct": 0.25832010416627627,
+          "delta_pp": 0.0015480747765628505
+        },
+        "-70..-60": {
+          "freq_baseline_pct": 1.439089210952884,
+          "freq_variant_pct": 1.4472204734242105,
+          "delta_pp": 0.008131262471326554
+        },
+        "-60..-50": {
+          "freq_baseline_pct": 4.415035070381919,
+          "freq_variant_pct": 4.441774689063886,
+          "delta_pp": 0.026739618681967392
+        },
+        "-50..-40": {
+          "freq_baseline_pct": 6.452786196090359,
+          "freq_variant_pct": 6.494655930383776,
+          "delta_pp": 0.04186973429341767
+        },
+        "-40..-30": {
+          "freq_baseline_pct": 5.29108498873208,
+          "freq_variant_pct": 5.3163981239761,
+          "delta_pp": 0.025313135244020568
+        },
+        "-30..-20": {
+          "freq_baseline_pct": 2.7360903643181107,
+          "freq_variant_pct": 2.72906974397406,
+          "delta_pp": -0.007020620344050724
+        },
+        "-20..-10": {
+          "freq_baseline_pct": 1.9721213111133271,
+          "freq_variant_pct": 1.9545156820759122,
+          "delta_pp": -0.017605629037414916
+        },
+        "-10..+0": {
+          "freq_baseline_pct": 1.4054339677509475,
+          "freq_variant_pct": 1.3667159291967912,
+          "delta_pp": -0.03871803855415631
+        },
+        "+0..+10": {
+          "freq_baseline_pct": 1.5893024187399445,
+          "freq_variant_pct": 1.5682446353423303,
+          "delta_pp": -0.02105778339761416
+        },
+        "+10..+20": {
+          "freq_baseline_pct": 2.1222899821622874,
+          "freq_variant_pct": 2.139231673775213,
+          "delta_pp": 0.01694169161292579
+        },
+        "+20..+30": {
+          "freq_baseline_pct": 1.9074522868701433,
+          "freq_variant_pct": 1.9081069451808812,
+          "delta_pp": 0.000654658310737799
+        },
+        "+30..+40": {
+          "freq_baseline_pct": 4.343046805153232,
+          "freq_variant_pct": 4.332460577889959,
+          "delta_pp": -0.010586227263272713
+        },
+        "+40..+50": {
+          "freq_baseline_pct": 5.758397626218958,
+          "freq_variant_pct": 5.752552256465232,
+          "delta_pp": -0.00584536975372571
+        },
+        "+50..+60": {
+          "freq_baseline_pct": 4.208388371615921,
+          "freq_variant_pct": 4.221087341393325,
+          "delta_pp": 0.01269896977740409
+        },
+        "+60..+70": {
+          "freq_baseline_pct": 0.9305883926216088,
+          "freq_variant_pct": 0.9276108850489295,
+          "delta_pp": -0.002977507572679214
+        },
+        "+70..+80": {
+          "freq_baseline_pct": 1.3102301669133847,
+          "freq_variant_pct": 1.3214726041930345,
+          "delta_pp": 0.011242437279649665
+        },
+        "+80..+90": {
+          "freq_baseline_pct": 4.320018277752922,
+          "freq_variant_pct": 4.335322088449325,
+          "delta_pp": 0.015303810696402215
+        }
+      }
+    },
+    "ubf": {
+      "n_finite": 33223680,
+      "identical": false,
+      "spearman_rho": 0.9957109905000908,
+      "median_rel_diff": 0.010633321674355026,
+      "severities": {
+        "light": {
+          "percentile": 97.0,
+          "n_exceed_baseline": 2005833,
+          "threshold_baseline": 2.026117226768144e-08,
+          "threshold_variant": 2.0228839140668638e-08,
+          "threshold_rel_shift": -0.001595817190912338,
+          "exceedance_freq_baseline": 0.030000000066400894,
+          "exceedance_freq_variant": 0.030000000810231513,
+          "flip_rate": 0.010187718130755396,
+          "material": true
+        },
+        "light_moderate": {
+          "percentile": 99.1,
+          "n_exceed_baseline": 1054494,
+          "threshold_baseline": 3.638014642025684e-08,
+          "threshold_variant": 3.6342972936261834e-08,
+          "threshold_rel_shift": -0.001021806882401821,
+          "exceedance_freq_baseline": 0.00899999890549433,
+          "exceedance_freq_variant": 0.009000015424901307,
+          "flip_rate": 0.008531305961454832,
+          "material": true
+        },
+        "moderate": {
+          "percentile": 99.6,
+          "n_exceed_baseline": 757695,
+          "threshold_baseline": 5.2190861871591436e-08,
+          "threshold_variant": 5.214682820639975e-08,
+          "threshold_rel_shift": -0.0008437045032907404,
+          "exceedance_freq_baseline": 0.003999981341420711,
+          "exceedance_freq_variant": 0.004000020049908919,
+          "flip_rate": 0.006872107659882849,
+          "material": true
+        },
+        "moderate_severe": {
+          "percentile": 99.8,
+          "n_exceed_baseline": 597058,
+          "threshold_baseline": 7.034388616395018e-08,
+          "threshold_variant": 7.030222193870539e-08,
+          "threshold_rel_shift": -0.0005922934815925312,
+          "exceedance_freq_baseline": 0.0020000094897723772,
+          "exceedance_freq_variant": 0.0019999997739341365,
+          "flip_rate": 0.006236987100819039,
+          "material": true
+        },
+        "severe": {
+          "percentile": 99.9,
+          "n_exceed_baseline": 489904,
+          "threshold_baseline": 9.531769312505793e-08,
+          "threshold_variant": 9.522548518194197e-08,
+          "threshold_rel_shift": -0.0009673748922457433,
+          "exceedance_freq_baseline": 0.0010000024926436345,
+          "exceedance_freq_variant": 0.0010000175504225682,
+          "flip_rate": 0.005394852160834266,
+          "material": true
+        }
+      },
+      "lat_bands": {
+        "-90..-80": {
+          "freq_baseline_pct": 16.91353764471466,
+          "freq_variant_pct": 16.922337229784635,
+          "delta_pp": 0.0087995850699768
+        },
+        "-80..-70": {
+          "freq_baseline_pct": 1.4892934167333098,
+          "freq_variant_pct": 1.492676781664723,
+          "delta_pp": 0.003383364931413245
+        },
+        "-70..-60": {
+          "freq_baseline_pct": 0.6196819939699383,
+          "freq_variant_pct": 0.6206274988108382,
+          "delta_pp": 0.0009455048409000126
+        },
+        "-60..-50": {
+          "freq_baseline_pct": 1.3378794386184767,
+          "freq_variant_pct": 1.3319294238173007,
+          "delta_pp": -0.005950014801175962
+        },
+        "-50..-40": {
+          "freq_baseline_pct": 1.907370525221751,
+          "freq_variant_pct": 1.896935307152793,
+          "delta_pp": -0.010435218068957988
+        },
+        "-40..-30": {
+          "freq_baseline_pct": 2.854595524343218,
+          "freq_variant_pct": 2.8481533718350294,
+          "delta_pp": -0.006442152508188276
+        },
+        "-30..-20": {
+          "freq_baseline_pct": 1.9874240127134468,
+          "freq_variant_pct": 1.9825884295601983,
+          "delta_pp": -0.0048355831532485155
+        },
+        "-20..-10": {
+          "freq_baseline_pct": 0.9077756509218611,
+          "freq_variant_pct": 0.9106554599874268,
+          "delta_pp": 0.002879809065565661
+        },
+        "-10..+0": {
+          "freq_baseline_pct": 1.1076430351631095,
+          "freq_variant_pct": 1.11257783658543,
+          "delta_pp": 0.004934801422320362
+        },
+        "+0..+10": {
+          "freq_baseline_pct": 0.8962153271709162,
+          "freq_variant_pct": 0.8996286853126232,
+          "delta_pp": 0.003413358141706943
+        },
+        "+10..+20": {
+          "freq_baseline_pct": 0.39935699410052344,
+          "freq_variant_pct": 0.4011402611318758,
+          "delta_pp": 0.0017832670313523181
+        },
+        "+20..+30": {
+          "freq_baseline_pct": 3.3913911717782392,
+          "freq_variant_pct": 3.3980590464200136,
+          "delta_pp": 0.006667874641774069
+        },
+        "+30..+40": {
+          "freq_baseline_pct": 7.980982372916171,
+          "freq_variant_pct": 7.979564365109907,
+          "delta_pp": -0.001418007806264221
+        },
+        "+40..+50": {
+          "freq_baseline_pct": 8.369308928760775,
+          "freq_variant_pct": 8.367251792332972,
+          "delta_pp": -0.00205713642780353
+        },
+        "+50..+60": {
+          "freq_baseline_pct": 4.998499866919832,
+          "freq_variant_pct": 4.998893860157615,
+          "delta_pp": 0.0003939932377836075
+        },
+        "+60..+70": {
+          "freq_baseline_pct": 5.134006683131288,
+          "freq_variant_pct": 5.143991130331161,
+          "delta_pp": 0.009984447199873348
+        },
+        "+70..+80": {
+          "freq_baseline_pct": 2.50222219431108,
+          "freq_variant_pct": 2.5031486365962214,
+          "delta_pp": 0.0009264422851415488
+        },
+        "+80..+90": {
+          "freq_baseline_pct": 17.61304980994479,
+          "freq_variant_pct": 17.58442693948942,
+          "delta_pp": -0.028622870455369265
+        }
+      }
+    },
+    "vertical_wind_shear": {
+      "n_finite": 33223680,
+      "identical": true,
+      "spearman_rho": 1.0,
+      "median_rel_diff": 0.0,
+      "severities": {
+        "light": {
+          "percentile": 97.0,
+          "n_exceed_baseline": 900810,
+          "threshold_baseline": 0.010817369359048682,
+          "threshold_variant": 0.010817369359048682,
+          "threshold_rel_shift": 0.0,
+          "exceedance_freq_baseline": 0.030000004965496475,
+          "exceedance_freq_variant": 0.030000004965496475,
+          "flip_rate": 0.0,
+          "material": false
+        },
+        "light_moderate": {
+          "percentile": 99.1,
+          "n_exceed_baseline": 274221,
+          "threshold_baseline": 0.013598063339326958,
+          "threshold_variant": 0.013598063339326958,
+          "threshold_rel_shift": 0.0,
+          "exceedance_freq_baseline": 0.008999967932880984,
+          "exceedance_freq_variant": 0.008999967932880984,
+          "flip_rate": 0.0,
+          "material": false
+        },
+        "moderate": {
+          "percentile": 99.6,
+          "n_exceed_baseline": 127282,
+          "threshold_baseline": 0.015504146184701768,
+          "threshold_variant": 0.015504146184701768,
+          "threshold_rel_shift": 0.0,
+          "exceedance_freq_baseline": 0.003999995678749715,
+          "exceedance_freq_variant": 0.003999995678749715,
+          "flip_rate": 0.0,
+          "material": false
+        },
+        "moderate_severe": {
+          "percentile": 99.8,
+          "n_exceed_baseline": 65232,
+          "threshold_baseline": 0.017199243645084974,
+          "threshold_variant": 0.017199243645084974,
+          "threshold_rel_shift": 0.0,
+          "exceedance_freq_baseline": 0.0019999951459672683,
+          "exceedance_freq_variant": 0.0019999951459672683,
+          "flip_rate": 0.0,
+          "material": false
+        },
+        "severe": {
+          "percentile": 99.9,
+          "n_exceed_baseline": 33450,
+          "threshold_baseline": 0.018777088631636477,
+          "threshold_variant": 0.018777088631636477,
+          "threshold_rel_shift": 0.0,
+          "exceedance_freq_baseline": 0.0009999941821359306,
+          "exceedance_freq_variant": 0.0009999941821359306,
+          "flip_rate": 0.0,
+          "material": false
+        }
+      },
+      "lat_bands": {
+        "-90..-80": {
+          "freq_baseline_pct": 0.0,
+          "freq_variant_pct": 0.0,
+          "delta_pp": 0.0
+        },
+        "-80..-70": {
+          "freq_baseline_pct": 0.3354032235984085,
+          "freq_variant_pct": 0.3354032235984085,
+          "delta_pp": 0.0
+        },
+        "-70..-60": {
+          "freq_baseline_pct": 1.6388318132969493,
+          "freq_variant_pct": 1.6388318132969493,
+          "delta_pp": 0.0
+        },
+        "-60..-50": {
+          "freq_baseline_pct": 6.7200178622336555,
+          "freq_variant_pct": 6.7200178622336555,
+          "delta_pp": 0.0
+        },
+        "-50..-40": {
+          "freq_baseline_pct": 5.626534902848979,
+          "freq_variant_pct": 5.626534902848979,
+          "delta_pp": 0.0
+        },
+        "-40..-30": {
+          "freq_baseline_pct": 3.5619076958666085,
+          "freq_variant_pct": 3.5619076958666085,
+          "delta_pp": 0.0
+        },
+        "-30..-20": {
+          "freq_baseline_pct": 0.9842158522434943,
+          "freq_variant_pct": 0.9842158522434943,
+          "delta_pp": 0.0
+        },
+        "-20..-10": {
+          "freq_baseline_pct": 1.1762061794475631,
+          "freq_variant_pct": 1.1762061794475631,
+          "delta_pp": 0.0
+        },
+        "-10..+0": {
+          "freq_baseline_pct": 1.4486471156899672,
+          "freq_variant_pct": 1.4486471156899672,
+          "delta_pp": 0.0
+        },
+        "+0..+10": {
+          "freq_baseline_pct": 2.0726113336737715,
+          "freq_variant_pct": 2.0726113336737715,
+          "delta_pp": 0.0
+        },
+        "+10..+20": {
+          "freq_baseline_pct": 4.104513961633959,
+          "freq_variant_pct": 4.104513961633959,
+          "delta_pp": 0.0
+        },
+        "+20..+30": {
+          "freq_baseline_pct": 1.9988275857514777,
+          "freq_variant_pct": 1.9988275857514777,
+          "delta_pp": 0.0
+        },
+        "+30..+40": {
+          "freq_baseline_pct": 3.730592381107238,
+          "freq_variant_pct": 3.730592381107238,
+          "delta_pp": 0.0
+        },
+        "+40..+50": {
+          "freq_baseline_pct": 7.135979822159401,
+          "freq_variant_pct": 7.135979822159401,
+          "delta_pp": 0.0
+        },
+        "+50..+60": {
+          "freq_baseline_pct": 4.765936686762142,
+          "freq_variant_pct": 4.765936686762142,
+          "delta_pp": 0.0
+        },
+        "+60..+70": {
+          "freq_baseline_pct": 0.5507134387967824,
+          "freq_variant_pct": 0.5507134387967824,
+          "delta_pp": 0.0
+        },
+        "+70..+80": {
+          "freq_baseline_pct": 1.1743107585057924,
+          "freq_variant_pct": 1.1743107585057924,
+          "delta_pp": 0.0
+        },
+        "+80..+90": {
+          "freq_baseline_pct": 2.298142755863786,
+          "freq_variant_pct": 2.298142755863786,
+          "delta_pp": 0.0
+        }
+      }
+    },
+    "vorticity_squared": {
+      "n_finite": 33223680,
+      "identical": false,
+      "spearman_rho": 0.9787871979762589,
+      "median_rel_diff": 0.032471763948709084,
+      "severities": {
+        "light": {
+          "percentile": 97.0,
+          "n_exceed_baseline": 994493,
+          "threshold_baseline": 8.211923583177452e-09,
+          "threshold_variant": 7.999452336369568e-09,
+          "threshold_rel_shift": -0.02587350511190129,
+          "exceedance_freq_baseline": 0.02999982414959575,
+          "exceedance_freq_variant": 0.0299999909362483,
+          "flip_rate": 0.07938585757417882,
+          "material": true
+        },
+        "light_moderate": {
+          "percentile": 99.1,
+          "n_exceed_baseline": 290483,
+          "threshold_baseline": 1.426606901135875e-08,
+          "threshold_variant": 1.3790275146085666e-08,
+          "threshold_rel_shift": -0.03335143443468932,
+          "exceedance_freq_baseline": 0.009000052836167444,
+          "exceedance_freq_variant": 0.008999979161718996,
+          "flip_rate": 0.09967244991765704,
+          "material": true
+        },
+        "moderate": {
+          "percentile": 99.6,
+          "n_exceed_baseline": 107082,
+          "threshold_baseline": 2.0092240480061203e-08,
+          "threshold_variant": 1.937929400902061e-08,
+          "threshold_rel_shift": -0.03548367200502583,
+          "exceedance_freq_baseline": 0.004000007940330224,
+          "exceedance_freq_variant": 0.0039999789148245065,
+          "flip_rate": 0.114212183194154,
+          "material": true
+        },
+        "moderate_severe": {
+          "percentile": 99.8,
+          "n_exceed_baseline": 48139,
+          "threshold_baseline": 2.6243377560879476e-08,
+          "threshold_variant": 2.5252290452323915e-08,
+          "threshold_rel_shift": -0.03776522691320633,
+          "exceedance_freq_baseline": 0.001999992292722134,
+          "exceedance_freq_variant": 0.002000008362806315,
+          "flip_rate": 0.130958335293991,
+          "material": true
+        },
+        "severe": {
+          "percentile": 99.9,
+          "n_exceed_baseline": 23714,
+          "threshold_baseline": 3.3251437372129964e-08,
+          "threshold_variant": 3.1990180048672513e-08,
+          "threshold_rel_shift": -0.03793091135707073,
+          "exceedance_freq_baseline": 0.000999984272041551,
+          "exceedance_freq_variant": 0.0009999999324723028,
+          "flip_rate": 0.15230867801707065,
+          "material": true
+        }
+      },
+      "lat_bands": {
+        "-90..-80": {
+          "freq_baseline_pct": 0.0,
+          "freq_variant_pct": 0.12834678770889252,
+          "delta_pp": 0.12834678770889252
+        },
+        "-80..-70": {
+          "freq_baseline_pct": 0.0,
+          "freq_variant_pct": 0.0,
+          "delta_pp": 0.0
+        },
+        "-70..-60": {
+          "freq_baseline_pct": 0.38084935334614595,
+          "freq_variant_pct": 0.39596648703720727,
+          "delta_pp": 0.015117133691061341
+        },
+        "-60..-50": {
+          "freq_baseline_pct": 4.171908357830877,
+          "freq_variant_pct": 4.40846518825645,
+          "delta_pp": 0.23655683042557232
+        },
+        "-50..-40": {
+          "freq_baseline_pct": 6.643197644259678,
+          "freq_variant_pct": 6.866372183794649,
+          "delta_pp": 0.22317453953497046
+        },
+        "-40..-30": {
+          "freq_baseline_pct": 8.677211283818847,
+          "freq_variant_pct": 8.887315170320939,
+          "delta_pp": 0.21010388650209155
+        },
+        "-30..-20": {
+          "freq_baseline_pct": 5.023747425315028,
+          "freq_variant_pct": 4.999619175252552,
+          "delta_pp": -0.024128250062476625
+        },
+        "-20..-10": {
+          "freq_baseline_pct": 3.651655367552781,
+          "freq_variant_pct": 3.4325358558194714,
+          "delta_pp": -0.21911951173330946
+        },
+        "-10..+0": {
+          "freq_baseline_pct": 2.005241796971606,
+          "freq_variant_pct": 1.7243082696711802,
+          "delta_pp": -0.2809335273004254
+        },
+        "+0..+10": {
+          "freq_baseline_pct": 1.5389512952049929,
+          "freq_variant_pct": 1.3094724673537155,
+          "delta_pp": -0.22947882785127743
+        },
+        "+10..+20": {
+          "freq_baseline_pct": 1.312166290082315,
+          "freq_variant_pct": 1.297781752442139,
+          "delta_pp": -0.014384537640176054
+        },
+        "+20..+30": {
+          "freq_baseline_pct": 1.6399142153060768,
+          "freq_variant_pct": 1.7069301413014284,
+          "delta_pp": 0.06701592599535171
+        },
+        "+30..+40": {
+          "freq_baseline_pct": 3.0772491344456787,
+          "freq_variant_pct": 3.1994516128909,
+          "delta_pp": 0.12220247844522171
+        },
+        "+40..+50": {
+          "freq_baseline_pct": 2.110046332197549,
+          "freq_variant_pct": 2.190384560571459,
+          "delta_pp": 0.08033822837391
+        },
+        "+50..+60": {
+          "freq_baseline_pct": 0.5273056397725419,
+          "freq_variant_pct": 0.5520884876988087,
+          "delta_pp": 0.02478284792626689
+        },
+        "+60..+70": {
+          "freq_baseline_pct": 0.43720200476397375,
+          "freq_variant_pct": 0.45598727080578383,
+          "delta_pp": 0.018785266041810092
+        },
+        "+70..+80": {
+          "freq_baseline_pct": 1.8351782357022906,
+          "freq_variant_pct": 1.8751524636575052,
+          "delta_pp": 0.039974227955214686
+        },
+        "+80..+90": {
+          "freq_baseline_pct": 8.318174632917897,
+          "freq_variant_pct": 8.580606033804216,
+          "delta_pp": 0.26243140088632044
+        }
+      }
+    },
+    "wind_speed": {
+      "n_finite": 33223680,
+      "identical": true,
+      "spearman_rho": 1.0,
+      "median_rel_diff": 0.0,
+      "severities": {
+        "light": {
+          "percentile": 97.0,
+          "n_exceed_baseline": 803699,
+          "threshold_baseline": 57.30941004204837,
+          "threshold_variant": 57.30941004204837,
+          "threshold_rel_shift": 0.0,
+          "exceedance_freq_baseline": 0.030000007297871025,
+          "exceedance_freq_variant": 0.030000007297871025,
+          "flip_rate": 0.0,
+          "material": false
+        },
+        "light_moderate": {
+          "percentile": 99.1,
+          "n_exceed_baseline": 240427,
+          "threshold_baseline": 66.46925273596956,
+          "threshold_variant": 66.46925273596956,
+          "threshold_rel_shift": 0.0,
+          "exceedance_freq_baseline": 0.009000016121895583,
+          "exceedance_freq_variant": 0.009000016121895583,
+          "flip_rate": 0.0,
+          "material": false
+        },
+        "moderate": {
+          "percentile": 99.6,
+          "n_exceed_baseline": 109298,
+          "threshold_baseline": 70.99000895373474,
+          "threshold_variant": 70.99000895373474,
+          "threshold_rel_shift": 0.0,
+          "exceedance_freq_baseline": 0.004000007786179571,
+          "exceedance_freq_variant": 0.004000007786179571,
+          "flip_rate": 0.0,
+          "material": false
+        },
+        "moderate_severe": {
+          "percentile": 99.8,
+          "n_exceed_baseline": 57079,
+          "threshold_baseline": 74.06687432602688,
+          "threshold_variant": 74.06687432602688,
+          "threshold_rel_shift": 0.0,
+          "exceedance_freq_baseline": 0.001999980945713301,
+          "exceedance_freq_variant": 0.001999980945713301,
+          "flip_rate": 0.0,
+          "material": false
+        },
+        "severe": {
+          "percentile": 99.9,
+          "n_exceed_baseline": 30378,
+          "threshold_baseline": 77.11098878584936,
+          "threshold_variant": 77.11098878584936,
+          "threshold_rel_shift": 0.0,
+          "exceedance_freq_baseline": 0.0009999774693320864,
+          "exceedance_freq_variant": 0.0009999774693320864,
+          "flip_rate": 0.0,
+          "material": false
+        }
+      },
+      "lat_bands": {
+        "-90..-80": {
+          "freq_baseline_pct": 0.0,
+          "freq_variant_pct": 0.0,
+          "delta_pp": 0.0
+        },
+        "-80..-70": {
+          "freq_baseline_pct": 0.0,
+          "freq_variant_pct": 0.0,
+          "delta_pp": 0.0
+        },
+        "-70..-60": {
+          "freq_baseline_pct": 0.20299099560409634,
+          "freq_variant_pct": 0.20299099560409634,
+          "delta_pp": 0.0
+        },
+        "-60..-50": {
+          "freq_baseline_pct": 3.90603403404547,
+          "freq_variant_pct": 3.90603403404547,
+          "delta_pp": 0.0
+        },
+        "-50..-40": {
+          "freq_baseline_pct": 5.618363993181105,
+          "freq_variant_pct": 5.618363993181105,
+          "delta_pp": 0.0
+        },
+        "-40..-30": {
+          "freq_baseline_pct": 3.4200594191866114,
+          "freq_variant_pct": 3.4200594191866114,
+          "delta_pp": 0.0
+        },
+        "-30..-20": {
+          "freq_baseline_pct": 0.1976238035483241,
+          "freq_variant_pct": 0.1976238035483241,
+          "delta_pp": 0.0
+        },
+        "-20..-10": {
+          "freq_baseline_pct": 0.0,
+          "freq_variant_pct": 0.0,
+          "delta_pp": 0.0
+        },
+        "-10..+0": {
+          "freq_baseline_pct": 0.0,
+          "freq_variant_pct": 0.0,
+          "delta_pp": 0.0
+        },
+        "+0..+10": {
+          "freq_baseline_pct": 0.0,
+          "freq_variant_pct": 0.0,
+          "delta_pp": 0.0
+        },
+        "+10..+20": {
+          "freq_baseline_pct": 0.0,
+          "freq_variant_pct": 0.0,
+          "delta_pp": 0.0
+        },
+        "+20..+30": {
+          "freq_baseline_pct": 13.580603451129361,
+          "freq_variant_pct": 13.580603451129361,
+          "delta_pp": 0.0
+        },
+        "+30..+40": {
+          "freq_baseline_pct": 9.73896234690983,
+          "freq_variant_pct": 9.73896234690983,
+          "delta_pp": 0.0
+        },
+        "+40..+50": {
+          "freq_baseline_pct": 5.952296770171659,
+          "freq_variant_pct": 5.952296770171659,
+          "delta_pp": 0.0
+        },
+        "+50..+60": {
+          "freq_baseline_pct": 1.1007383496392147,
+          "freq_variant_pct": 1.1007383496392147,
+          "delta_pp": 0.0
+        },
+        "+60..+70": {
+          "freq_baseline_pct": 0.0,
+          "freq_variant_pct": 0.0,
+          "delta_pp": 0.0
+        },
+        "+70..+80": {
+          "freq_baseline_pct": 0.0,
+          "freq_variant_pct": 0.0,
+          "delta_pp": 0.0
+        },
+        "+80..+90": {
+          "freq_baseline_pct": 0.0,
+          "freq_variant_pct": 0.0,
+          "delta_pp": 0.0
+        }
+      }
+    }
+  }
+}

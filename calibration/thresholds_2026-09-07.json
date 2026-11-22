@@ -1,0 +1,217 @@
+{
+  "created": "2026-09-07T13:25:53",
+  "provenance": {
+    "calibration_domain": "global",
+    "notes": "Computed by ada/tail_thresholds.py from retained tails (cut p88.0). Exact reproduction of calib_weighted_percentile on the full field; the discarded bulk enters only through W_total and W_below. Evaluated at 200 hPa from the 175/200/225 stencil.",
+    "period": "derived/global (12 stores)",
+    "pressure_levels": [
+      "175",
+      "200",
+      "225"
+    ],
+    "rojak_version": null,
+    "sample_sizes": {
+      "brown1": 3039966720,
+      "brown2": 3039966720,
+      "colson_panofsky": 3039966720,
+      "deformation": 3039966720,
+      "endlich": 3039966720,
+      "f2d": 3039966720,
+      "horizontal_divergence": 3039966720,
+      "magnitude_pv": 3039966720,
+      "ncsu1": 3039966720,
+      "negative_richardson": 3039966720,
+      "ngm1": 3039966720,
+      "ngm2": 3039966720,
+      "nva": 3039966720,
+      "rva_magnitude": 3039966720,
+      "temperature_gradient": 3039966720,
+      "ti1": 3039966720,
+      "ti2": 3039966720,
+      "ubf": 3039966720,
+      "vertical_wind_shear": 3039966720,
+      "vorticity_squared": 3039966720,
+      "wind_speed": 3039966720
+    },
+    "severities_percentiles": {
+      "light": 97.0,
+      "light_to_moderate": 99.1,
+      "moderate": 99.6,
+      "moderate_to_severe": 99.8,
+      "severe": 99.9
+    }
+  },
+  "schema_version": 1,
+  "signs": {
+    "brown1": "+",
+    "brown2": "+",
+    "colson_panofsky": "+",
+    "deformation": "+",
+    "endlich": "+",
+    "f2d": "+",
+    "horizontal_divergence": "+",
+    "magnitude_pv": "+",
+    "ncsu1": "+",
+    "negative_richardson": "+",
+    "ngm1": "+",
+    "ngm2": "+",
+    "nva": "+",
+    "rva_magnitude": "+",
+    "temperature_gradient": "+",
+    "ti1": "+",
+    "ti2": "+",
+    "ubf": "+",
+    "vertical_wind_shear": "+",
+    "vorticity_squared": "+",
+    "wind_speed": "+"
+  },
+  "thresholds": {
+    "brown1": {
+      "light": 0.0001316017480550526,
+      "light_to_moderate": 0.00016544161302291743,
+      "moderate": 0.00019156993822626696,
+      "moderate_to_severe": 0.0002159651284699508,
+      "severe": 0.00024220967178895504
+    },
+    "brown2": {
+      "light": 4.25828606887563e-10,
+      "light_to_moderate": 8.590276771785024e-10,
+      "moderate": 1.2841570754407646e-09,
+      "moderate_to_severe": 1.751483587607893e-09,
+      "severe": 2.3235857414490028e-09
+    },
+    "colson_panofsky": {
+      "light": -19.435513003015178,
+      "light_to_moderate": -1.0219946775360067,
+      "moderate": 11.660982276924782,
+      "moderate_to_severe": 26.64096552357705,
+      "severe": 43.49409272284196
+    },
+    "deformation": {
+      "light": 0.00010476080185739822,
+      "light_to_moderate": 0.00013705967238453624,
+      "moderate": 0.00016094228250332105,
+      "moderate_to_severe": 0.00018292786804569003,
+      "severe": 0.00020655885774921405
+    },
+    "endlich": {
+      "light": 0.007897703107807474,
+      "light_to_moderate": 0.010425250417553848,
+      "moderate": 0.012091023851208225,
+      "moderate_to_severe": 0.013504064619583821,
+      "severe": 0.014904401491164052
+    },
+    "f2d": {
+      "light": 0.0007849912129027032,
+      "light_to_moderate": 0.0036314529234142807,
+      "moderate": 0.013887591116504559,
+      "moderate_to_severe": 0.060263990181388456,
+      "severe": 0.3173663597229084
+    },
+    "horizontal_divergence": {
+      "light": 6.302908920053975e-05,
+      "light_to_moderate": 9.121030500807625e-05,
+      "moderate": 0.00011214730994626673,
+      "moderate_to_severe": 0.00013174418562009527,
+      "severe": 0.0001536757054619439
+    },
+    "magnitude_pv": {
+      "light": 8.911061141583561e-06,
+      "light_to_moderate": 9.742585854322765e-06,
+      "moderate": 1.0289916871369957e-05,
+      "moderate_to_severe": 1.0746323093607936e-05,
+      "severe": 1.118944043682549e-05
+    },
+    "ncsu1": {
+      "light": 1.1848515350181852e-13,
+      "light_to_moderate": 4.443900050437565e-13,
+      "moderate": 9.42382734008844e-13,
+      "moderate_to_severe": 1.7107287038410903e-12,
+      "severe": 3.073012682460891e-12
+    },
+    "negative_richardson": {
+      "light": -0.9466096448075686,
+      "light_to_moderate": -0.5170302628485798,
+      "moderate": -0.3577171669021004,
+      "moderate_to_severe": -0.2586466458006002,
+      "severe": -0.17187457677458254
+    },
+    "ngm1": {
+      "light": 0.003977432794158816,
+      "light_to_moderate": 0.005808303698900503,
+      "moderate": 0.007160761106872581,
+      "moderate_to_severe": 0.00840579872612202,
+      "severe": 0.009747940326619233
+    },
+    "ngm2": {
+      "light": 6.975554615669145e-07,
+      "light_to_moderate": 9.393876606829022e-07,
+      "moderate": 1.1183722412384757e-06,
+      "moderate_to_severe": 1.285238260312213e-06,
+      "severe": 1.4686520976606173e-06
+    },
+    "nva": {
+      "light": 9.918552312567106e-09,
+      "light_to_moderate": 1.7521002530677705e-08,
+      "moderate": 2.410184801219081e-08,
+      "moderate_to_severe": 3.086135426747741e-08,
+      "severe": 3.883498859791772e-08
+    },
+    "rva_magnitude": {
+      "light": 1.4077892696091205e-08,
+      "light_to_moderate": 2.317010956447801e-08,
+      "moderate": 3.099083222659329e-08,
+      "moderate_to_severe": 3.897480529318962e-08,
+      "severe": 4.8345331719074674e-08
+    },
+    "temperature_gradient": {
+      "light": 2.4587882556710768e-05,
+      "light_to_moderate": 3.426329984373833e-05,
+      "moderate": 4.113686006854344e-05,
+      "moderate_to_severe": 4.7271194330910754e-05,
+      "severe": 5.375305336095833e-05
+    },
+    "ti1": {
+      "light": 7.704124448802433e-07,
+      "light_to_moderate": 1.2792202843185175e-06,
+      "moderate": 1.7113236540854056e-06,
+      "moderate_to_severe": 2.139622047827522e-06,
+      "severe": 2.62401947546355e-06
+    },
+    "ti2": {
+      "light": 9.029984269832442e-07,
+      "light_to_moderate": 1.5501471930383877e-06,
+      "moderate": 2.1142302473507468e-06,
+      "moderate_to_severe": 2.683490317116357e-06,
+      "severe": 3.339204344208983e-06
+    },
+    "ubf": {
+      "light": 1.9724708662844934e-08,
+      "light_to_moderate": 3.478088100815759e-08,
+      "moderate": 4.975044996662732e-08,
+      "moderate_to_severe": 6.754199211974431e-08,
+      "severe": 9.28382203919133e-08
+    },
+    "vertical_wind_shear": {
+      "light": 0.011068598401507904,
+      "light_to_moderate": 0.014255561012404288,
+      "moderate": 0.01636950608689628,
+      "moderate_to_severe": 0.018153579509980963,
+      "severe": 0.019928564311912714
+    },
+    "vorticity_squared": {
+      "light": 9.242118798099217e-09,
+      "light_to_moderate": 1.5920394431098798e-08,
+      "moderate": 2.231335658239205e-08,
+      "moderate_to_severe": 2.9241879047608886e-08,
+      "severe": 3.772082328933841e-08
+    },
+    "wind_speed": {
+      "light": 57.68892767870253,
+      "light_to_moderate": 68.83281204017,
+      "moderate": 75.32282805350705,
+      "moderate_to_severe": 80.40270696882148,
+      "severe": 84.99560274209955
+    }
+  }
+}

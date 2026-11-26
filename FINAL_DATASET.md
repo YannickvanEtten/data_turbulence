@@ -1,5 +1,152 @@
 # FINAL DATASET — CAT indicators, North Atlantic, 1979–2020
 
+> ## ⟶ NOVEMBER 2026 UPDATE — READ THIS SECTION FIRST (2026-11-22)
+>
+> **This section is the current state.** Everything below it (§0–§8) is the
+> September 2026 evidence and is kept unchanged as the record. Where this
+> section and §0–§8 disagree, **this section wins**; the corrections are listed
+> in U5. Detail behind each item: `REFEREE_PASS_2026-09-22.md`,
+> `MEMO_PREP_2026-11-16.md`, `UBF_STENCIL_TEST.md`,
+> `DATASET_DECISION_2026-11-20.md`.
+
+## U1. What data is present (ADA share, measured 2026-11-22)
+
+`/scistor/SBE-EDS-ClimateKoopman/yen230/` — **852 GB of 2.5 TB, 35 % used.**
+
+| path | size | contents |
+|---|---|---|
+| `derived/north_atlantic_audit/` | 300 GB | **THE DATASET.** 504 zarr stores, 1979-01 .. 2020-12. All 21 CAT diagnostics as full fields: 0.25°, 3-hourly, 200 hPa, domain 30–60°N × 75°W–0°. Analysis box 36–60°N × 55–10°W (Prosser Fig. 2). float32. |
+| `calibration/thresholds_2026-09-11.json` | 7 KB | **The thresholds to use**: cos φ-weighted percentiles 97.0 / 99.1 / 99.6 / 99.8 / 99.9 (light / light-moderate / moderate / moderate-severe / severe) of the full global year 2000, same conventions. |
+| `derived/global_audit/` | 201 GB | that reference year: 12 global stores, 2000, same 21 diagnostics |
+| `calibration/tails_2026-09-11/` | 41 GB | top 12 % of every diagnostic in the reference year, with latitude (for new percentile questions without a rerun) |
+| `raw/north_atlantic/` | 176 GB | 504 ERA5 GRIB, u v t z d vo pv at 175/200/225 hPa — the input; ERA5's own vorticity, divergence and PV can be read from here directly |
+| `raw/global/` | 119 GB | the 12 global months of 2000 |
+| `raw/global_sub48/` | 16 GB | 48-day sample of 2000 (inputs of the Nov tests) |
+
+Conventions of the dataset (`audit_fixes = meridional_metric+four_variable_provenance`,
+`f2d_variant = A`, deformation un-squared): ζ, δ and PV computed from u, v, T, z
+(Prosser's four-field method); corrected meridional grid spacing; signed
+frontogenesis. Reasons: `DATASET_DECISION_2026-11-20.md`.
+
+**The baseline series no longer exists as stores.** It was deleted on
+2026-11-22. Its 42-year box series at all five severities are in git
+(`cat_outputs/baseline_archive/`), its thresholds in `calibration/` in the
+repo. Every §1/§8 sentence that relies on the baseline stores being on disk is
+superseded. Rebuild from raw if ever needed: about one day of cluster time.
+
+In git (`github.com/YannickvanEtten/data_turbulence`): all code, all four
+threshold files, all result tables (`cat_outputs/`, `data_prosser/`), the
+Nov tests, and a 2 MB archive of every job log (`logs_archive_2026-11-20.tar.gz`).
+
+## U2. Relation to Prosser et al. (2023) — the replication, current numbers
+
+Independent implementation (Prosser publishes no code), on slightly different
+ERA5 data: pressure levels 175/200/225 hPa instead of model levels ≈188/197/206
+(MARS-only), ERA5 instead of ERA5.1 for 2000–2006.
+
+**Ensemble of 21, annual, North Atlantic box, fitted 1979→2020 change**
+(`MEMO_PREP_2026-11-16.md`, recomputed from the archived series):
+
+| severity | ours | Fieller 95 % (OLS) | Prosser | t (OLS) | t (Prais–Winsten) |
+|---|---|---|---|---|---|
+| light | +16.5 % | [+8.2, +25.6] | +17 % | 4.18 | 2.92 |
+| light-moderate | +27.5 % | [+15.6, +41.0] | +28 % | 5.02 | 3.63 |
+| moderate | +37.2 % | [+22.2, +54.6] | +37 % | 5.57 | 4.13 |
+| moderate-severe | +46.9 % | [+28.6, +68.5] | +46 % | 5.94 | 4.52 |
+| severe | +57.3 % | [+35.0, +84.6] | +55 % | 6.12 | 4.77 |
+
+**Per diagnostic** (21 × light / moderate / severe, against Prosser Fig. 4 and S4):
+- **median |ours − Prosser| = 1.5 / 1.7 / 4.9 percentage points** — the
+  headline agreement statistic;
+- Prosser's value inside our Fieller interval in 21 / 20 / 20 cells (61 of 63);
+  only `ncsu1` at moderate and severe is outside;
+- significance call agrees in 19 / 19 / 18 of 21 (OLS, like-for-like with
+  Prosser's own OLS Wald tests).
+
+**Levels:** our 1979 ensemble exceedance level is 0.90 / 0.88 / 0.88 / 0.87 / 0.84
+of Prosser's (light → severe). The 10–16 % deficit is the coarser vertical
+stencil: it concentrates in the diagnostics that use the vertical difference,
+deepens with severity in winter/spring, is flat in summer, and does not move
+the trends.
+
+**Seasonal Table 1** (25 season × severity cells): 25/25 contain Prosser's
+value and 25/25 are significant under OLS. Fieller can only widen these
+intervals, so containment stays 25/25; the seasonal cells have NOT been redone
+under Prais–Winsten.
+
+**What can be claimed:** an independent implementation on slightly different
+ERA5 data reproduces Prosser's trends; levels sit 10–16 % lower for a known,
+measured reason; six diagnostics depart from him, each with an explanation.
+**Not supported:** any claim outside the 36–60°N, 55–10°W box.
+
+## U3. Per-indicator status (current)
+
+**13 class A** (use on their own, no caveat): `brown1`, `temperature_gradient`,
+`horizontal_divergence` (no trend — in Prosser either), `vertical_wind_shear`,
+`deformation`, `wind_speed`, `rva_magnitude`, `nva`, `brown2` (rank-only
+magnitude), `vorticity_squared`, `ti1`, `ngm1`, `ti2`.
+
+**2 class B** (use with the stated caveat): `magnitude_pv` (Sharman A18 PV in hPa
+units, not ERA5 Ertel PV), `ngm2` (level 17–43 % below Prosser, trends agree).
+
+**6 class C** (ensemble members only), each with its stated cause:
+
+| diagnostic | why | status |
+|---|---|---|
+| `colson_panofsky`, `negative_richardson`, `f2d` | tail is tropical; the NA box holds few of their events | correctly computed; a threshold-design question if used alone |
+| `ncsu1` | Prosser's finer stencil triggers the 1/max(Ri,1e-5) floor; agrees at light, not above | explained (§6 Q3) |
+| `ubf` | polar reference-year tail; NA level 0.39 / 0.19 / 0.08 of Prosser | **tested Nov 2026: the Laplacian discretisation is not the cause** — more accurate operators make the tail MORE polar. Most likely near-grid-scale structure at high latitude amplified by a second derivative. Cause otherwise unknown. |
+| `endlich` | NA level 0.67 / 0.51 / 0.46 of Prosser | **tested Nov 2026: the ∂ψ/∂z reading is not the cause** — the closed form reshuffles the tail but moves the NA 1979 level by at most 12 %. Keep the angle reading. Remaining cause: the vertical stencil (directional shear in thin layers). |
+
+## U4. What could be done with this data (options, nothing decided)
+
+- **Trends with proper time-series inference** — 42 annual observations per
+  series with lag-1 autocorrelation up to ~0.5 (DW ≈ 1.0–1.5): Prais–Winsten or
+  state-space trend models; seasonal and per-severity.
+- **Tail behaviour** — does the shape of the upper tail change, not only the
+  exceedance frequency? Peaks-over-threshold / GPD on the 1979–2020 magnitudes.
+  Needs a NA peaks-over-threshold archive (~23 GB, one pass) built once the unit
+  of observation is fixed.
+- **The 21 indicators as noisy measurements of one latent turbulence state**
+  — a (dynamic) factor or measurement model across diagnostics, gridpoints and
+  time; the 13 class-A series are the natural core.
+- **Explaining variation** — interannual variability is larger than the trend
+  (NAO-type jet variability), so covariates such as jet position/NAO, or
+  attribution to warming, are natural extensions.
+- **First design decision for any of these:** the unit of observation
+  (gridpoint × month, box × season, route, …). It decides which remaining
+  preparatory work is needed.
+
+## U5. Corrections to §0–§8 below
+
+| where | September text | current |
+|---|---|---|
+| §0 item 2, §6 Q5 | "59 of 63 … 21/21, 20/21, 18/21" inside our 95 % CI | 61/63 under Fieller; those CIs were mislabelled (coverage 88–93 %). Lead with the median gap 1.5 / 1.7 / 4.9 pp (REFEREE F1, F2) |
+| §0, §6 Q5 | ensemble change without interval; LOO range presented beside it | Fieller intervals in U2; LOO is ensemble-composition sensitivity, not uncertainty (F6) |
+| everywhere | no serial-correlation treatment | DW ≈ 1.0 on the ensemble; Prais–Winsten t in U2 (F3) |
+| §5 `endlich` row, §4.3 | class C on SOG CI; "usable with caveat at LOG and MOG" | class C on the stencil; the formula reading is tested and closed (U3); no carve-out |
+| §3 L10, §5 `ubf` | next step: high-latitude Stokes/divergence check | done: geometry correct on exact balanced flow over the poles; discretisation tested and not the cause (U3) |
+| §3 L1-L15, §1 SENSITIVITY, §8 | baseline stores on disk as sensitivity arm | deleted 2026-11-22; baseline numbers in `cat_outputs/baseline_archive/` |
+| §2 C1, §3 L3, `DECISION_RECORD` §5 | f2d damping 0.637 (36 %) | 0.900 (10 %) for a diurnal cycle at 3-hourly sampling |
+| §6 Q4 item 12 | rojak treats longitude as periodic (assumed) | it does NOT: two one-sided edge columns at ±180° on the global grid; global reference year only, NA box unaffected |
+| `REFEREE_PASS` F5 | `endlich` ranked most exposed to the polar curvature defect | wrong: `endlich` has no horizontal derivative |
+| `DECISION_RECORD` §3–§4 | "17 of 21 need no caveat"; "`ubf` is NOT anomalous" | 13 A / 2 B / 6 C; `ubf` is class C (U3) |
+
+**Still open (none blocks use of the dataset):**
+- the repo CSVs and `FINAL_SCORECARD.*` still carry the old interval
+  construction; the Fieller / Prais–Winsten numbers in U2 come from the
+  November recompute (`MEMO_PREP_2026-11-16.md`), not from regenerated files;
+- seasonal Table 1 under Prais–Winsten;
+- fix the polar curvature term in `essentials/diagnostics.py` before
+  publishing that code (does not touch the NA box);
+- no backup of the ADA share (L14): one email to ITvO before publication.
+
+---
+
+*Below: the September 2026 record, unchanged.*
+
+## September 2026 record
+
 **Written 2026-09-16, updated 2026-09-21 with the batch results.** This closes
 the data-gathering phase. It does not restate `DECISION_RECORD.md`. It checks
 that document's conclusion, corrects eleven statements in the record that are
